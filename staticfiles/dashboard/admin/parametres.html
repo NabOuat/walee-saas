@@ -1,0 +1,815 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Paramètres - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="parametresData()">
+    
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-2">
+            Paramètres
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">Configurez votre application</p>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 overflow-x-auto">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex space-x-4 md:space-x-8 px-4 md:px-6" aria-label="Tabs">
+                <button @click="activeTab = 'general'" 
+                        :class="activeTab === 'general' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                    Général
+                </button>
+                <button @click="activeTab = 'notifications'" 
+                        :class="activeTab === 'notifications' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                    Notifications
+                </button>
+                <button @click="activeTab = 'securite'" 
+                        :class="activeTab === 'securite' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                    Sécurité
+                </button>
+                <button @click="activeTab = 'facturation'" 
+                        :class="activeTab === 'facturation' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                    Facturation
+                </button>
+                <button @click="activeTab = 'integrations'" 
+                        :class="activeTab === 'integrations' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                    Intégrations
+                </button>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Tab Content: Général -->
+    <div x-show="activeTab === 'general'" x-transition.opacity class="space-y-6">
+        
+        <!-- Apparence -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Apparence</h3>
+                <button @click="showInfo('apparence')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Langue -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Langue</label>
+                        <button @click="showInfo('langue')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <select x-model="settings.langue" 
+                            class="w-full max-w-md px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                    </select>
+                </div>
+                
+                <!-- Devise -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Devise par défaut</label>
+                        <button @click="showInfo('devise')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <select x-model="settings.devise"
+                            class="w-full max-w-md px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                        <option value="xof">FCFA (XOF)</option>
+                        <option value="eur">Euro (EUR)</option>
+                        <option value="usd">Dollar (USD)</option>
+                    </select>
+                </div>
+                
+                <!-- Fuseau horaire -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Fuseau horaire</label>
+                        <button @click="showInfo('timezone')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <select x-model="settings.timezone"
+                            class="w-full max-w-md px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                        <option value="abidjan">Africa/Abidjan (GMT+0)</option>
+                        <option value="paris">Europe/Paris (GMT+1)</option>
+                        <option value="newyork">America/New_York (GMT-5)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bouton Enregistrer -->
+            <div class="mt-6">
+                <button @click="saveSettings()" 
+                        class="px-6 py-2 bg-walee-blue text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+        
+        <!-- Format -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Format d'affichage</h3>
+                <button @click="showInfo('format')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                     @click="showInfo('date_format')">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Format de date</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">JJ/MM/AAAA</p>
+                    </div>
+                    <button @click.stop="editFormat('date')" 
+                            class="text-walee-blue hover:text-blue-700 text-sm font-medium transition-colors">
+                        Modifier
+                    </button>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                     @click="showInfo('time_format')">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">Format d'heure</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">24 heures</p>
+                    </div>
+                    <button @click.stop="editFormat('time')" 
+                            class="text-walee-blue hover:text-blue-700 text-sm font-medium transition-colors">
+                        Modifier
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Notifications -->
+    <div x-show="activeTab === 'notifications'" x-transition.opacity class="space-y-6">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Préférences de notification</h3>
+                <button @click="showInfo('notifications')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Email notifications -->
+                <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+                     @click="showInfo('email_notif')">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="mail" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 dark:text-white">Notifications par email</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Recevoir les alertes importantes</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer ml-4" @click.stop>
+                        <input type="checkbox" x-model="notifications.email" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                    </label>
+                </div>
+                
+                <!-- Push notifications -->
+                <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+                     @click="showInfo('push_notif')">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="bell" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 dark:text-white">Notifications push</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Alertes en temps réel</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer ml-4" @click.stop>
+                        <input type="checkbox" x-model="notifications.push" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                    </label>
+                </div>
+                
+                <!-- SMS notifications -->
+                <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+                     @click="showInfo('sms_notif')">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="message-square" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 dark:text-white">Notifications SMS</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Alertes critiques uniquement</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer ml-4" @click.stop>
+                        <input type="checkbox" x-model="notifications.sms" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Types de notifications -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Types de notifications</h3>
+                <button @click="showInfo('types_notif')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-2">
+                <template x-for="(type, index) in notificationTypes" :key="index">
+                    <label class="flex items-center space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors">
+                        <input type="checkbox" x-model="type.enabled" 
+                               class="w-4 h-4 text-walee-blue rounded focus:ring-walee-blue border-gray-300 dark:border-gray-600">
+                        <span class="text-sm text-gray-700 dark:text-gray-300 flex-1" x-text="type.label"></span>
+                        <button @click.stop.prevent="showInfo('type_' + index)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        </button>
+                    </label>
+                </template>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Sécurité -->
+    <div x-show="activeTab === 'securite'" x-transition.opacity class="space-y-6">
+        
+        <!-- Mot de passe -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Mot de passe</h3>
+                <button @click="showInfo('password')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <form @submit.prevent="updatePassword()" class="space-y-4 max-w-md">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mot de passe actuel</label>
+                    <input type="password" 
+                           x-model="passwordForm.current"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nouveau mot de passe</label>
+                    <input type="password" 
+                           x-model="passwordForm.new"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmer le mot de passe</label>
+                    <input type="password" 
+                           x-model="passwordForm.confirm"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none transition-colors">
+                </div>
+                <button type="submit" 
+                        class="px-6 py-3 bg-walee-blue text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+                    Mettre à jour le mot de passe
+                </button>
+            </form>
+        </div>
+        
+        <!-- Authentification à deux facteurs -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+             @click="showInfo('2fa')">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-start space-x-3">
+                    <div>
+                        <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Authentification à deux facteurs (2FA)</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Ajoutez une couche de sécurité supplémentaire</p>
+                    </div>
+                    <button @click.stop="showInfo('2fa')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
+                        <i data-lucide="help-circle" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer" @click.stop>
+                    <input type="checkbox" x-model="security.twoFA" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Sessions actives -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Sessions actives</h3>
+                <button @click="showInfo('sessions')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="monitor" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 dark:text-white">Windows • Chrome</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Abidjan, Côte d'Ivoire • Actif maintenant</p>
+                        </div>
+                    </div>
+                    <span class="text-xs px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full whitespace-nowrap ml-2">Actuel</span>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Facturation -->
+    <div x-show="activeTab === 'facturation'" x-transition.opacity class="space-y-6">
+        
+        <!-- Plan actuel -->
+        <div class="bg-gradient-to-br from-walee-blue to-walee-indigo rounded-xl p-6 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+             @click="showInfo('plan')">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <div>
+                    <p class="text-sm opacity-90">Plan actuel</p>
+                    <h3 class="text-2xl font-bold font-poppins">Premium</h3>
+                </div>
+                <div class="text-left sm:text-right">
+                    <p class="text-3xl font-bold">25,000</p>
+                    <p class="text-sm opacity-90">FCFA/mois</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-sm">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Renouvellement le 15 février 2024</span>
+                </div>
+                <button @click.stop="showInfo('plan')" class="text-white/70 hover:text-white">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Méthode de paiement -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Méthode de paiement</h3>
+                    <button @click="showInfo('payment')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <button @click="addPaymentMethod()" 
+                        class="text-walee-blue hover:text-blue-700 text-sm font-medium transition-colors">
+                    Ajouter
+                </button>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded flex items-center justify-center text-white text-xs font-bold">
+                        VISA
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">•••• •••• •••• 4242</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Expire 12/2025</p>
+                    </div>
+                </div>
+                <button @click="removePaymentMethod()" 
+                        class="text-red-600 hover:text-red-700 text-sm font-medium transition-colors">
+                    Supprimer
+                </button>
+            </div>
+        </div>
+        
+        <!-- Historique de facturation -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white">Historique de facturation</h3>
+                <button @click="showInfo('invoices')" 
+                        class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <template x-for="invoice in invoices" :key="invoice.id">
+                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+                         @click="showInfo('invoice_' + invoice.id)">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="invoice.month"></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="'Payé le ' + invoice.date"></p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="font-semibold text-gray-900 dark:text-white whitespace-nowrap" x-text="invoice.amount + ' FCFA'"></span>
+                            <button @click.stop="downloadInvoice(invoice.id)" 
+                                    class="text-walee-blue hover:text-blue-700 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Intégrations -->
+    <div x-show="activeTab === 'integrations'" x-transition.opacity class="space-y-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            
+            <template x-for="integration in integrations" :key="integration.id">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                     @click="showInfo('integration_' + integration.id)">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                             :class="integration.bgColor">
+                            <i :data-lucide="integration.icon" class="w-6 h-6" :class="integration.iconColor"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-gray-900 dark:text-white" x-text="integration.name"></h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="integration.description"></p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer" @click.stop>
+                            <input type="checkbox" x-model="integration.enabled" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                        </label>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400" x-text="integration.details"></p>
+                </div>
+            </template>
+            
+        </div>
+        
+    </div>
+
+    <!-- Modal d'information -->
+    <div x-show="showInfoModal" 
+         x-transition.opacity
+         @click.self="showInfoModal = false"
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div @click.stop 
+             x-transition
+             class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="infoModal.title"></h3>
+                <button @click="showInfoModal = false" 
+                        class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+                </button>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-6">
+                <div class="flex items-start space-x-3 mb-4">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                         :class="infoModal.iconBg">
+                        <i :data-lucide="infoModal.icon" class="w-5 h-5" :class="infoModal.iconColor"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed" x-html="infoModal.description"></p>
+                    </div>
+                </div>
+                
+                <!-- Tips si disponibles -->
+                <div x-show="infoModal.tips && infoModal.tips.length > 0" class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                    <p class="text-xs font-medium text-blue-900 dark:text-blue-300 mb-2">💡 Conseils</p>
+                    <ul class="space-y-1">
+                        <template x-for="tip in infoModal.tips" :key="tip">
+                            <li class="text-xs text-blue-700 dark:text-blue-400" x-text="'• ' + tip"></li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="sticky bottom-0 bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex justify-end">
+                <button @click="showInfoModal = false" 
+                        class="px-4 py-2 bg-walee-blue text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    Compris
+                </button>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function parametresData() {
+    return {
+        activeTab: 'general',
+        showInfoModal: false,
+        infoModal: {
+            title: '',
+            description: '',
+            icon: 'info',
+            iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            tips: []
+        },
+        
+        settings: {
+            langue: 'fr',
+            devise: 'xof',
+            timezone: 'abidjan'
+        },
+        
+        notifications: {
+            email: true,
+            push: true,
+            sms: false
+        },
+        
+        notificationTypes: [
+            { label: 'Nouvelles ventes', enabled: true },
+            { label: 'Alertes de stock', enabled: true },
+            { label: 'Factures en retard', enabled: true },
+            { label: 'Rapports hebdomadaires', enabled: false }
+        ],
+        
+        passwordForm: {
+            current: '',
+            new: '',
+            confirm: ''
+        },
+        
+        security: {
+            twoFA: false
+        },
+        
+        invoices: [
+            { id: 1, month: 'Janvier 2024', date: '15/01/2024', amount: '25,000' },
+            { id: 2, month: 'Décembre 2023', date: '15/12/2023', amount: '25,000' },
+            { id: 3, month: 'Novembre 2023', date: '15/11/2023', amount: '25,000' }
+        ],
+        
+        integrations: [
+            { 
+                id: 1, 
+                name: 'WhatsApp Business', 
+                description: 'Notifications clients',
+                details: 'Envoyez des notifications de vente et factures via WhatsApp',
+                icon: 'message-circle',
+                bgColor: 'bg-green-100 dark:bg-green-900/30',
+                iconColor: 'text-green-600 dark:text-green-400',
+                enabled: false
+            },
+            { 
+                id: 2, 
+                name: 'Stripe', 
+                description: 'Paiements en ligne',
+                details: 'Acceptez les paiements par carte bancaire',
+                icon: 'credit-card',
+                bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+                iconColor: 'text-purple-600 dark:text-purple-400',
+                enabled: true
+            },
+            { 
+                id: 3, 
+                name: 'Google Analytics', 
+                description: 'Analyse de trafic',
+                details: 'Suivez vos performances avec Google Analytics',
+                icon: 'bar-chart-2',
+                bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+                iconColor: 'text-orange-600 dark:text-orange-400',
+                enabled: false
+            },
+            { 
+                id: 4, 
+                name: 'Zapier', 
+                description: 'Automatisations',
+                details: 'Connectez Walee à 5000+ applications',
+                icon: 'zap',
+                bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+                iconColor: 'text-blue-600 dark:text-blue-400',
+                enabled: false
+            }
+        ],
+        
+        infoContent: {
+            'apparence': {
+                title: 'Paramètres d\'apparence',
+                description: 'Personnalisez l\'interface de Walee selon vos préférences. Ces paramètres affectent l\'affichage de l\'application pour votre compte uniquement.',
+                icon: 'palette',
+                tips: ['Choisissez votre langue préférée', 'Définissez votre devise locale', 'Configurez votre fuseau horaire']
+            },
+            'langue': {
+                title: 'Langue de l\'interface',
+                description: 'Sélectionnez la langue dans laquelle vous souhaitez utiliser Walee. Cette modification s\'applique immédiatement à toute l\'interface.',
+                icon: 'globe',
+                tips: ['Actuellement: Français, English et Español disponibles', 'D\'autres langues seront ajoutées prochainement']
+            },
+            'devise': {
+                title: 'Devise par défaut',
+                description: 'Définissez la devise principale pour vos transactions. Tous les montants seront affichés dans cette devise. Vous pourrez toujours utiliser d\'autres devises au besoin.',
+                icon: 'dollar-sign',
+                iconBg: 'bg-green-100 dark:bg-green-900/30',
+                iconColor: 'text-green-600 dark:text-green-400',
+                tips: ['FCFA (XOF) pour l\'Afrique de l\'Ouest', 'Conversion automatique disponible', 'Synchronisé avec vos factures']
+            },
+            'timezone': {
+                title: 'Fuseau horaire',
+                description: 'Configurez votre fuseau horaire pour que les dates et heures s\'affichent correctement. Cela affecte les rapports, les notifications et l\'historique.',
+                icon: 'clock',
+                iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+                iconColor: 'text-purple-600 dark:text-purple-400',
+                tips: ['Utilisé pour les horaires de vente', 'Synchronisé avec les rapports', 'Important pour les notifications programmées']
+            },
+            'format': {
+                title: 'Formats d\'affichage',
+                description: 'Personnalisez la façon dont les dates et les heures sont affichées dans l\'application. Ces paramètres rendent l\'interface plus familière selon vos habitudes.',
+                icon: 'calendar',
+                tips: ['JJ/MM/AAAA ou MM/JJ/AAAA', 'Format 12h ou 24h']
+            },
+            'date_format': {
+                title: 'Format de date',
+                description: 'Choisissez comment les dates sont affichées: JJ/MM/AAAA (format français), MM/JJ/AAAA (format américain), ou AAAA-MM-JJ (format ISO).',
+                icon: 'calendar'
+            },
+            'time_format': {
+                title: 'Format d\'heure',
+                description: 'Sélectionnez le format d\'heure: 24 heures (14:30) ou 12 heures avec AM/PM (2:30 PM).',
+                icon: 'clock'
+            },
+            'notifications': {
+                title: 'Préférences de notification',
+                description: 'Choisissez comment vous souhaitez être averti des événements importants. Vous pouvez activer plusieurs canaux simultanément.',
+                icon: 'bell',
+                tips: ['Email pour les alertes importantes', 'Push pour les notifications en temps réel', 'SMS pour les urgences uniquement']
+            },
+            'email_notif': {
+                title: 'Notifications par email',
+                description: 'Recevez des emails pour les ventes importantes, les alertes de stock et les rapports périodiques. Les emails sont envoyés à votre adresse enregistrée.',
+                icon: 'mail',
+                tips: ['Consultable partout', 'Archive automatique', 'Possibilité de répondre directement']
+            },
+            'push_notif': {
+                title: 'Notifications push',
+                description: 'Alertes instantanées sur votre appareil dès qu\'un événement important se produit. Idéal pour rester informé en temps réel.',
+                icon: 'bell',
+                iconBg: 'bg-green-100 dark:bg-green-900/30',
+                iconColor: 'text-green-600 dark:text-green-400',
+                tips: ['Notification instantanée', 'Visible même si l\'app est fermée', 'Peut être désactivé temporairement']
+            },
+            'sms_notif': {
+                title: 'Notifications SMS',
+                description: 'Recevez des SMS uniquement pour les événements critiques nécessitant une action immédiate. Des frais peuvent s\'appliquer selon votre forfait.',
+                icon: 'message-square',
+                iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+                iconColor: 'text-purple-600 dark:text-purple-400',
+                tips: ['Réservé aux urgences', 'Facturation en rupture de stock', 'Problèmes de paiement']
+            },
+            'types_notif': {
+                title: 'Types de notifications',
+                description: 'Activez ou désactivez des catégories spécifiques de notifications selon vos besoins. Vous gardez le contrôle total sur ce que vous recevez.',
+                icon: 'sliders',
+                tips: ['Personnalisez selon vos besoins', 'Activez uniquement ce qui est important', 'Vous pouvez tout modifier à tout moment']
+            },
+            'password': {
+                title: 'Changement de mot de passe',
+                description: 'Pour votre sécurité, changez régulièrement votre mot de passe. Utilisez un mot de passe fort avec au moins 8 caractères, incluant majuscules, minuscules et chiffres.',
+                icon: 'lock',
+                iconBg: 'bg-red-100 dark:bg-red-900/30',
+                iconColor: 'text-red-600 dark:text-red-400',
+                tips: ['Minimum 8 caractères', 'Mélangez lettres, chiffres et symboles', 'Ne réutilisez pas d\'anciens mots de passe']
+            },
+            '2fa': {
+                title: 'Authentification à deux facteurs',
+                description: 'Ajoutez une couche de sécurité supplémentaire à votre compte. Même si quelqu\'un obtient votre mot de passe, il ne pourra pas se connecter sans le code 2FA.',
+                icon: 'shield',
+                iconBg: 'bg-green-100 dark:bg-green-900/30',
+                iconColor: 'text-green-600 dark:text-green-400',
+                tips: ['Sécurité renforcée', 'Code via application mobile', 'Protège contre le piratage']
+            },
+            'sessions': {
+                title: 'Sessions actives',
+                description: 'Visualisez tous les appareils et navigateurs où vous êtes actuellement connecté. Vous pouvez déconnecter les sessions suspectes à tout moment.',
+                icon: 'monitor',
+                tips: ['Vérifiez régulièrement', 'Déconnectez les appareils non reconnus', 'Une seule session active par défaut']
+            },
+            'plan': {
+                title: 'Votre plan Premium',
+                description: 'Vous bénéficiez du plan Premium avec toutes les fonctionnalités avancées. Gérez plusieurs entreprises, exportez vos données et profitez d\'un support prioritaire.',
+                icon: 'star',
+                iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
+                iconColor: 'text-yellow-600 dark:text-yellow-400',
+                tips: ['Entreprises illimitées', 'Exports illimités', 'Support prioritaire', 'Intégrations avancées']
+            },
+            'payment': {
+                title: 'Méthodes de paiement',
+                description: 'Gérez vos cartes bancaires et moyens de paiement. Vos informations sont sécurisées et cryptées. Le paiement automatique facilite le renouvellement.',
+                icon: 'credit-card',
+                iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+                iconColor: 'text-blue-600 dark:text-blue-400',
+                tips: ['Paiement sécurisé SSL', 'Aucune donnée stockée sur nos serveurs', 'Renouvellement automatique']
+            },
+            'invoices': {
+                title: 'Historique de facturation',
+                description: 'Consultez et téléchargez toutes vos factures. Pratique pour votre comptabilité et vos déclarations fiscales.',
+                icon: 'file-text',
+                tips: ['Téléchargement PDF', 'Conservé pendant 7 ans', 'Export Excel disponible']
+            },
+            'integration_1': {
+                title: 'WhatsApp Business',
+                description: 'Connectez votre compte WhatsApp Business pour envoyer automatiquement les reçus et factures à vos clients. Améliorez votre communication client.',
+                icon: 'message-circle',
+                iconBg: 'bg-green-100 dark:bg-green-900/30',
+                iconColor: 'text-green-600 dark:text-green-400',
+                tips: ['Envoi automatique des factures', 'Confirmation de paiement', 'Rappels personnalisés']
+            },
+            'integration_2': {
+                title: 'Stripe',
+                description: 'Acceptez les paiements en ligne via Stripe. Vos clients peuvent payer par carte bancaire en toute sécurité. Transactions sécurisées et suivi en temps réel.',
+                icon: 'credit-card',
+                iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+                iconColor: 'text-purple-600 dark:text-purple-400',
+                tips: ['Paiement sécurisé', 'Virement automatique', 'Support multi-devises']
+            },
+            'integration_3': {
+                title: 'Google Analytics',
+                description: 'Suivez les performances de votre boutique en ligne avec Google Analytics. Analysez le trafic, les conversions et le comportement des visiteurs.',
+                icon: 'bar-chart-2',
+                iconBg: 'bg-orange-100 dark:bg-orange-900/30',
+                iconColor: 'text-orange-600 dark:text-orange-400',
+                tips: ['Statistiques détaillées', 'Suivi des conversions', 'Rapports personnalisés']
+            },
+            'integration_4': {
+                title: 'Zapier',
+                description: 'Automatisez vos workflows en connectant Walee à plus de 5000 applications. Créez des automatisations puissantes sans coder.',
+                icon: 'zap',
+                iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+                iconColor: 'text-blue-600 dark:text-blue-400',
+                tips: ['5000+ applications', 'Automatisation sans code', 'Workflows personnalisés']
+            }
+        },
+        
+        showInfo(key) {
+            const info = this.infoContent[key];
+            if (info) {
+                this.infoModal = {
+                    title: info.title,
+                    description: info.description,
+                    icon: info.icon || 'info',
+                    iconBg: info.iconBg || 'bg-blue-100 dark:bg-blue-900/30',
+                    iconColor: info.iconColor || 'text-blue-600 dark:text-blue-400',
+                    tips: info.tips || []
+                };
+                this.showInfoModal = true;
+            }
+        },
+        
+        saveSettings() {
+            console.log('Enregistrement des paramètres:', this.settings);
+        },
+        
+        editFormat(type) {
+            console.log('Modification du format:', type);
+        },
+        
+        updatePassword() {
+            if (this.passwordForm.new !== this.passwordForm.confirm) {
+                alert('Les mots de passe ne correspondent pas');
+                return;
+            }
+            console.log('Mise à jour du mot de passe');
+            this.passwordForm = { current: '', new: '', confirm: '' };
+        },
+        
+        addPaymentMethod() {
+            console.log('Ajouter une méthode de paiement');
+        },
+        
+        removePaymentMethod() {
+            if (confirm('Supprimer cette méthode de paiement ?')) {
+                console.log('Méthode de paiement supprimée');
+            }
+        },
+        
+        downloadInvoice(id) {
+            console.log('Téléchargement de la facture:', id);
+        }
+    }
+}
+</script>
+{% endblock %}

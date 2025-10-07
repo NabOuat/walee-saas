@@ -1,0 +1,634 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Ventes - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="ventesData()">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-2">
+                Ventes
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">Gérez vos ventes et suivez vos performances</p>
+        </div>
+        <button @click="showNewSaleModal = true" 
+                class="flex items-center space-x-2 px-6 py-3 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span>Nouvelle vente</span>
+        </button>
+    </div>
+    
+    <!-- Filtre Entreprise -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex items-center space-x-4">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Entreprise:</label>
+            <select x-model="selectedEntreprise" 
+                    @change="loadVentes()"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none">
+                <option value="">📊 Toutes les entreprises (Vue d'ensemble)</option>
+                <option value="1">🏢 ACME Corporation</option>
+                <option value="2">💻 Tech Boutique</option>
+                <option value="3">🍽️ Restaurant Saveurs</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        <!-- CA Total -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-walee-green"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium">+15.3%</span>
+            </div>
+            <h3 class="text-gray-500 dark:text-gray-400 text-sm mb-1">CA Total</h3>
+            <p class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="formatMoney(stats.caTotal)"></p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Ce mois</p>
+        </div>
+        
+        <!-- Ventes Aujourd'hui -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-walee-blue"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium">+8</span>
+            </div>
+            <h3 class="text-gray-500 dark:text-gray-400 text-sm mb-1">Ventes Aujourd'hui</h3>
+            <p class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="stats.ventesJour"></p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1" x-text="formatMoney(stats.caJour)"></p>
+        </div>
+        
+        <!-- Panier Moyen -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium">+5.2%</span>
+            </div>
+            <h3 class="text-gray-500 dark:text-gray-400 text-sm mb-1">Panier Moyen</h3>
+            <p class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="formatMoney(stats.panierMoyen)"></p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Par transaction</p>
+        </div>
+        
+        <!-- Taux de Conversion -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="percent" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium">+2.1%</span>
+            </div>
+            <h3 class="text-gray-500 dark:text-gray-400 text-sm mb-1">Taux de Conversion</h3>
+            <p class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="stats.tauxConversion + '%'"></p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Visiteurs → Clients</p>
+        </div>
+        
+    </div>
+    
+    <!-- Stats par Entreprise (si vue d'ensemble) -->
+    <div x-show="!selectedEntreprise" class="mb-8">
+        <h3 class="text-xl font-bold font-poppins text-walee-dark dark:text-white mb-4">Performance par Entreprise</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <template x-for="entreprise in entreprisesStats" :key="entreprise.id">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-lg transition cursor-pointer"
+                     @click="selectedEntreprise = entreprise.id; loadVentes()">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
+                             :class="entreprise.gradient">
+                            <span x-text="entreprise.initiales"></span>
+                        </div>
+                        <i data-lucide="arrow-right" class="w-5 h-5 text-gray-400"></i>
+                    </div>
+                    <h4 class="font-bold text-walee-dark dark:text-white mb-2" x-text="entreprise.nom"></h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Ventes</p>
+                            <p class="font-semibold text-walee-dark dark:text-white" x-text="entreprise.ventes"></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">CA</p>
+                            <p class="font-semibold text-walee-dark dark:text-white" x-text="formatMoney(entreprise.ca)"></p>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
+        </div>
+    </div>
+    
+    <!-- Filtres & Actions -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           placeholder="Rechercher une vente..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue focus:border-transparent outline-none">
+                </div>
+            </div>
+            
+            <div class="flex space-x-3">
+                <select x-model="selectedPeriod"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none">
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="year">Cette année</option>
+                </select>
+                
+                <select x-model="selectedStatus"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none">
+                    <option value="">Tous les statuts</option>
+                    <option value="payee">Payée</option>
+                    <option value="attente">En attente</option>
+                    <option value="annulee">Annulée</option>
+                </select>
+                
+                <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ventes Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Vente</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" x-show="!selectedEntreprise">Entreprise</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Client</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendeur</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                
+                <template x-for="vente in filteredVentes" :key="vente.id">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <td class="px-6 py-4">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.date"></p>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4" x-show="!selectedEntreprise">
+                            <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                                <i data-lucide="building-2" class="w-3 h-3 mr-1"></i>
+                                <span x-text="vente.entreprise"></span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="vente.client"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.clientTel"></p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm text-gray-900 dark:text-white" x-text="vente.vendeur"></p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.articles + ' articles'"></p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium"
+                                  :class="getStatutClass(vente.statut)">
+                                <span x-text="vente.statut"></span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex space-x-2">
+                                <button @click="viewVente(vente)" 
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
+                                        title="Voir détails">
+                                    <i data-lucide="eye" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+                                </button>
+                                <button @click="printVente(vente)" 
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
+                                        title="Imprimer">
+                                    <i data-lucide="printer" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                                </button>
+                                <button @click="deleteVente(vente)" 
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
+                                        title="Annuler">
+                                    <i data-lucide="x-circle" class="w-4 h-4 text-red-600 dark:text-red-400"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+                
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Modal Nouvelle Vente -->
+    <div x-show="showNewSaleModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+         @click.self="showNewSaleModal = false"
+         style="display: none;">
+        
+        <div x-show="showNewSaleModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-90"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+                <h2 class="text-2xl font-bold font-poppins text-walee-dark dark:text-white">Nouvelle Vente</h2>
+                <button @click="showNewSaleModal = false" 
+                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                    <i data-lucide="x" class="w-6 h-6 text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <form @submit.prevent="handleNewSale()" class="p-6">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Colonne gauche: Sélection produits -->
+                    <div class="lg:col-span-2 space-y-6">
+                        
+                        <!-- Client -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Client *
+                            </label>
+                            <div class="flex space-x-2">
+                                <select x-model="saleForm.clientId" 
+                                        class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none"
+                                        required>
+                                    <option value="">Sélectionnez un client</option>
+                                    <option value="1">Jean Kouassi</option>
+                                    <option value="2">Fatou Diallo</option>
+                                    <option value="3">Yao Brou</option>
+                                </select>
+                                <button type="button" 
+                                        class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Recherche produit -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Ajouter des produits
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                                <input type="text" 
+                                       x-model="productSearch"
+                                       @input="searchProducts()"
+                                       placeholder="Rechercher un produit..." 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none">
+                            </div>
+                            
+                            <!-- Liste produits disponibles -->
+                            <div x-show="productSearch.length > 0" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl">
+                                <template x-for="product in availableProducts" :key="product.id">
+                                    <button type="button"
+                                            @click="addProductToSale(product)"
+                                            class="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left">
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white" x-text="product.nom"></p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="formatMoney(product.prix)"></p>
+                                        </div>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="'Stock: ' + product.stock"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <!-- Produits ajoutés -->
+                        <div>
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-3">Articles (<span x-text="saleForm.items.length"></span>)</h4>
+                            <div class="space-y-2">
+                                <template x-for="(item, index) in saleForm.items" :key="index">
+                                    <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                                        <div class="flex-1">
+                                            <p class="font-medium text-gray-900 dark:text-white" x-text="item.nom"></p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="formatMoney(item.prix)"></p>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <button type="button" 
+                                                    @click="item.quantite = Math.max(1, item.quantite - 1)"
+                                                    class="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                                                <i data-lucide="minus" class="w-4 h-4"></i>
+                                            </button>
+                                            <input type="number" 
+                                                   x-model="item.quantite"
+                                                   min="1"
+                                                   class="w-16 text-center px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                                            <button type="button" 
+                                                    @click="item.quantite++"
+                                                    class="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                        <button type="button" 
+                                                @click="saleForm.items.splice(index, 1)"
+                                                class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </template>
+                                
+                                <div x-show="saleForm.items.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <i data-lucide="shopping-cart" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>Aucun article ajouté</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Colonne droite: Résumé -->
+                    <div class="space-y-6">
+                        
+                        <!-- Résumé -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                            <h4 class="font-bold text-gray-900 dark:text-white mb-4">Résumé</h4>
+                            
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Sous-total:</span>
+                                    <span class="font-medium text-gray-900 dark:text-white" x-text="formatMoney(calculateSubtotal())"></span>
+                                </div>
+                                
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Remise:</span>
+                                    <input type="number" 
+                                           x-model="saleForm.remise"
+                                           min="0"
+                                           max="100"
+                                           class="w-20 text-right px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
+                                </div>
+                                
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">TVA (18%):</span>
+                                    <span class="font-medium text-gray-900 dark:text-white" x-text="formatMoney(calculateTVA())"></span>
+                                </div>
+                                
+                                <div class="pt-3 border-t border-gray-200 dark:border-gray-600">
+                                    <div class="flex justify-between">
+                                        <span class="font-bold text-gray-900 dark:text-white">Total:</span>
+                                        <span class="font-bold text-xl text-walee-blue" x-text="formatMoney(calculateTotal())"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mode de paiement -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Mode de paiement
+                            </label>
+                            <select x-model="saleForm.modePaiement" 
+                                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none">
+                                <option value="especes">Espèces</option>
+                                <option value="carte">Carte bancaire</option>
+                                <option value="mobile">Mobile Money</option>
+                                <option value="cheque">Chèque</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Notes (optionnel)
+                            </label>
+                            <textarea x-model="saleForm.notes"
+                                      rows="3"
+                                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue outline-none"
+                                      placeholder="Ajouter une note..."></textarea>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" 
+                            @click="showNewSaleModal = false"
+                            class="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            :disabled="saleForm.items.length === 0"
+                            :class="saleForm.items.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-600'"
+                            class="flex-1 px-6 py-3 bg-walee-green text-white font-semibold rounded-xl transition">
+                        Valider la vente
+                    </button>
+                </div>
+                
+            </form>
+            
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function ventesData() {
+    return {
+        showNewSaleModal: false,
+        selectedEntreprise: '',
+        searchQuery: '',
+        selectedPeriod: 'month',
+        selectedStatus: '',
+        
+        stats: {
+            caTotal: 12500000,
+            ventesJour: 45,
+            caJour: 2500000,
+            panierMoyen: 85000,
+            tauxConversion: 68.5
+        },
+        
+        entreprisesStats: [
+            { id: 1, nom: 'ACME Corporation', initiales: 'AC', ventes: 156, ca: 5200000, gradient: 'bg-gradient-to-br from-walee-blue to-walee-indigo' },
+            { id: 2, nom: 'Tech Boutique', initiales: 'TB', ventes: 89, ca: 4100000, gradient: 'bg-gradient-to-br from-purple-500 to-pink-600' },
+            { id: 3, nom: 'Restaurant Saveurs', initiales: 'RS', ventes: 234, ca: 3200000, gradient: 'bg-gradient-to-br from-orange-500 to-red-600' }
+        ],
+        
+        ventes: [
+            { id: 1, numero: 'VNT-001', date: 'Aujourd\'hui 14:30', entreprise: 'ACME Corporation', entrepriseId: 1, client: 'Jean Kouassi', clientTel: '+225 07 XX XX', vendeur: 'Marie Martin', montant: 125000, articles: 3, statut: 'Payée' },
+            { id: 2, numero: 'VNT-002', date: 'Aujourd\'hui 13:15', entreprise: 'ACME Corporation', entrepriseId: 1, client: 'Fatou Diallo', clientTel: '+225 05 XX XX', vendeur: 'Jean Dupont', montant: 89500, articles: 2, statut: 'En attente' },
+            { id: 3, numero: 'VNT-003', date: 'Aujourd\'hui 11:45', entreprise: 'Tech Boutique', entrepriseId: 2, client: 'Yao Brou', clientTel: '+225 01 XX XX', vendeur: 'Sophie Laurent', montant: 245000, articles: 5, statut: 'Payée' },
+            { id: 4, numero: 'VNT-004', date: 'Hier 16:20', entreprise: 'Restaurant Saveurs', entrepriseId: 3, client: 'Aya Koné', clientTel: '+225 09 XX XX', vendeur: 'Pierre Dubois', montant: 45000, articles: 1, statut: 'Payée' },
+        ],
+        
+        // Modal Nouvelle Vente
+        productSearch: '',
+        saleForm: {
+            clientId: '',
+            items: [],
+            remise: 0,
+            modePaiement: 'especes',
+            notes: ''
+        },
+        
+        availableProducts: [
+            { id: 1, nom: 'Laptop HP Pavilion', prix: 450000, stock: 15 },
+            { id: 2, nom: 'iPhone 13 Pro', prix: 650000, stock: 8 },
+            { id: 3, nom: 'Samsung Galaxy S23', prix: 550000, stock: 12 },
+            { id: 4, nom: 'MacBook Air M2', prix: 900000, stock: 5 },
+            { id: 5, nom: 'iPad Pro', prix: 600000, stock: 10 }
+        ],
+        
+        get filteredVentes() {
+            return this.ventes.filter(vente => {
+                const matchSearch = !this.searchQuery || 
+                    vente.numero.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    vente.client.toLowerCase().includes(this.searchQuery.toLowerCase());
+                
+                const matchEntreprise = !this.selectedEntreprise || 
+                    vente.entrepriseId == this.selectedEntreprise;
+                
+                const matchStatus = !this.selectedStatus || 
+                    vente.statut.toLowerCase() === this.selectedStatus;
+                
+                return matchSearch && matchEntreprise && matchStatus;
+            });
+        },
+        
+        loadVentes() {
+            // Recharger les stats selon l'entreprise sélectionnée
+            console.log('Chargement ventes pour entreprise:', this.selectedEntreprise);
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        },
+        
+        getStatutClass(statut) {
+            const classes = {
+                'Payée': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'En attente': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
+                'Annulée': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        viewVente(vente) {
+            alert(`📋 Détails de la vente ${vente.numero}\n\nClient: ${vente.client}\nMontant: ${this.formatMoney(vente.montant)}\nArticles: ${vente.articles}\nStatut: ${vente.statut}`);
+        },
+        
+        printVente(vente) {
+            alert(`🖨️ Impression de la vente ${vente.numero}\n\nFonctionnalité à venir`);
+        },
+        
+        deleteVente(vente) {
+            if (confirm(`⚠️ Annuler la vente ${vente.numero} ?\n\nCette action est irréversible.`)) {
+                const index = this.ventes.findIndex(v => v.id === vente.id);
+                if (index > -1) {
+                    this.ventes.splice(index, 1);
+                    alert(`✅ Vente ${vente.numero} annulée.`);
+                }
+            }
+        },
+        
+        // Fonctions Modal Vente
+        searchProducts() {
+            // Filtrer les produits disponibles
+            console.log('Recherche:', this.productSearch);
+        },
+        
+        addProductToSale(product) {
+            // Vérifier si le produit est déjà dans la liste
+            const existing = this.saleForm.items.find(item => item.id === product.id);
+            if (existing) {
+                existing.quantite++;
+            } else {
+                this.saleForm.items.push({
+                    ...product,
+                    quantite: 1
+                });
+            }
+            this.productSearch = '';
+        },
+        
+        calculateSubtotal() {
+            return this.saleForm.items.reduce((total, item) => {
+                return total + (item.prix * item.quantite);
+            }, 0);
+        },
+        
+        calculateTVA() {
+            const subtotal = this.calculateSubtotal();
+            const afterDiscount = subtotal * (1 - this.saleForm.remise / 100);
+            return afterDiscount * 0.18;
+        },
+        
+        calculateTotal() {
+            const subtotal = this.calculateSubtotal();
+            const afterDiscount = subtotal * (1 - this.saleForm.remise / 100);
+            return afterDiscount + this.calculateTVA();
+        },
+        
+        handleNewSale() {
+            if (!this.saleForm.clientId) {
+                alert('⚠️ Veuillez sélectionner un client');
+                return;
+            }
+            
+            if (this.saleForm.items.length === 0) {
+                alert('⚠️ Veuillez ajouter au moins un produit');
+                return;
+            }
+            
+            // Créer la nouvelle vente
+            const newVente = {
+                id: this.ventes.length + 1,
+                numero: `VNT-${String(this.ventes.length + 1).padStart(3, '0')}`,
+                date: 'Maintenant',
+                entreprise: 'ACME Corporation',
+                entrepriseId: 1,
+                client: 'Client #' + this.saleForm.clientId,
+                clientTel: '+225 XX XX XX XX',
+                vendeur: 'Vous',
+                montant: this.calculateTotal(),
+                articles: this.saleForm.items.length,
+                statut: 'Payée'
+            };
+            
+            this.ventes.unshift(newVente);
+            
+            alert(`✅ Vente ${newVente.numero} créée avec succès !\n\nMontant: ${this.formatMoney(newVente.montant)}\nArticles: ${newVente.articles}`);
+            
+            // Réinitialiser le formulaire
+            this.saleForm = {
+                clientId: '',
+                items: [],
+                remise: 0,
+                modePaiement: 'especes',
+                notes: ''
+            };
+            this.showNewSaleModal = false;
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1158 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Employés - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="employeesData()">
+    
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-1 sm:mb-2">
+                Employés
+            </h1>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Gérez votre équipe et leurs permissions</p>
+        </div>
+        <button @click="showAddModal = true; resetEmployeeForm()" 
+                class="flex items-center justify-center space-x-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-walee-blue to-walee-indigo text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-105 transition w-full sm:w-auto">
+            <i data-lucide="user-plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="text-sm sm:text-base">Ajouter un employé</span>
+        </button>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-5 h-5 text-walee-blue"></i>
+                </div>
+                <p class="text-2xl font-bold font-poppins text-walee-dark dark:text-white" x-text="employees.length"></p>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Total employés</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="user-check" class="w-5 h-5 text-walee-green"></i>
+                </div>
+                <p class="text-2xl font-bold font-poppins text-walee-dark dark:text-white" x-text="employees.filter(e => e.statut === 'Actif').length"></p>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Actifs</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="shield" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <p class="text-2xl font-bold font-poppins text-walee-dark dark:text-white">6</p>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Rôles</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="clock" class="w-5 h-5 text-orange-600"></i>
+                </div>
+                <p class="text-2xl font-bold font-poppins text-walee-dark dark:text-white" x-text="employees.filter(e => e.statut === 'En congé').length"></p>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">En congé</p>
+        </div>
+    </div>
+    
+    <!-- Filters & Search -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 gap-4">
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           placeholder="Rechercher un employé..." 
+                           class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue focus:border-transparent outline-none transition">
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+                <!-- Filtre Entreprise -->
+                <select x-model="selectedEntreprise" 
+                        class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none transition">
+                    <option value="">🏢 Toutes les entreprises</option>
+                    <option value="1">ACME Corporation</option>
+                    <option value="2">Tech Boutique</option>
+                    <option value="3">Restaurant Saveurs</option>
+                </select>
+                
+                <select x-model="selectedRole"
+                        class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none transition">
+                    <option value="">👥 Tous les rôles</option>
+                    <option>Administrateur</option>
+                    <option>Gérant</option>
+                    <option>Caissier</option>
+                    <option>Gestionnaire de stock</option>
+                    <option>Vendeur</option>
+                    <option>Comptable</option>
+                </select>
+                
+                <select x-model="selectedStatus"
+                        class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none transition">
+                    <option value="">📊 Tous les statuts</option>
+                    <option>Actif</option>
+                    <option>Inactif</option>
+                    <option>En congé</option>
+                </select>
+                
+                <!-- Bouton reset filtres -->
+                <button @click="resetFilters()" 
+                        x-show="searchQuery || selectedEntreprise || selectedRole || selectedStatus"
+                        class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Employees Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Employé
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Entreprise
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Rôle
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Contact
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Statut
+                        </th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    
+                    <template x-for="employee in filteredEmployees" :key="employee.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold shadow-md"
+                                         :class="employee.gradient">
+                                        <span x-text="employee.initiales"></span>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white" x-text="employee.nom"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="employee.code"></p>
+                                        <p class="text-xs text-walee-blue dark:text-blue-400 font-medium" x-text="'@' + employee.username"></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                    <i data-lucide="building-2" class="w-3 h-3 mr-1"></i>
+                                    <span x-text="employee.entreprise"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
+                                      :class="getRoleBadgeClass(employee.role)">
+                                    <i :data-lucide="getRoleIcon(employee.role)" class="w-3.5 h-3.5 mr-1.5"></i>
+                                    <span x-text="employee.role"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="space-y-1">
+                                    <p class="text-sm text-gray-900 dark:text-white flex items-center">
+                                        <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-gray-400"></i>
+                                        <span x-text="employee.email"></span>
+                                    </p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                        <i data-lucide="phone" class="w-3.5 h-3.5 mr-1.5 text-gray-400"></i>
+                                        <span x-text="employee.telephone"></span>
+                                    </p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold"
+                                      :class="getStatutBadgeClass(employee.statut)">
+                                    <span class="w-1.5 h-1.5 rounded-full mr-2"
+                                          :class="employee.statut === 'Actif' ? 'bg-green-600' : employee.statut === 'En congé' ? 'bg-yellow-600' : 'bg-gray-600'"></span>
+                                    <span x-text="employee.statut"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center space-x-1.5">
+                                    <button @click="viewEmployee(employee)" 
+                                            class="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition group"
+                                            title="Voir l'activité">
+                                        <i data-lucide="eye" class="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition"></i>
+                                    </button>
+                                    <button @click="editEmployee(employee)" 
+                                            class="p-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition group"
+                                            title="Modifier">
+                                        <i data-lucide="edit" class="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition"></i>
+                                    </button>
+                                    <button @click="toggleStatus(employee)" 
+                                            class="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition group"
+                                            :title="employee.statut === 'Actif' ? 'Désactiver' : 'Activer'">
+                                        <i data-lucide="power" class="w-4 h-4 text-yellow-600 dark:text-yellow-400 group-hover:scale-110 transition"></i>
+                                    </button>
+                                    <button @click="deleteEmployee(employee)" 
+                                            class="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition group"
+                                            title="Supprimer">
+                                        <i data-lucide="trash-2" class="w-4 h-4 text-red-600 dark:text-red-400 group-hover:scale-110 transition"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    
+                    <!-- Empty State -->
+                    <tr x-show="filteredEmployees.length === 0">
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center space-y-3">
+                                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                    <i data-lucide="users-x" class="w-8 h-8 text-gray-400"></i>
+                                </div>
+                                <p class="text-gray-500 dark:text-gray-400 font-medium">Aucun employé trouvé</p>
+                                <p class="text-sm text-gray-400 dark:text-gray-500">Essayez de modifier vos filtres</p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Add Employee Modal -->
+    <div x-show="showAddModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         @keydown.escape.window="showAddModal = false">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showAddModal = false"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+                
+                <!-- Modal Header -->
+                <div class="sticky top-0 bg-gradient-to-r from-walee-blue to-walee-indigo px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between z-10">
+                    <div class="flex items-center space-x-2 sm:space-x-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="user-plus" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-2xl font-bold text-white" x-text="editingEmployee ? 'Modifier l\'employé' : 'Ajouter un employé'"></h2>
+                            <p class="text-xs sm:text-sm text-blue-100 hidden sm:block">Renseignez les informations nécessaires</p>
+                        </div>
+                    </div>
+                    <button @click="showAddModal = false" class="p-2 hover:bg-white/10 rounded-lg transition flex-shrink-0">
+                        <i data-lucide="x" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <form @submit.prevent="handleSaveEmployee()" class="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(95vh-100px)] sm:max-h-[calc(90vh-120px)]">
+                    
+                    <!-- Entreprise -->
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <i data-lucide="building-2" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                            Entreprise *
+                        </label>
+                        <select x-model="employeeForm.entrepriseId"
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                required>
+                            <option value="">Sélectionnez une entreprise</option>
+                            <option value="1">🏢 ACME Corporation</option>
+                            <option value="2">💻 Tech Boutique</option>
+                            <option value="3">🍽️ Restaurant Saveurs</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Nom & Prénom -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Prénom *
+                            </label>
+                            <input type="text" 
+                                   x-model="employeeForm.prenom"
+                                   @input="generateUsername()"
+                                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                   placeholder="Jean"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Nom *
+                            </label>
+                            <input type="text" 
+                                   x-model="employeeForm.nom"
+                                   @input="generateUsername()"
+                                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                   placeholder="Dupont"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <!-- Username (auto-généré) -->
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <i data-lucide="at-sign" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                            Nom d'utilisateur <span class="hidden sm:inline">(généré automatiquement)</span>
+                        </label>
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <input type="text" 
+                                   x-model="employeeForm.username"
+                                   readonly
+                                   class="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl bg-gray-50 dark:bg-gray-600 cursor-not-allowed"
+                                   placeholder="nom.prenom">
+                            <div class="px-3 sm:px-4 py-2.5 sm:py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl flex items-center space-x-1 sm:space-x-2 border border-green-300 dark:border-green-700 flex-shrink-0">
+                                <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                                <span class="text-xs sm:text-sm font-medium hidden sm:inline">Auto</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center">
+                            <i data-lucide="info" class="w-3 h-3 mr-1 flex-shrink-0"></i>
+                            <span>Format: nom.prenom (minuscules)</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Mot de passe par défaut -->
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <i data-lucide="key" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                            Mot de passe par défaut
+                        </label>
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <input type="text" 
+                                   x-model="employeeForm.password"
+                                   readonly
+                                   class="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 font-mono text-base sm:text-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl bg-gray-50 dark:bg-gray-600 cursor-not-allowed tracking-wider min-w-0"
+                                   placeholder="••••••••">
+                            <button type="button"
+                                    @click="generatePassword()"
+                                    class="px-3 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                <span class="font-medium text-xs sm:text-sm hidden sm:inline">Régénérer</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-start">
+                            <i data-lucide="alert-triangle" class="w-3 h-3 mr-1 mt-0.5 flex-shrink-0"></i>
+                            <span>L'employé devra changer ce mot de passe à la première connexion</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Email & Téléphone -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i data-lucide="mail" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                                Email *
+                            </label>
+                            <input type="email" 
+                                   x-model="employeeForm.email"
+                                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                   placeholder="email@exemple.com"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i data-lucide="phone" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                                Téléphone *
+                            </label>
+                            <input type="tel" 
+                                   x-model="employeeForm.telephone"
+                                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                   placeholder="+225 XX XX XX XX XX"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <!-- Rôle & Poste -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i data-lucide="shield" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                                Rôle *
+                            </label>
+                            <select x-model="employeeForm.role"
+                                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                    required>
+                                <option value="">Sélectionnez un rôle</option>
+                                <option>Administrateur</option>
+                                <option>Gérant</option>
+                                <option>Caissier</option>
+                                <option>Gestionnaire de stock</option>
+                                <option>Vendeur</option>
+                                <option>Comptable</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i data-lucide="briefcase" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                                Poste
+                            </label>
+                            <input type="text" 
+                                   x-model="employeeForm.poste"
+                                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-walee-blue outline-none transition"
+                                   placeholder="Responsable des ventes">
+                        </div>
+                    </div>
+                    
+                    <!-- Permissions -->
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            <i data-lucide="lock" class="w-3 h-3 sm:w-4 sm:h-4 inline mr-1"></i>
+                            Permissions
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-walee-blue cursor-pointer transition group">
+                                <input type="checkbox" 
+                                       x-model="employeeForm.permissions.caisse"
+                                       class="w-4 h-4 sm:w-5 sm:h-5 text-walee-blue rounded focus:ring-walee-blue border-2 border-gray-300 flex-shrink-0">
+                                <div class="flex items-center space-x-1.5 sm:space-x-2">
+                                    <i data-lucide="shopping-cart" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 group-hover:text-walee-blue flex-shrink-0"></i>
+                                    <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Accès caisse</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-walee-blue cursor-pointer transition group">
+                                <input type="checkbox" 
+                                       x-model="employeeForm.permissions.stock"
+                                       class="w-4 h-4 sm:w-5 sm:h-5 text-walee-blue rounded focus:ring-walee-blue border-2 border-gray-300 flex-shrink-0">
+                                <div class="flex items-center space-x-1.5 sm:space-x-2">
+                                    <i data-lucide="package" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 group-hover:text-walee-blue flex-shrink-0"></i>
+                                    <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Gestion stock</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-walee-blue cursor-pointer transition group">
+                                <input type="checkbox" 
+                                       x-model="employeeForm.permissions.rapports"
+                                       class="w-4 h-4 sm:w-5 sm:h-5 text-walee-blue rounded focus:ring-walee-blue border-2 border-gray-300 flex-shrink-0">
+                                <div class="flex items-center space-x-1.5 sm:space-x-2">
+                                    <i data-lucide="bar-chart" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 group-hover:text-walee-blue flex-shrink-0"></i>
+                                    <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Voir rapports</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-walee-blue cursor-pointer transition group">
+                                <input type="checkbox" 
+                                       x-model="employeeForm.permissions.clients"
+                                       class="w-4 h-4 sm:w-5 sm:h-5 text-walee-blue rounded focus:ring-walee-blue border-2 border-gray-300 flex-shrink-0">
+                                <div class="flex items-center space-x-1.5 sm:space-x-2">
+                                    <i data-lucide="users" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 group-hover:text-walee-blue flex-shrink-0"></i>
+                                    <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Gestion clients</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-4 sm:pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+                        <button type="button" 
+                                @click="showAddModal = false"
+                                class="w-full sm:flex-1 px-4 sm:px-6 py-3 sm:py-3.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center space-x-2">
+                            <i data-lucide="x" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                            <span class="text-sm sm:text-base">Annuler</span>
+                        </button>
+                        <button type="submit" 
+                                class="w-full sm:flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-walee-blue to-walee-indigo text-white font-semibold rounded-xl hover:shadow-lg transition flex items-center justify-center space-x-2">
+                            <i data-lucide="check" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                            <span class="text-sm sm:text-base" x-text="editingEmployee ? 'Modifier' : 'Ajouter'"></span>
+                        </button>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Employee Activity Modal -->
+    <div x-show="showViewModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         @keydown.escape.window="showViewModal = false">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showViewModal = false"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+                
+                <template x-if="viewingEmployee">
+                    <div>
+                        <!-- Modal Header -->
+                        <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-4 sm:px-6 py-4 sm:py-6 z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3 sm:space-x-4">
+                                    <div class="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold shadow-xl border-4 border-white/30 flex-shrink-0"
+                                         :class="viewingEmployee.gradient">
+                                        <span x-text="viewingEmployee.initiales"></span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="text-lg sm:text-2xl font-bold text-white truncate" x-text="viewingEmployee.nom"></h2>
+                                        <p class="text-sm sm:text-base text-purple-100 truncate" x-text="viewingEmployee.role + ' • ' + viewingEmployee.entreprise"></p>
+                                        <p class="text-xs sm:text-sm text-purple-200 mt-1" x-text="'@' + viewingEmployee.username"></p>
+                                    </div>
+                                </div>
+                                <button @click="showViewModal = false" class="p-2 hover:bg-white/10 rounded-lg transition flex-shrink-0">
+                                    <i data-lucide="x" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal Body -->
+                        <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-140px)]">
+                            
+                            <!-- Info Cards -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 sm:p-5 border border-blue-200 dark:border-blue-800">
+                                    <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
+                                        </div>
+                                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Ventes aujourd'hui</p>
+                                    </div>
+                                    <p class="text-2xl sm:text-3xl font-bold text-walee-blue dark:text-blue-400">12</p>
+                                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">+3 depuis hier</p>
+                                </div>
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 sm:p-5 border border-green-200 dark:border-green-800">
+                                    <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="trending-up" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
+                                        </div>
+                                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">CA généré</p>
+                                    </div>
+                                    <p class="text-2xl sm:text-3xl font-bold text-walee-green dark:text-green-400">1.2M</p>
+                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">FCFA aujourd'hui</p>
+                                </div>
+                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 sm:p-5 border border-purple-200 dark:border-purple-800">
+                                    <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="clock" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
+                                        </div>
+                                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Heures travaillées</p>
+                                    </div>
+                                    <p class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">42h</p>
+                                    <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Cette semaine</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Activité Récente -->
+                            <div class="mb-4 sm:mb-6">
+                                <h3 class="text-base sm:text-lg font-bold font-poppins text-walee-dark dark:text-white mb-3 sm:mb-4 flex items-center">
+                                    <i data-lucide="activity" class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-purple-600"></i>
+                                    Activité récente
+                                </h3>
+                                <div class="space-y-2 sm:space-y-3">
+                                    <!-- Activity Item -->
+                                    <div class="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-100 to-green-200 dark:bg-green-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Vente #12345</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">125,000 FCFA • Il y a 5 min</p>
+                                        </div>
+                                        <span class="px-2 sm:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full flex-shrink-0">Complété</span>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:bg-blue-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="package" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">Ajout produit "Laptop HP"</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Il y a 1h</p>
+                                        </div>
+                                        <span class="px-2 sm:px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full flex-shrink-0">Stock</span>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:bg-purple-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="user-plus" class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">Nouveau client "Marie Kouassi"</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Il y a 2h</p>
+                                        </div>
+                                        <span class="px-2 sm:px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full flex-shrink-0">Clients</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Informations & Permissions -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-600">
+                                    <h4 class="font-bold text-sm sm:text-base text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+                                        <i data-lucide="info" class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600"></i>
+                                        Informations
+                                    </h4>
+                                    <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg gap-2">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center flex-shrink-0">
+                                                <i data-lucide="hash" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2"></i>
+                                                Code
+                                            </span>
+                                            <span class="font-semibold text-gray-900 dark:text-white truncate" x-text="viewingEmployee.code"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg gap-2">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center flex-shrink-0">
+                                                <i data-lucide="at-sign" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2"></i>
+                                                Username
+                                            </span>
+                                            <span class="font-semibold text-walee-blue dark:text-blue-400 truncate" x-text="'@' + viewingEmployee.username"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg gap-2">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center flex-shrink-0">
+                                                <i data-lucide="mail" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2"></i>
+                                                Email
+                                            </span>
+                                            <span class="font-medium text-gray-900 dark:text-white text-xs truncate" x-text="viewingEmployee.email"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg gap-2">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center flex-shrink-0">
+                                                <i data-lucide="phone" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2"></i>
+                                                Téléphone
+                                            </span>
+                                            <span class="font-medium text-gray-900 dark:text-white text-xs truncate" x-text="viewingEmployee.telephone"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-600">
+                                    <h4 class="font-bold text-sm sm:text-base text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+                                        <i data-lucide="lock" class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-purple-600"></i>
+                                        Permissions
+                                    </h4>
+                                    <div class="space-y-2 sm:space-y-3">
+                                        <div class="flex items-center space-x-2 sm:space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0"></i>
+                                            <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Accès caisse</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2 sm:space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0"></i>
+                                            <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Gestion stock</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2 sm:space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg opacity-50">
+                                            <i data-lucide="x-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0"></i>
+                                            <span class="text-xs sm:text-sm text-gray-400">Voir rapports</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2 sm:space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0"></i>
+                                            <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Gestion clients</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </template>
+                
+            </div>
+        </div>
+    </div></i>
+                                        </div>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Ventes aujourd'hui</p>
+                                    </div>
+                                    <p class="text-3xl font-bold text-walee-blue dark:text-blue-400">12</p>
+                                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">+3 depuis hier</p>
+                                </div>
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-5 border border-green-200 dark:border-green-800">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                            <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">CA généré</p>
+                                    </div>
+                                    <p class="text-3xl font-bold text-walee-green dark:text-green-400">1.2M</p>
+                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">FCFA aujourd'hui</p>
+                                </div>
+                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-5 border border-purple-200 dark:border-purple-800">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                            <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Heures travaillées</p>
+                                    </div>
+                                    <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">42h</p>
+                                    <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Cette semaine</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Activité Récente -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-bold font-poppins text-walee-dark dark:text-white mb-4 flex items-center">
+                                    <i data-lucide="activity" class="w-5 h-5 mr-2 text-purple-600"></i>
+                                    Activité récente
+                                </h3>
+                                <div class="space-y-3">
+                                    <!-- Activity Item -->
+                                    <div class="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 dark:bg-green-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="shopping-cart" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">Vente #12345</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">125,000 FCFA • Il y a 5 min</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">Complété</span>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:bg-blue-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="package" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">Ajout produit "Laptop HP"</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Il y a 1h</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">Stock</span>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-600">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 dark:bg-purple-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i data-lucide="user-plus" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">Nouveau client "Marie Kouassi"</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Il y a 2h</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">Clients</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Informations & Permissions -->
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 rounded-xl p-5 border border-gray-200 dark:border-gray-600">
+                                    <h4 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i data-lucide="info" class="w-5 h-5 mr-2 text-blue-600"></i>
+                                        Informations
+                                    </h4>
+                                    <div class="space-y-3 text-sm">
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center">
+                                                <i data-lucide="hash" class="w-4 h-4 mr-2"></i>
+                                                Code
+                                            </span>
+                                            <span class="font-semibold text-gray-900 dark:text-white" x-text="viewingEmployee.code"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center">
+                                                <i data-lucide="at-sign" class="w-4 h-4 mr-2"></i>
+                                                Username
+                                            </span>
+                                            <span class="font-semibold text-walee-blue dark:text-blue-400" x-text="'@' + viewingEmployee.username"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center">
+                                                <i data-lucide="mail" class="w-4 h-4 mr-2"></i>
+                                                Email
+                                            </span>
+                                            <span class="font-medium text-gray-900 dark:text-white text-xs" x-text="viewingEmployee.email"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center">
+                                                <i data-lucide="phone" class="w-4 h-4 mr-2"></i>
+                                                Téléphone
+                                            </span>
+                                            <span class="font-medium text-gray-900 dark:text-white text-xs" x-text="viewingEmployee.telephone"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 rounded-xl p-5 border border-gray-200 dark:border-gray-600">
+                                    <h4 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i data-lucide="lock" class="w-5 h-5 mr-2 text-purple-600"></i>
+                                        Permissions
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Accès caisse</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Gestion stock</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg opacity-50">
+                                            <i data-lucide="x-circle" class="w-5 h-5 text-gray-400"></i>
+                                            <span class="text-sm text-gray-400">Voir rapports</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Gestion clients</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </template>
+                
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function employeesData() {
+    return {
+        showAddModal: false,
+        showViewModal: false,
+        viewingEmployee: null,
+        editingEmployee: null,
+        searchQuery: '',
+        selectedEntreprise: '',
+        selectedRole: '',
+        selectedStatus: '',
+        
+        employeeForm: {
+            entrepriseId: '',
+            prenom: '',
+            nom: '',
+            username: '',
+            password: '',
+            email: '',
+            telephone: '',
+            role: '',
+            poste: '',
+            permissions: {
+                caisse: false,
+                stock: false,
+                rapports: false,
+                clients: false
+            }
+        },
+        
+        employees: [
+            {
+                id: 1,
+                nom: 'Jean Dupont',
+                initiales: 'JD',
+                code: 'EMP-001',
+                username: 'dupont.jean',
+                email: 'jean.dupont@email.com',
+                telephone: '+225 07 XX XX XX XX',
+                role: 'Administrateur',
+                entreprise: 'ACME Corporation',
+                entrepriseId: 1,
+                statut: 'Actif',
+                gradient: 'bg-gradient-to-br from-walee-blue to-walee-indigo'
+            },
+            {
+                id: 2,
+                nom: 'Marie Martin',
+                initiales: 'MM',
+                code: 'EMP-002',
+                username: 'martin.marie',
+                email: 'marie.martin@email.com',
+                telephone: '+225 05 XX XX XX XX',
+                role: 'Gérant',
+                entreprise: 'ACME Corporation',
+                entrepriseId: 1,
+                statut: 'Actif',
+                gradient: 'bg-gradient-to-br from-pink-500 to-rose-600'
+            },
+            {
+                id: 3,
+                nom: 'Pierre Dubois',
+                initiales: 'PD',
+                code: 'EMP-003',
+                username: 'dubois.pierre',
+                email: 'pierre.dubois@email.com',
+                telephone: '+225 01 XX XX XX XX',
+                role: 'Caissier',
+                entreprise: 'ACME Corporation',
+                entrepriseId: 1,
+                statut: 'En congé',
+                gradient: 'bg-gradient-to-br from-green-500 to-emerald-600'
+            },
+            {
+                id: 4,
+                nom: 'Sophie Laurent',
+                initiales: 'SL',
+                code: 'EMP-004',
+                username: 'laurent.sophie',
+                email: 'sophie.laurent@email.com',
+                telephone: '+225 09 XX XX XX XX',
+                role: 'Gestionnaire de stock',
+                entreprise: 'ACME Corporation',
+                entrepriseId: 1,
+                statut: 'Actif',
+                gradient: 'bg-gradient-to-br from-orange-500 to-red-600'
+            },
+            {
+                id: 5,
+                nom: 'Ahmed Traoré',
+                initiales: 'AT',
+                code: 'EMP-005',
+                username: 'traore.ahmed',
+                email: 'ahmed.traore@email.com',
+                telephone: '+225 07 XX XX XX XX',
+                role: 'Vendeur',
+                entreprise: 'Tech Boutique',
+                entrepriseId: 2,
+                statut: 'Actif',
+                gradient: 'bg-gradient-to-br from-teal-500 to-cyan-600'
+            },
+            {
+                id: 6,
+                nom: 'Fatou Koné',
+                initiales: 'FK',
+                code: 'EMP-006',
+                username: 'kone.fatou',
+                email: 'fatou.kone@email.com',
+                telephone: '+225 05 XX XX XX XX',
+                role: 'Comptable',
+                entreprise: 'Tech Boutique',
+                entrepriseId: 2,
+                statut: 'Actif',
+                gradient: 'bg-gradient-to-br from-indigo-500 to-purple-600'
+            }
+        ],
+        
+        get filteredEmployees() {
+            return this.employees.filter(emp => {
+                const matchSearch = !this.searchQuery || 
+                    emp.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    emp.email.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    emp.username.toLowerCase().includes(this.searchQuery.toLowerCase());
+                
+                const matchEntreprise = !this.selectedEntreprise || 
+                    emp.entrepriseId == this.selectedEntreprise;
+                
+                const matchRole = !this.selectedRole || 
+                    emp.role === this.selectedRole;
+                
+                const matchStatus = !this.selectedStatus || 
+                    emp.statut === this.selectedStatus;
+                
+                return matchSearch && matchEntreprise && matchRole && matchStatus;
+            });
+        },
+        
+        resetFilters() {
+            this.searchQuery = '';
+            this.selectedEntreprise = '';
+            this.selectedRole = '';
+            this.selectedStatus = '';
+        },
+        
+        generateUsername() {
+            if (this.employeeForm.nom && this.employeeForm.prenom) {
+                const nom = this.employeeForm.nom.toLowerCase().trim().replace(/\s+/g, '');
+                const prenom = this.employeeForm.prenom.toLowerCase().trim().replace(/\s+/g, '');
+                this.employeeForm.username = `${nom}.${prenom}`;
+                
+                // Générer aussi le mot de passe si vide
+                if (!this.employeeForm.password) {
+                    this.generatePassword();
+                }
+            }
+        },
+        
+        generatePassword() {
+            // Générer un mot de passe aléatoire de 8 caractères
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
+            let password = '';
+            for (let i = 0; i < 10; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            this.employeeForm.password = password;
+        },
+        
+        handleSaveEmployee() {
+            if (this.editingEmployee) {
+                // Modification
+                const index = this.employees.findIndex(e => e.id === this.editingEmployee.id);
+                if (index !== -1) {
+                    this.employees[index] = {
+                        ...this.employees[index],
+                        nom: `${this.employeeForm.prenom} ${this.employeeForm.nom}`,
+                        initiales: (this.employeeForm.prenom[0] + this.employeeForm.nom[0]).toUpperCase(),
+                        email: this.employeeForm.email,
+                        telephone: this.employeeForm.telephone,
+                        role: this.employeeForm.role,
+                        entreprise: this.getEntrepriseName(this.employeeForm.entrepriseId),
+                        entrepriseId: this.employeeForm.entrepriseId
+                    };
+                }
+                alert('✅ Employé modifié avec succès !');
+            } else {
+                // Ajout
+                const newEmployee = {
+                    id: this.employees.length + 1,
+                    nom: `${this.employeeForm.prenom} ${this.employeeForm.nom}`,
+                    initiales: (this.employeeForm.prenom[0] + this.employeeForm.nom[0]).toUpperCase(),
+                    code: `EMP-${String(this.employees.length + 1).padStart(3, '0')}`,
+                    username: this.employeeForm.username,
+                    email: this.employeeForm.email,
+                    telephone: this.employeeForm.telephone,
+                    role: this.employeeForm.role,
+                    entreprise: this.getEntrepriseName(this.employeeForm.entrepriseId),
+                    entrepriseId: this.employeeForm.entrepriseId,
+                    statut: 'Actif',
+                    gradient: this.getRandomGradient()
+                };
+                
+                this.employees.push(newEmployee);
+                
+                // Afficher message de succès avec mot de passe
+                alert(`✅ Employé ajouté avec succès !\n\n` +
+                      `Nom d'utilisateur: ${this.employeeForm.username}\n` +
+                      `Mot de passe: ${this.employeeForm.password}\n\n` +
+                      `⚠️ Notez bien ces informations !`);
+            }
+            
+            // Fermer modal et reset
+            this.showAddModal = false;
+            this.editingEmployee = null;
+            this.resetEmployeeForm();
+        },
+        
+        viewEmployee(employee) {
+            this.viewingEmployee = employee;
+            this.showViewModal = true;
+        },
+        
+        editEmployee(employee) {
+            this.editingEmployee = employee;
+            const [prenom, ...nomParts] = employee.nom.split(' ');
+            this.employeeForm = {
+                entrepriseId: employee.entrepriseId.toString(),
+                prenom: prenom,
+                nom: nomParts.join(' '),
+                username: employee.username,
+                password: '••••••••',
+                email: employee.email,
+                telephone: employee.telephone,
+                role: employee.role,
+                poste: employee.poste || '',
+                permissions: {
+                    caisse: true,
+                    stock: true,
+                    rapports: false,
+                    clients: true
+                }
+            };
+            this.showAddModal = true;
+        },
+        
+        toggleStatus(employee) {
+            if (employee.statut === 'Actif') {
+                if (confirm(`⚠️ Désactiver "${employee.nom}" ?\n\nL'employé ne pourra plus se connecter.`)) {
+                    employee.statut = 'Inactif';
+                    alert(`✅ ${employee.nom} a été désactivé.`);
+                }
+            } else {
+                employee.statut = 'Actif';
+                alert(`✅ ${employee.nom} a été réactivé.`);
+            }
+        },
+        
+        deleteEmployee(employee) {
+            if (confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${employee.nom}" ?\n\nCette action est irréversible.`)) {
+                const index = this.employees.findIndex(e => e.id === employee.id);
+                if (index > -1) {
+                    this.employees.splice(index, 1);
+                    alert(`✅ ${employee.nom} a été supprimé avec succès.`);
+                }
+            }
+        },
+        
+        getEntrepriseName(id) {
+            const entreprises = {
+                '1': 'ACME Corporation',
+                '2': 'Tech Boutique',
+                '3': 'Restaurant Saveurs'
+            };
+            return entreprises[id] || 'Non définie';
+        },
+        
+        getRoleBadgeClass(role) {
+            const classes = {
+                'Administrateur': 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+                'Gérant': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+                'Caissier': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800',
+                'Gestionnaire de stock': 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+                'Vendeur': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
+                'Comptable': 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800'
+            };
+            return classes[role] || 'bg-gray-100 text-gray-800';
+        },
+        
+        getRoleIcon(role) {
+            const icons = {
+                'Administrateur': 'shield',
+                'Gérant': 'briefcase',
+                'Caissier': 'shopping-cart',
+                'Gestionnaire de stock': 'package',
+                'Vendeur': 'user',
+                'Comptable': 'calculator'
+            };
+            return icons[role] || 'user';
+        },
+        
+        getStatutBadgeClass(statut) {
+            const classes = {
+                'Actif': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800',
+                'Inactif': 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-600',
+                'En congé': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-800';
+        },
+        
+        getRandomGradient() {
+            const gradients = [
+                'bg-gradient-to-br from-blue-500 to-indigo-600',
+                'bg-gradient-to-br from-green-500 to-emerald-600',
+                'bg-gradient-to-br from-purple-500 to-pink-600',
+                'bg-gradient-to-br from-orange-500 to-red-600',
+                'bg-gradient-to-br from-teal-500 to-cyan-600',
+                'bg-gradient-to-br from-yellow-500 to-orange-600',
+                'bg-gradient-to-br from-pink-500 to-rose-600',
+                'bg-gradient-to-br from-indigo-500 to-purple-600'
+            ];
+            return gradients[Math.floor(Math.random() * gradients.length)];
+        },
+        
+        resetEmployeeForm() {
+            this.employeeForm = {
+                entrepriseId: '',
+                prenom: '',
+                nom: '',
+                username: '',
+                password: '',
+                email: '',
+                telephone: '',
+                role: '',
+                poste: '',
+                permissions: {
+                    caisse: false,
+                    stock: false,
+                    rapports: false,
+                    clients: false
+                }
+            };
+        }
+    }
+}
+</script>
+{% endblock %}

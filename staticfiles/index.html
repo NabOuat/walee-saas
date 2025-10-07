@@ -1,0 +1,630 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Walee - Solution SaaS de Gestion Intelligente{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-walee-bg" x-data="{ mobileMenuOpen: false, scrolled: false }" @scroll.window="scrolled = window.pageYOffset > 50">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" 
+         :class="scrolled ? 'bg-white shadow-lg' : 'bg-transparent'">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-10 h-10">
+                    <span class="text-2xl font-bold font-poppins" :class="scrolled ? 'text-walee-blue' : 'text-white'">
+                        Walee
+                    </span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#fonctionnalites" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                        Fonctionnalités
+                    </a>
+                    <a href="#tarifs" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                        Tarifs
+                    </a>
+                    <a href="#temoignages" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                        Témoignages
+                    </a>
+                    <a href="#contact" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                        Contact
+                    </a>
+                </div>
+                
+                <!-- CTA Buttons -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="{% url 'login' %}" class="px-6 py-2 font-medium rounded-xl transition" 
+                       :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
+                        Connexion
+                    </a>
+                    <a href="{% url 'register' %}" class="px-6 py-2 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-lg">
+                        Essai gratuit
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg" :class="scrolled ? 'text-gray-700' : 'text-white'">
+                    <i :data-lucide="mobileMenuOpen ? 'x' : 'menu'" class="w-6 h-6"></i>
+                </button>
+                
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div x-show="mobileMenuOpen" x-transition class="md:hidden bg-white border-t">
+            <div class="px-4 py-6 space-y-4">
+                <a href="#fonctionnalites" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Fonctionnalités</a>
+                <a href="#tarifs" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Tarifs</a>
+                <a href="#temoignages" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Témoignages</a>
+                <a href="#contact" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Contact</a>
+                <div class="pt-4 space-y-2">
+                    <a href="{% url 'login' %}" class="block w-full text-center px-6 py-3 border border-walee-blue text-walee-blue font-semibold rounded-xl hover:bg-blue-50 transition">
+                        Connexion
+                    </a>
+                    <a href="{% url 'register' %}" class="block w-full text-center px-6 py-3 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transition">
+                        Essai gratuit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-walee-blue via-walee-indigo to-purple-900">
+        
+        <!-- Animated Background -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-20 left-10 w-96 h-96 bg-walee-green opacity-20 rounded-full blur-3xl animate-float"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+            <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+        </div>
+        
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Left Content -->
+                <div class="text-white space-y-8 animate-slide-up">
+                    <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-walee-green"></i>
+                        <span class="text-sm font-medium">Nouveau : Version 2.0 disponible</span>
+                    </div>
+                    
+                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold font-poppins leading-tight">
+                        Gérez votre entreprise avec
+                        <span class="text-walee-green">intelligence</span>
+                    </h1>
+                    
+                    <p class="text-xl text-blue-100 leading-relaxed">
+                        Walee est la solution SaaS tout-en-un pour les entreprises africaines. 
+                        Caisse, stock, facturation, comptabilité et bien plus encore.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-2xl">
+                            <span>Commencer gratuitement</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#demo" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 transition duration-200">
+                            <i data-lucide="play-circle" class="w-5 h-5"></i>
+                            <span>Voir la démo</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-6 pt-8">
+                        <div>
+                            <div class="text-3xl font-bold font-poppins">500+</div>
+                            <div class="text-sm text-blue-200">Entreprises</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold font-poppins">10K+</div>
+                            <div class="text-sm text-blue-200">Utilisateurs</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold font-poppins">99.9%</div>
+                            <div class="text-sm text-blue-200">Uptime</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Content - Mascot & Dashboard Preview -->
+                <div class="relative animate-fade-in">
+                    <div class="relative">
+                        <!-- Mascot -->
+                        <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-full max-w-md mx-auto drop-shadow-2xl animate-float">
+                        
+                        <!-- Floating Cards -->
+                        <div class="absolute top-10 -left-10 bg-white rounded-2xl shadow-2xl p-4 animate-slide-up" style="animation-delay: 0.5s;">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-walee-green rounded-xl flex items-center justify-center">
+                                    <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Ventes du jour</p>
+                                    <p class="text-lg font-bold text-walee-dark">2.5M FCFA</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute bottom-10 -right-10 bg-white rounded-2xl shadow-2xl p-4 animate-slide-up" style="animation-delay: 1s;">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-walee-blue rounded-xl flex items-center justify-center">
+                                    <i data-lucide="package" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Stock disponible</p>
+                                    <p class="text-lg font-bold text-walee-dark">1,234 articles</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section id="fonctionnalites" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-16 animate-slide-up">
+                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
+                    Tout ce dont vous avez besoin
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Une suite complète d'outils pour gérer votre entreprise efficacement
+                </p>
+            </div>
+            
+            <!-- Features Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- Feature Card 1 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-walee-blue rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="shopping-cart" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Caisse & Ventes</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Gestion complète de la caisse avec multi-points de vente, tickets et reçus imprimables.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 2 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-walee-green rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="package" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Gestion de Stock</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Suivi en temps réel, alertes de seuil, inventaires automatiques et multi-entrepôts.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 3 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="file-text" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Facturation</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Créez des factures, devis et avoirs professionnels en quelques clics.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 4 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">CRM Clients</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Gérez vos clients, historiques d'achats, fidélité et segmentation avancée.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 5 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-pink-500 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="bar-chart-3" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Statistiques</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Tableaux de bord en temps réel, graphiques et rapports détaillés.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 6 -->
+                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                    <div class="w-14 h-14 bg-teal-500 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Multi-entreprises</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Gérez plusieurs entreprises depuis un seul compte avec permissions granulaires.
+                    </p>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+    
+    <!-- Pricing Section -->
+    <section id="tarifs" class="py-20 bg-walee-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
+                    Tarifs simples et transparents
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Choisissez le plan qui correspond à vos besoins
+                </p>
+            </div>
+            
+            <!-- Pricing Cards -->
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                
+                <!-- Free Plan -->
+                <div class="bg-white rounded-3xl p-8 shadow-lg hover-lift">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Gratuit</h3>
+                        <div class="text-5xl font-bold font-poppins text-walee-dark mb-2">0 <span class="text-2xl text-gray-500">FCFA</span></div>
+                        <p class="text-gray-500">Pour démarrer</p>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">1 utilisateur</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Max 5 produits</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Caisse basique</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Support email</span>
+                        </li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 border-2 border-walee-blue text-walee-blue font-semibold rounded-xl hover:bg-blue-50 transition">
+                        Commencer
+                    </a>
+                </div>
+                
+                <!-- Standard Plan -->
+                <div class="bg-gradient-to-br from-walee-blue to-walee-indigo rounded-3xl p-8 shadow-2xl transform scale-105 relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-walee-green text-white px-4 py-1 rounded-full text-sm font-semibold">
+                        Populaire
+                    </div>
+                    <div class="text-center mb-8 text-white">
+                        <h3 class="text-2xl font-bold font-poppins mb-2">Standard</h3>
+                        <div class="text-5xl font-bold font-poppins mb-2">15K <span class="text-2xl opacity-80">FCFA</span></div>
+                        <p class="opacity-80">Par mois</p>
+                    </div>
+                    <ul class="space-y-4 mb-8 text-white">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Max 3 utilisateurs</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Max 100 produits</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Caisse complète</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Gestion stock</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Facturation</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <span>Support prioritaire</span>
+                        </li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 bg-white text-walee-blue font-semibold rounded-xl hover:bg-gray-100 transition">
+                        Choisir Standard
+                    </a>
+                </div>
+                
+                <!-- Premium Plan -->
+                <div class="bg-white rounded-3xl p-8 shadow-lg hover-lift">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Premium</h3>
+                        <div class="text-5xl font-bold font-poppins text-walee-dark mb-2">45K <span class="text-2xl text-gray-500">FCFA</span></div>
+                        <p class="text-gray-500">Par mois</p>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Max 10 utilisateurs</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Produits illimités</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Multi-entreprises</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Comptabilité</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">API Access</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
+                            <span class="text-gray-600">Support 24/7</span>
+                        </li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 gradient-green text-white font-semibold rounded-xl hover:shadow-lg transition">
+                        Choisir Premium
+                    </a>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+    
+    <!-- Testimonials Section -->
+    <section id="temoignages" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
+                    Ils nous font confiance
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Découvrez ce que nos clients disent de Walee
+                </p>
+            </div>
+            
+            <!-- Testimonials Carousel -->
+            <div class="relative" x-data="{ currentTestimonial: 0, testimonials: 3 }">
+                
+                <!-- Testimonials -->
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <!-- Testimonial 1 -->
+                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                AK
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-walee-dark">Amadou Koné</h4>
+                                <p class="text-sm text-gray-500">Directeur, ACME Shop</p>
+                            </div>
+                        </div>
+                        <div class="flex mb-4">
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        </div>
+                        <p class="text-gray-600 leading-relaxed">
+                            "Walee a transformé la gestion de mon commerce. Je peux maintenant suivre mes ventes en temps réel et gérer mon stock efficacement. Un vrai gain de temps !"
+                        </p>
+                    </div>
+                    
+                    <!-- Testimonial 2 -->
+                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-walee-green to-emerald-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                FT
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-walee-dark">Fatoumata Traoré</h4>
+                                <p class="text-sm text-gray-500">Gérante, Boutique Élégance</p>
+                            </div>
+                        </div>
+                        <div class="flex mb-4">
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        </div>
+                        <p class="text-gray-600 leading-relaxed">
+                            "Interface intuitive et fonctionnalités complètes. Mes employés ont adopté Walee en quelques jours. Le support client est excellent !"
+                        </p>
+                    </div>
+                    
+                    <!-- Testimonial 3 -->
+                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                YB
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-walee-dark">Yao Brou</h4>
+                                <p class="text-sm text-gray-500">PDG, Tech Solutions</p>
+                            </div>
+                        </div>
+                        <div class="flex mb-4">
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        </div>
+                        <p class="text-gray-600 leading-relaxed">
+                            "Gérer 3 entreprises n'a jamais été aussi simple. Les statistiques détaillées m'aident à prendre de meilleures décisions. Je recommande vivement !"
+                        </p>
+                    </div>
+                    
+                </div>
+                
+                <!-- Stats -->
+                <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div>
+                        <p class="text-4xl font-bold font-poppins text-walee-blue mb-2">500+</p>
+                        <p class="text-gray-600">Entreprises</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl font-bold font-poppins text-walee-green mb-2">10K+</p>
+                        <p class="text-gray-600">Utilisateurs</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl font-bold font-poppins text-purple-600 mb-2">99.9%</p>
+                        <p class="text-gray-600">Uptime</p>
+                    </div>
+                    <div>
+                        <p class="text-4xl font-bold font-poppins text-orange-600 mb-2">4.9/5</p>
+                        <p class="text-gray-600">Satisfaction</p>
+                    </div>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-r from-walee-blue to-walee-indigo">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <h2 class="text-4xl md:text-5xl font-bold font-poppins mb-6">
+                Prêt à transformer votre entreprise ?
+            </h2>
+            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+                Rejoignez des centaines d'entreprises qui font confiance à Walee pour gérer leurs opérations quotidiennes.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'register' %}" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-2xl">
+                    <span>Commencer gratuitement</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </a>
+                <a href="#contact" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 transition duration-200">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                    <span>Nous contacter</span>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="bg-walee-dark text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-10 h-10">
+                        <span class="text-2xl font-bold font-poppins">Walee</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Solution SaaS de gestion intelligente pour entreprises africaines.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                            <i data-lucide="facebook" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Product -->
+                <div>
+                    <h4 class="font-bold font-poppins mb-4">Produit</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Fonctionnalités</a></li>
+                        <li><a href="#" class="hover:text-white transition">Tarifs</a></li>
+                        <li><a href="#" class="hover:text-white transition">Sécurité</a></li>
+                        <li><a href="#" class="hover:text-white transition">Mises à jour</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Company -->
+                <div>
+                    <h4 class="font-bold font-poppins mb-4">Entreprise</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">À propos</a></li>
+                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition">Carrières</a></li>
+                        <li><a href="#" class="hover:text-white transition">Partenaires</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Support -->
+                <div>
+                    <h4 class="font-bold font-poppins mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Centre d'aide</a></li>
+                        <li><a href="#" class="hover:text-white transition">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                        <li><a href="#" class="hover:text-white transition">Status</a></li>
+                    </ul>
+                </div>
+                
+            </div>
+            
+            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">
+                    © 2025 Walee. Tous droits réservés.
+                </p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Confidentialité</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Conditions</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+    
+    // Reinitialize icons
+    document.addEventListener('alpine:init', () => {
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    });
+</script>
+{% endblock %}

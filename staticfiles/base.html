@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Walee - Dashboard{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'images/logo.svg' %}">
+    
+    <!-- ========================================
+         OPTION 1 : MODE PRODUCTION (Recommandé)
+         Héberger les assets localement
+    ========================================= -->
+    
+    <!-- Tailwind CSS compilé (local) -->
+    <link rel="stylesheet" href="{% static 'css/tailwind.min.css' %}">
+    
+    <!-- Alpine.js (local) -->
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+    
+    <!-- Lucide Icons (local) -->
+    <script src="{% static 'js/lucide.min.js' %}"></script>
+    
+    <!-- Chart.js (local - only on pages that need it) -->
+    {% block charts_js %}{% endblock %}
+    
+    <!-- Google Fonts (avec fallback) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap">
+    
+    <!-- ========================================
+         OPTION 2 : MODE DÉVELOPPEMENT (CDN avec fallback)
+         Pour le développement uniquement
+    ========================================= -->
+    
+    <!--
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Si CDN échoue, charger version locale
+        if (typeof tailwind === 'undefined') {
+            document.write('<link rel="stylesheet" href="{% static "css/tailwind.min.css" %}">');
+        }
+    </script>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        setTimeout(() => {
+            if (typeof Alpine === 'undefined') {
+                document.write('<script defer src="{% static "js/alpine.min.js" %}"><\/script>');
+            }
+        }, 2000);
+    </script>
+    -->
+    
+    <!-- ========================================
+         CRITICAL CSS INLINE (pour performance)
+         CSS minimal pour le premier affichage
+    ========================================= -->
+    <style>
+        /* Fonts avec fallback système */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        /* Couleurs critiques */
+        :root {
+            --color-blue: #2563EB;
+            --color-green: #10B981;
+            --color-gray: #F3F4F6;
+        }
+        
+        /* Layout de base */
+        .sidebar { width: 256px; }
+        .sidebar-collapsed { width: 80px; }
+        .main-content { margin-left: 256px; }
+        .main-content-expanded { margin-left: 80px; }
+        
+        /* Loading spinner simple */
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--color-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Scrollbar simple */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-blue);
+            border-radius: 4px;
+        }
+        
+        /* Mode offline indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #f59e0b;
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .offline .offline-indicator {
+            display: block;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50" x-data="appState()">
+    
+    <!-- Indicateur hors ligne -->
+    <div class="offline-indicator">
+        ⚠️ Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées.
+    </div>
+    
+    <!-- Loading minimal -->
+    <div x-show="loading" class="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="loading mx-auto"></div>
+            <p class="mt-4 text-gray-600">Chargement...</p>
+        </div>
+    </div>
+    
+    <!-- Contenu de la page -->
+    {% block content %}{% endblock %}
+    
+    <!-- Script de détection hors ligne -->
+    <script>
+        // Détecter connexion
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                document.body.classList.remove('offline');
+            } else {
+                document.body.classList.add('offline');
+                // Sauvegarder les données en local si hors ligne
+                console.log('Mode hors ligne activé');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+        
+        // App state management
+        function appState() {
+            return {
+                loading: false,
+                darkMode: localStorage.getItem('darkMode') === 'true',
+                sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false',
+                
+                init() {
+                    // Initialiser les icônes quand disponibles
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                    // Watch dark mode
+                    this.$watch('darkMode', val => {
+                        localStorage.setItem('darkMode', val);
+                        document.documentElement.classList.toggle('dark', val);
+                    });
+                }
+            }
+        }
+        
+        // Service Worker pour mode offline (optionnel)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
