@@ -3,10 +3,10 @@ services:
     name: walee
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn walee.wsgi:application"
+    startCommand: "gunicorn walee.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.9
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
