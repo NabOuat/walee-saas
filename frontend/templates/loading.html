@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Chargement - Walee{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-walee-blue via-walee-indigo to-purple-900 overflow-hidden" 
+     x-data="{ progress: 0, message: 'Initialisation...' }"
+     x-init="
+        let messages = [
+            'Initialisation...',
+            'Chargement de votre espace...',
+            'Préparation du tableau de bord...',
+            'Synchronisation des données...',
+            'Presque prêt...'
+        ];
+        let interval = setInterval(() => {
+            progress += 20;
+            message = messages[Math.floor(progress / 20)];
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    window.location.href = '{% url 'onboarding' %}';
+                }, 500);
+            }
+        }, 800);
+     ">
+    
+    <!-- Animated Background -->
+    <div class="absolute inset-0">
+        <div class="absolute top-20 left-10 w-96 h-96 bg-walee-green opacity-20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <!-- Loading Content -->
+    <div class="relative z-10 text-center">
+        
+        <!-- Logo with Pulse Animation -->
+        <div class="mb-8 animate-scale-in">
+            <div class="relative inline-block">
+                <div class="absolute inset-0 bg-walee-green opacity-50 rounded-full blur-2xl animate-pulse"></div>
+                <img src="{% static 'images/logo-placeholder.svg' %}" alt="Walee Logo" class="relative w-32 h-32 mx-auto drop-shadow-2xl">
+            </div>
+        </div>
+        
+        <!-- Brand Name -->
+        <h1 class="text-6xl font-bold font-poppins text-white mb-4 animate-slide-up">
+            Walee
+        </h1>
+        
+        <!-- Loading Message -->
+        <p class="text-xl text-blue-100 mb-12 animate-fade-in" x-text="message"></p>
+        
+        <!-- Progress Bar -->
+        <div class="max-w-md mx-auto mb-8">
+            <div class="h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                <div class="h-full bg-gradient-to-r from-walee-green to-emerald-400 rounded-full transition-all duration-500 ease-out"
+                     :style="`width: ${progress}%`"></div>
+            </div>
+            <p class="text-white/60 text-sm mt-2" x-text="`${progress}%`"></p>
+        </div>
+        
+        <!-- Animated Dots -->
+        <div class="flex justify-center space-x-2">
+            <div class="w-3 h-3 bg-walee-green rounded-full animate-bounce"></div>
+            <div class="w-3 h-3 bg-walee-green rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+            <div class="w-3 h-3 bg-walee-green rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+        </div>
+        
+        <!-- Fun Facts (Optional) -->
+        <div class="mt-12 max-w-lg mx-auto">
+            <div class="glass rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.5s;">
+                <p class="text-white/80 text-sm">
+                    💡 <span class="font-semibold">Le saviez-vous ?</span><br>
+                    Plus de 500 entreprises font déjà confiance à Walee pour gérer leurs opérations quotidiennes.
+                </p>
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+    
+    .animate-bounce {
+        animation: bounce 1s infinite;
+    }
+</style>
+{% endblock %}

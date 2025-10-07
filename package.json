@@ -1,0 +1,20 @@
+{
+  "name": "walee",
+  "version": "1.0.0",
+  "description": "Solution SaaS de gestion intelligente pour entreprises africaines",
+  "scripts": {
+    "build:css": "tailwindcss -i ./frontend/static/css/input.css -o ./frontend/static/css/output.css --minify",
+    "watch:css": "tailwindcss -i ./frontend/static/css/input.css -o ./frontend/static/css/output.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  },
+  "keywords": [
+    "django",
+    "saas",
+    "tailwindcss",
+    "management"
+  ],
+  "author": "Walee Team",
+  "license": "MIT"
+}

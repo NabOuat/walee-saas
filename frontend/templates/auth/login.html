@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Connexion - Walee{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-walee-blue via-walee-indigo to-purple-900">
+    
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-walee-green opacity-20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <!-- Login Container -->
+    <div class="relative z-10 w-full max-w-6xl mx-4 flex items-center justify-center gap-12 animate-fade-in">
+        
+        <!-- Left Side - Branding & Mascot -->
+        <div class="hidden lg:flex flex-col items-center space-y-8 text-white animate-slide-up">
+            <!-- Logo -->
+            <div class="flex items-center space-x-4">
+                <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-20 h-20 drop-shadow-2xl">
+                <h1 class="text-6xl font-bold font-poppins tracking-tight">Walee</h1>
+            </div>
+            
+            <!-- Mascot -->
+            <div class="relative">
+                <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-80 h-80 object-contain drop-shadow-2xl animate-float">
+                <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-64 h-8 bg-black opacity-20 rounded-full blur-xl"></div>
+            </div>
+            
+            <!-- Tagline -->
+            <div class="text-center space-y-2">
+                <p class="text-2xl font-semibold">Gestion Intelligente</p>
+                <p class="text-lg text-blue-200">Pour entreprises africaines</p>
+            </div>
+            
+            <!-- Features -->
+            <div class="grid grid-cols-2 gap-4 mt-8">
+                <div class="flex items-center space-x-2 glass rounded-xl px-4 py-2">
+                    <i data-lucide="zap" class="w-5 h-5 text-walee-green"></i>
+                    <span class="text-sm">Temps réel</span>
+                </div>
+                <div class="flex items-center space-x-2 glass rounded-xl px-4 py-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-walee-green"></i>
+                    <span class="text-sm">Sécurisé</span>
+                </div>
+                <div class="flex items-center space-x-2 glass rounded-xl px-4 py-2">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-walee-green"></i>
+                    <span class="text-sm">Analytics</span>
+                </div>
+                <div class="flex items-center space-x-2 glass rounded-xl px-4 py-2">
+                    <i data-lucide="users" class="w-5 h-5 text-walee-green"></i>
+                    <span class="text-sm">Multi-user</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Login Form -->
+        <div class="w-full max-w-md">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 animate-scale-in">
+                
+                <!-- Mobile Logo -->
+                <div class="lg:hidden flex flex-col items-center mb-8">
+                    <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-16 h-16 mb-3">
+                    <h2 class="text-3xl font-bold font-poppins text-walee-blue">Walee</h2>
+                </div>
+                
+                <!-- Form Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold font-poppins text-walee-dark mb-2">Bon retour !</h2>
+                    <p class="text-gray-500">Connectez-vous à votre compte</p>
+                </div>
+                
+                <!-- Login Form -->
+                <form class="space-y-6" x-data="{ showPassword: false }" @submit.prevent="window.location.href='{% url 'loading' %}'"
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Adresse email
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email"
+                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
+                                placeholder="vous@exemple.com"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Mot de passe
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                :type="showPassword ? 'text' : 'password'" 
+                                id="password" 
+                                name="password"
+                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
+                                placeholder="••••••••"
+                                required
+                            >
+                            <button 
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="w-4 h-4 text-walee-blue border-gray-300 rounded focus:ring-walee-blue">
+                            <span class="ml-2 text-sm text-gray-600">Se souvenir de moi</span>
+                        </label>
+                        <a href="{% url 'forgot_password' %}" class="text-sm text-walee-blue hover:text-walee-indigo font-medium transition">
+                            Mot de passe oublié ?
+                        </a>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit"
+                        class="w-full gradient-blue text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2"
+                    >
+                        <span>Se connecter</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <!-- Divider -->
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-gray-500">Ou continuer avec</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Social Login -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button 
+                            type="button"
+                            class="flex items-center justify-center space-x-2 py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200"
+                        >
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Google</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="flex items-center justify-center space-x-2 py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200"
+                        >
+                            <svg class="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Facebook</span>
+                        </button>
+                    </div>
+                    
+                </form>
+                
+                <!-- Sign Up Link -->
+                <div class="mt-8 text-center">
+                    <p class="text-gray-600">
+                        Pas encore de compte ? 
+                        <a href="{% url 'register' %}" class="text-walee-blue hover:text-walee-indigo font-semibold transition">
+                            Créer un compte
+                        </a>
+                    </p>
+                </div>
+                
+            </div>
+            
+            <!-- Footer Links -->
+            <div class="mt-6 text-center text-white text-sm space-x-4">
+                <a href="#" class="hover:text-walee-green transition">Aide</a>
+                <span>•</span>
+                <a href="#" class="hover:text-walee-green transition">Confidentialité</a>
+                <span>•</span>
+                <a href="#" class="hover:text-walee-green transition">Conditions</a>
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Reinitialize icons after Alpine.js renders
+    document.addEventListener('alpine:init', () => {
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    });
+</script>
+{% endblock %}

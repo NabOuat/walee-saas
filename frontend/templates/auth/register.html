@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inscription - Walee{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-walee-green via-emerald-600 to-teal-700 py-12">
+    
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 right-10 w-72 h-72 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 left-10 w-96 h-96 bg-walee-blue opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 right-1/3 w-64 h-64 bg-yellow-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <!-- Register Container -->
+    <div class="relative z-10 w-full max-w-6xl mx-4 flex items-center justify-center gap-12 animate-fade-in">
+        
+        <!-- Left Side - Form -->
+        <div class="w-full max-w-2xl">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 animate-scale-in">
+                
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="flex items-center justify-center space-x-3 mb-4">
+                        <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-12 h-12">
+                        <h2 class="text-4xl font-bold font-poppins text-walee-dark">Walee</h2>
+                    </div>
+                    <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Créer votre compte</h3>
+                    <p class="text-gray-500">Commencez votre essai gratuit dès aujourd'hui</p>
+                </div>
+                
+                <!-- Registration Form -->
+                <form class="space-y-5" x-data="{ showPassword: false, showConfirmPassword: false, accountType: 'personal' }" @submit.prevent="window.location.href='{% url 'loading' %}'"
+                    
+                    <!-- Account Type Selection -->
+                    <div class="grid grid-cols-2 gap-4 p-1 bg-gray-100 rounded-xl">
+                        <button 
+                            type="button"
+                            @click="accountType = 'personal'"
+                            :class="accountType === 'personal' ? 'bg-white shadow-md' : 'bg-transparent'"
+                            class="py-3 px-4 rounded-lg font-medium transition duration-200"
+                        >
+                            <div class="flex items-center justify-center space-x-2">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                                <span>Personnel</span>
+                            </div>
+                        </button>
+                        <button 
+                            type="button"
+                            @click="accountType = 'business'"
+                            :class="accountType === 'business' ? 'bg-white shadow-md' : 'bg-transparent'"
+                            class="py-3 px-4 rounded-lg font-medium transition duration-200"
+                        >
+                            <div class="flex items-center justify-center space-x-2">
+                                <i data-lucide="building-2" class="w-5 h-5"></i>
+                                <span>Entreprise</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Name Fields -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="prenom" class="block text-sm font-medium text-gray-700 mb-2">
+                                Prénom
+                            </label>
+                            <input 
+                                type="text" 
+                                id="prenom" 
+                                name="prenom"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="Jean"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                                Nom
+                            </label>
+                            <input 
+                                type="text" 
+                                id="nom" 
+                                name="nom"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="Dupont"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Business Name (conditional) -->
+                    <div x-show="accountType === 'business'" x-transition class="space-y-4">
+                        <div>
+                            <label for="entreprise" class="block text-sm font-medium text-gray-700 mb-2">
+                                Nom de l'entreprise
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i data-lucide="building-2" class="w-5 h-5 text-gray-400"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="entreprise" 
+                                    name="entreprise"
+                                    class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                    placeholder="Ma Super Entreprise"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Adresse email professionnelle
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email"
+                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="vous@entreprise.com"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Phone Field -->
+                    <div>
+                        <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
+                            Téléphone
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="phone" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="tel" 
+                                id="telephone" 
+                                name="telephone"
+                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="+225 XX XX XX XX XX"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Password Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                                Mot de passe
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                                </div>
+                                <input 
+                                    :type="showPassword ? 'text' : 'password'" 
+                                    id="password" 
+                                    name="password"
+                                    class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                    placeholder="••••••••"
+                                    required
+                                >
+                                <button 
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                                >
+                                    <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-2">
+                                Confirmer
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                                </div>
+                                <input 
+                                    :type="showConfirmPassword ? 'text' : 'password'" 
+                                    id="confirm_password" 
+                                    name="confirm_password"
+                                    class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                    placeholder="••••••••"
+                                    required
+                                >
+                                <button 
+                                    type="button"
+                                    @click="showConfirmPassword = !showConfirmPassword"
+                                    class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                                >
+                                    <i :data-lucide="showConfirmPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms & Conditions -->
+                    <div class="flex items-start">
+                        <input type="checkbox" id="terms" class="w-4 h-4 mt-1 text-walee-green border-gray-300 rounded focus:ring-walee-green" required>
+                        <label for="terms" class="ml-2 text-sm text-gray-600">
+                            J'accepte les <a href="#" class="text-walee-green hover:text-emerald-700 font-medium">conditions d'utilisation</a> 
+                            et la <a href="#" class="text-walee-green hover:text-emerald-700 font-medium">politique de confidentialité</a>
+                        </label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit"
+                        class="w-full gradient-green text-white font-semibold py-4 px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2"
+                    >
+                        <span>Créer mon compte</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <!-- Divider -->
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-gray-500">Ou s'inscrire avec</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Social Register -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button 
+                            type="button"
+                            class="flex items-center justify-center space-x-2 py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200"
+                        >
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Google</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="flex items-center justify-center space-x-2 py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200"
+                        >
+                            <svg class="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Facebook</span>
+                        </button>
+                    </div>
+                    
+                </form>
+                
+                <!-- Login Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">
+                        Vous avez déjà un compte ? 
+                        <a href="{% url 'login' %}" class="text-walee-green hover:text-emerald-700 font-semibold transition">
+                            Se connecter
+                        </a>
+                    </p>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Right Side - Benefits -->
+        <div class="hidden lg:flex flex-col space-y-6 text-white max-w-md animate-slide-up">
+            
+            <!-- Mascot -->
+            <div class="text-center mb-4">
+                <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-64 h-64 object-contain mx-auto drop-shadow-2xl animate-float">
+            </div>
+            
+            <h3 class="text-3xl font-bold font-poppins mb-4">Pourquoi choisir Walee ?</h3>
+            
+            <!-- Benefits List -->
+            <div class="space-y-4">
+                <div class="flex items-start space-x-4 glass rounded-2xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                        <i data-lucide="rocket" class="w-6 h-6 text-walee-green"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-1">Démarrage rapide</h4>
+                        <p class="text-sm text-blue-100">Configurez votre entreprise en moins de 5 minutes</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-4 glass rounded-2xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-walee-green"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-1">Sécurité maximale</h4>
+                        <p class="text-sm text-blue-100">Vos données sont cryptées et sauvegardées en temps réel</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-4 glass rounded-2xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                        <i data-lucide="users" class="w-6 h-6 text-walee-green"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-1">Multi-entreprises</h4>
+                        <p class="text-sm text-blue-100">Gérez plusieurs entreprises depuis un seul compte</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-4 glass rounded-2xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                        <i data-lucide="headphones" class="w-6 h-6 text-walee-green"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-1">Support 24/7</h4>
+                        <p class="text-sm text-blue-100">Une équipe dédiée pour vous accompagner</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trust Badges -->
+            <div class="mt-8 pt-6 border-t border-white/20">
+                <p class="text-sm text-blue-100 mb-3">Ils nous font confiance :</p>
+                <div class="flex items-center space-x-4">
+                    <div class="glass rounded-lg px-4 py-2">
+                        <span class="font-semibold">500+</span>
+                        <p class="text-xs text-blue-100">Entreprises</p>
+                    </div>
+                    <div class="glass rounded-lg px-4 py-2">
+                        <span class="font-semibold">10K+</span>
+                        <p class="text-xs text-blue-100">Utilisateurs</p>
+                    </div>
+                    <div class="glass rounded-lg px-4 py-2">
+                        <span class="font-semibold">4.9/5</span>
+                        <p class="text-xs text-blue-100">Satisfaction</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    });
+</script>
+{% endblock %}

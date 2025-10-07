@@ -1,0 +1,61 @@
+<!-- Composant Réutilisable: Notification Card -->
+<!-- Usage: {% include 'dashboard/components/notification_card.html' with type='success' title='Vente réussie' message='Nouvelle vente de 125,000 FCFA' time='Il y a 5 min' %} -->
+
+<div class="flex items-start space-x-3 p-4 rounded-xl border transition-all hover:shadow-md
+    {% if type == 'success' %}bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800
+    {% elif type == 'warning' %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800
+    {% elif type == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800
+    {% elif type == 'info' %}bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800
+    {% else %}bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600{% endif %}">
+    
+    <!-- Icon -->
+    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
+        {% if type == 'success' %}bg-green-100 dark:bg-green-900
+        {% elif type == 'warning' %}bg-yellow-100 dark:bg-yellow-900
+        {% elif type == 'error' %}bg-red-100 dark:bg-red-900
+        {% elif type == 'info' %}bg-blue-100 dark:bg-blue-900
+        {% else %}bg-gray-100 dark:bg-gray-600{% endif %}">
+        
+        {% if icon %}
+            <i data-lucide="{{ icon }}" class="w-5 h-5
+                {% if type == 'success' %}text-green-600 dark:text-green-400
+                {% elif type == 'warning' %}text-yellow-600 dark:text-yellow-400
+                {% elif type == 'error' %}text-red-600 dark:text-red-400
+                {% elif type == 'info' %}text-blue-600 dark:text-blue-400
+                {% else %}text-gray-600 dark:text-gray-400{% endif %}"></i>
+        {% else %}
+            {% if type == 'success' %}
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+            {% elif type == 'warning' %}
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 dark:text-yellow-400"></i>
+            {% elif type == 'error' %}
+                <i data-lucide="x-circle" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
+            {% elif type == 'info' %}
+                <i data-lucide="info" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+            {% else %}
+                <i data-lucide="bell" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+        <p class="font-semibold text-gray-900 dark:text-white mb-1">{{ title }}</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ message }}</p>
+        {% if time %}
+        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ time }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Action button (optional) -->
+    {% if action_url %}
+    <a href="{{ action_url }}" class="flex-shrink-0 text-sm font-medium hover:underline
+        {% if type == 'success' %}text-green-600 dark:text-green-400
+        {% elif type == 'warning' %}text-yellow-600 dark:text-yellow-400
+        {% elif type == 'error' %}text-red-600 dark:text-red-400
+        {% elif type == 'info' %}text-blue-600 dark:text-blue-400
+        {% else %}text-gray-600 dark:text-gray-400{% endif %}">
+        {{ action_text|default:"Voir" }}
+    </a>
+    {% endif %}
+</div>
