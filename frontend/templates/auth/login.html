@@ -74,10 +74,32 @@
                 </div>
                 
                 <!-- Login Form -->
-                <form class="space-y-6" x-data="{ showPassword: false }" @submit.prevent="window.location.href='{% url 'loading' %}'"
+                <form class="space-y-6" x-data="{ showPassword: false, loginMethod: 'email' }" @submit.prevent="window.location.href='{% url 'loading' %}'">
+                    
+                    <!-- Login Method Switcher -->
+                    <div class="flex items-center justify-center space-x-2 bg-gray-100 rounded-xl p-1">
+                        <button 
+                            type="button"
+                            @click="loginMethod = 'email'"
+                            :class="loginMethod === 'email' ? 'bg-white shadow-sm' : 'bg-transparent'"
+                            class="flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-lg transition-all duration-200"
+                        >
+                            <i data-lucide="mail" class="w-4 h-4" :class="loginMethod === 'email' ? 'text-walee-blue' : 'text-gray-500'"></i>
+                            <span class="text-sm font-medium" :class="loginMethod === 'email' ? 'text-walee-dark' : 'text-gray-600'">Email</span>
+                        </button>
+                        <button 
+                            type="button"
+                            @click="loginMethod = 'phone'"
+                            :class="loginMethod === 'phone' ? 'bg-white shadow-sm' : 'bg-transparent'"
+                            class="flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-lg transition-all duration-200"
+                        >
+                            <i data-lucide="smartphone" class="w-4 h-4" :class="loginMethod === 'phone' ? 'text-walee-blue' : 'text-gray-500'"></i>
+                            <span class="text-sm font-medium" :class="loginMethod === 'phone' ? 'text-walee-dark' : 'text-gray-600'">Téléphone</span>
+                        </button>
+                    </div>
                     
                     <!-- Email Field -->
-                    <div>
+                    <div x-show="loginMethod === 'email'" x-transition>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                             Adresse email
                         </label>
@@ -91,9 +113,33 @@
                                 name="email"
                                 class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
                                 placeholder="vous@exemple.com"
-                                required
+                                :required="loginMethod === 'email'"
                             >
                         </div>
+                    </div>
+                    
+                    <!-- Phone Field -->
+                    <div x-show="loginMethod === 'phone'" x-transition>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                            Numéro de téléphone
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="smartphone" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="tel" 
+                                id="phone" 
+                                name="phone"
+                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
+                                placeholder="+225 07 XX XX XX XX"
+                                :required="loginMethod === 'phone'"
+                            >
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                            Format: +225 suivi de votre numéro
+                        </p>
                     </div>
                     
                     <!-- Password Field -->
@@ -214,6 +260,15 @@
         setTimeout(() => {
             lucide.createIcons();
         }, 100);
+    });
+    
+    // Reinitialize icons when switching login method
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('[\\@click*="loginMethod"]')) {
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 50);
+        }
     });
 </script>
 {% endblock %}
