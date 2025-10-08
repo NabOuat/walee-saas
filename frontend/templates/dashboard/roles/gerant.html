@@ -1,0 +1,401 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord Gérant - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="gerantData()">
+    
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-2">
+                    👨‍💼 Tableau de bord Gérant
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">Vue d'ensemble et gestion opérationnelle</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg font-medium">
+                    <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
+                    Opérationnel
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <button @click="openVente()" 
+                class="flex items-center space-x-3 p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+            </div>
+            <div class="text-left">
+                <p class="font-semibold">Nouvelle vente</p>
+                <p class="text-xs text-blue-100">Créer une vente</p>
+            </div>
+        </button>
+        
+        <button @click="openStock()" 
+                class="flex items-center space-x-3 p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <i data-lucide="package" class="w-6 h-6"></i>
+            </div>
+            <div class="text-left">
+                <p class="font-semibold">Gérer stock</p>
+                <p class="text-xs text-purple-100">Inventaire</p>
+            </div>
+        </button>
+        
+        <button @click="openEmployes()" 
+                class="flex items-center space-x-3 p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div class="text-left">
+                <p class="font-semibold">Équipe</p>
+                <p class="text-xs text-green-100">Gérer employés</p>
+            </div>
+        </button>
+        
+        <button @click="openRapports()" 
+                class="flex items-center space-x-3 p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <i data-lucide="bar-chart" class="w-6 h-6"></i>
+            </div>
+            <div class="text-left">
+                <p class="font-semibold">Rapports</p>
+                <p class="text-xs text-orange-100">Statistiques</p>
+            </div>
+        </button>
+    </div>
+    
+    <!-- KPIs du jour -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- CA du jour -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium" x-text="stats.caEvolution"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">CA aujourd'hui</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="formatMoney(stats.caJour)"></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Objectif: <span x-text="formatMoney(stats.objectifJour)"></span></p>
+        </div>
+        
+        <!-- Ventes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="shopping-bag" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <span class="text-blue-500 text-sm font-medium" x-text="stats.ventesEvolution"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Ventes</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.ventesJour"></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Panier moyen: <span x-text="formatMoney(stats.panierMoyen)"></span></p>
+        </div>
+        
+        <!-- Équipe active -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="user-check" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <span class="text-purple-500 text-sm font-medium" x-text="stats.employesActifs + '/' + stats.employesTotal"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Équipe active</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.employesActifs"></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">En service maintenant</p>
+        </div>
+        
+        <!-- Alertes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <span class="text-orange-500 text-sm font-medium" x-text="stats.alertes + ' alertes'"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Alertes</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.alertes"></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">À traiter</p>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Colonne gauche (2/3) -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Performance de l'équipe -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-walee-dark dark:text-white">Performance de l'équipe</h3>
+                    <select x-model="performancePeriode" 
+                            class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm">
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-4">
+                    <template x-for="employe in topEmployes" :key="employe.id">
+                        <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                                 :class="employe.gradient">
+                                <span x-text="employe.initiales"></span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white" x-text="employe.nom"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="employe.role"></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-walee-blue" x-text="formatMoney(employe.ca)"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="employe.ventes + ' ventes'"></p>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-walee-blue to-walee-indigo h-2 rounded-full transition-all"
+                                         :style="`width: ${employe.performance}%`"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Ventes récentes -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-walee-dark dark:text-white">Ventes récentes</h3>
+                    <a href="{% url 'ventes' %}" class="text-sm text-walee-blue hover:text-blue-700">Voir tout →</a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">N°</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Client</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Vendeur</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Montant</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="vente in ventesRecentes" :key="vente.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                                    @click="viewVente(vente)">
+                                    <td class="px-4 py-3">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.heure"></p>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <p class="text-sm text-gray-900 dark:text-white" x-text="vente.client"></p>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <p class="text-sm text-gray-700 dark:text-gray-300" x-text="vente.vendeur"></p>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium"
+                                              :class="vente.statut === 'Payée' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'">
+                                            <span x-text="vente.statut"></span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Colonne droite (1/3) -->
+        <div class="space-y-6">
+            
+            <!-- Alertes et notifications -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4 flex items-center">
+                    <i data-lucide="bell" class="w-5 h-5 mr-2 text-orange-600"></i>
+                    Alertes
+                </h3>
+                
+                <div class="space-y-3">
+                    <template x-for="alerte in alertes" :key="alerte.id">
+                        <div class="p-3 rounded-lg border-l-4"
+                             :class="alerte.type === 'urgent' ? 'bg-red-50 dark:bg-red-900/20 border-red-500' : alerte.type === 'warning' ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'">
+                            <div class="flex items-start space-x-3">
+                                <i :data-lucide="alerte.icon" class="w-5 h-5 flex-shrink-0 mt-0.5"
+                                   :class="alerte.type === 'urgent' ? 'text-red-600 dark:text-red-400' : alerte.type === 'warning' ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium" 
+                                       :class="alerte.type === 'urgent' ? 'text-red-900 dark:text-red-100' : alerte.type === 'warning' ? 'text-orange-900 dark:text-orange-100' : 'text-blue-900 dark:text-blue-100'"
+                                       x-text="alerte.titre"></p>
+                                    <p class="text-xs mt-1"
+                                       :class="alerte.type === 'urgent' ? 'text-red-700 dark:text-red-300' : alerte.type === 'warning' ? 'text-orange-700 dark:text-orange-300' : 'text-blue-700 dark:text-blue-300'"
+                                       x-text="alerte.message"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Tâches à faire -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4 flex items-center">
+                    <i data-lucide="check-square" class="w-5 h-5 mr-2 text-green-600"></i>
+                    Tâches du jour
+                </h3>
+                
+                <div class="space-y-3">
+                    <template x-for="tache in taches" :key="tache.id">
+                        <label class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer">
+                            <input type="checkbox" 
+                                   :checked="tache.fait"
+                                   @change="toggleTache(tache)"
+                                   class="w-5 h-5 text-walee-blue rounded border-gray-300 dark:border-gray-600 mt-0.5">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium"
+                                   :class="tache.fait ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
+                                   x-text="tache.titre"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="tache.heure"></p>
+                            </div>
+                        </label>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Produits à réapprovisionner -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4 flex items-center">
+                    <i data-lucide="package-x" class="w-5 h-5 mr-2 text-red-600"></i>
+                    Stock faible
+                </h3>
+                
+                <div class="space-y-3">
+                    <template x-for="produit in produitsStockFaible" :key="produit.id">
+                        <div class="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="produit.nom"></p>
+                                <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                    Stock: <span x-text="produit.stock"></span> / <span x-text="produit.seuilMin"></span>
+                                </p>
+                            </div>
+                            <button @click="reapprovisionner(produit)"
+                                    class="px-3 py-1 bg-walee-blue text-white text-xs rounded-lg hover:bg-blue-700 transition">
+                                Commander
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function gerantData() {
+    return {
+        performancePeriode: 'today',
+        
+        stats: {
+            caJour: 2450000,
+            objectifJour: 3000000,
+            caEvolution: '+12.5%',
+            ventesJour: 45,
+            ventesEvolution: '+8',
+            panierMoyen: 54444,
+            employesActifs: 6,
+            employesTotal: 8,
+            alertes: 3
+        },
+        
+        topEmployes: [
+            { id: 1, nom: 'Marie Martin', initiales: 'MM', role: 'Caissier', ca: 850000, ventes: 18, performance: 95, gradient: 'bg-gradient-to-br from-blue-500 to-blue-600' },
+            { id: 2, nom: 'Jean Dupont', initiales: 'JD', role: 'Vendeur', ca: 720000, ventes: 15, performance: 85, gradient: 'bg-gradient-to-br from-green-500 to-green-600' },
+            { id: 3, nom: 'Sophie Laurent', initiales: 'SL', role: 'Caissier', ca: 650000, ventes: 12, performance: 78, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
+            { id: 4, nom: 'Pierre Dubois', initiales: 'PD', role: 'Vendeur', ca: 230000, ventes: 5, performance: 45, gradient: 'bg-gradient-to-br from-orange-500 to-orange-600' }
+        ],
+        
+        ventesRecentes: [
+            { id: 1, numero: 'VNT-045', client: 'Jean Kouassi', vendeur: 'Marie M.', montant: 125000, statut: 'Payée', heure: '14:30' },
+            { id: 2, numero: 'VNT-044', client: 'Fatou Diallo', vendeur: 'Jean D.', montant: 89500, statut: 'En attente', heure: '14:15' },
+            { id: 3, numero: 'VNT-043', client: 'Yao Brou', vendeur: 'Sophie L.', montant: 245000, statut: 'Payée', heure: '13:50' },
+            { id: 4, numero: 'VNT-042', client: 'Aya Koné', vendeur: 'Marie M.', montant: 67000, statut: 'Payée', heure: '13:20' }
+        ],
+        
+        alertes: [
+            { id: 1, type: 'urgent', icon: 'alert-circle', titre: 'Stock critique', message: '3 produits en rupture de stock' },
+            { id: 2, type: 'warning', icon: 'clock', titre: 'Retard livraison', message: 'Commande #CMD-123 en retard' },
+            { id: 3, type: 'info', icon: 'info', titre: 'Nouveau message', message: 'Message de l\'administrateur' }
+        ],
+        
+        taches: [
+            { id: 1, titre: 'Vérifier la caisse de fermeture', heure: '18:00', fait: false },
+            { id: 2, titre: 'Valider les commandes fournisseurs', heure: '15:00', fait: false },
+            { id: 3, titre: 'Réunion d\'équipe', heure: '16:30', fait: false },
+            { id: 4, titre: 'Contrôle inventaire', heure: '17:00', fait: true }
+        ],
+        
+        produitsStockFaible: [
+            { id: 1, nom: 'Laptop HP Pavilion', stock: 3, seuilMin: 10 },
+            { id: 2, nom: 'iPhone 13 Pro', stock: 2, seuilMin: 10 },
+            { id: 3, nom: 'Samsung Galaxy S23', stock: 1, seuilMin: 10 }
+        ],
+        
+        openVente() {
+            window.location.href = '{% url "ventes" %}';
+        },
+        
+        openStock() {
+            window.location.href = '{% url "stock" %}';
+        },
+        
+        openEmployes() {
+            window.location.href = '{% url "employees" %}';
+        },
+        
+        openRapports() {
+            window.location.href = '{% url "statistiques" %}';
+        },
+        
+        viewVente(vente) {
+            alert(`📋 Détails de la vente ${vente.numero}\n\nClient: ${vente.client}\nMontant: ${this.formatMoney(vente.montant)}\nStatut: ${vente.statut}`);
+        },
+        
+        toggleTache(tache) {
+            tache.fait = !tache.fait;
+        },
+        
+        reapprovisionner(produit) {
+            alert(`📦 Commander ${produit.nom}\n\nStock actuel: ${produit.stock}\nSeuil minimum: ${produit.seuilMin}\n\nFonctionnalité à venir`);
+        },
+        
+        formatMoney(amount) {
+            if (amount >= 1000000) {
+                return (amount / 1000000).toFixed(1) + 'M FCFA';
+            }
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

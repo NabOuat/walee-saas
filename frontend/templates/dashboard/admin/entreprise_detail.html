@@ -7,38 +7,38 @@
 <div x-data="entrepriseDetailData()">
     
     <!-- Header avec retour -->
-    <div class="mb-6">
-        <a href="{% url 'entreprises' %}" class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-walee-blue transition mb-4">
+    <div class="mb-4 sm:mb-6">
+        <a href="{% url 'entreprises' %}" class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-walee-blue transition mb-3 sm:mb-4">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>Retour aux entreprises</span>
+            <span class="text-sm sm:text-base">Retour aux entreprises</span>
         </a>
         
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center space-x-4">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div class="flex items-start space-x-3 sm:space-x-4">
                 <!-- Logo/Icône entreprise -->
-                <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg flex-shrink-0"
                      :class="entreprise.gradient">
                     <span x-text="entreprise.initiales"></span>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-3 mb-2">
-                        <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="entreprise.nom"></h1>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium"
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold font-poppins text-walee-dark dark:text-white truncate" x-text="entreprise.nom"></h1>
+                        <span class="px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium flex-shrink-0"
                               :class="entreprise.actif ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'">
                             <span x-text="entreprise.actif ? 'Active' : 'Inactive'"></span>
                         </span>
                     </div>
-                    <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         <span class="flex items-center space-x-1">
-                            <i data-lucide="tag" class="w-4 h-4"></i>
-                            <span x-text="entreprise.secteur"></span>
+                            <i data-lucide="tag" class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"></i>
+                            <span class="truncate" x-text="entreprise.secteur"></span>
                         </span>
                         <span class="flex items-center space-x-1">
-                            <i data-lucide="map-pin" class="w-4 h-4"></i>
-                            <span x-text="entreprise.ville"></span>
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"></i>
+                            <span class="truncate" x-text="entreprise.ville"></span>
                         </span>
-                        <span class="flex items-center space-x-1">
-                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span class="hidden sm:flex items-center space-x-1">
+                            <i data-lucide="calendar" class="w-4 h-4 flex-shrink-0"></i>
                             <span>Créée le <span x-text="entreprise.dateCreation"></span></span>
                         </span>
                     </div>
@@ -46,152 +46,152 @@
             </div>
             
             <!-- Actions -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-2 sm:gap-3">
                 <button @click="editEntreprise()" 
-                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                        class="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
                     <i data-lucide="edit" class="w-4 h-4"></i>
                     <span>Modifier</span>
                 </button>
                 <button @click="showSettings = true" 
                         class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <i data-lucide="settings" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                    <i data-lucide="settings" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400"></i>
                 </button>
             </div>
         </div>
     </div>
     
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
         <!-- CA du mois -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-2 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="dollar-sign" class="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400"></i>
                 </div>
-                <span class="text-green-500 text-sm font-medium" x-text="stats.caEvolution"></span>
+                <span class="text-green-500 text-xs sm:text-sm font-medium" x-text="stats.caEvolution"></span>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">CA du mois</p>
-            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="formatMoney(stats.caMois)"></p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">CA du mois</p>
+            <p class="text-lg sm:text-2xl font-bold text-walee-dark dark:text-white truncate" x-text="formatMoney(stats.caMois)"></p>
         </div>
         
         <!-- Ventes -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <i data-lucide="shopping-cart" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-2 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400"></i>
                 </div>
-                <span class="text-blue-500 text-sm font-medium" x-text="stats.ventesEvolution"></span>
+                <span class="text-blue-500 text-xs sm:text-sm font-medium" x-text="stats.ventesEvolution"></span>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Ventes</p>
-            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.ventesTotal"></p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Ventes</p>
+            <p class="text-lg sm:text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.ventesTotal"></p>
         </div>
         
         <!-- Clients -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <i data-lucide="users" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-2 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="users" class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400"></i>
                 </div>
-                <span class="text-purple-500 text-sm font-medium">+<span x-text="stats.nouveauxClients"></span></span>
+                <span class="text-purple-500 text-xs sm:text-sm font-medium">+<span x-text="stats.nouveauxClients"></span></span>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Clients</p>
-            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.clientsTotal"></p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Clients</p>
+            <p class="text-lg sm:text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.clientsTotal"></p>
         </div>
         
         <!-- Employés -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                    <i data-lucide="user-check" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-2 sm:mb-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="user-check" class="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400"></i>
                 </div>
-                <span class="text-orange-500 text-sm font-medium" x-text="stats.employesActifs + ' actifs'"></span>
+                <span class="text-orange-500 text-xs sm:text-sm font-medium" x-text="stats.employesActifs + ' actifs'"></span>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Employés</p>
-            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.employesTotal"></p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Employés</p>
+            <p class="text-lg sm:text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.employesTotal"></p>
         </div>
     </div>
     
     <!-- Tabs Navigation -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
+            <nav class="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto scrollbar-hide" aria-label="Tabs">
                 <button @click="activeTab = 'apercu'" 
                         :class="activeTab === 'apercu' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4 inline mr-2"></i>
-                    Aperçu
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="layout-dashboard" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Aperçu</span>
                 </button>
                 <button @click="activeTab = 'ventes'" 
                         :class="activeTab === 'ventes' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="trending-up" class="w-4 h-4 inline mr-2"></i>
-                    Ventes
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Ventes</span>
                 </button>
                 <button @click="activeTab = 'produits'" 
                         :class="activeTab === 'produits' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="package" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                     <span x-text="getSecteurLabel('produits')"></span>
                 </button>
                 <button @click="activeTab = 'clients'" 
                         :class="activeTab === 'clients' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="users" class="w-4 h-4 inline mr-2"></i>
-                    Clients
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="users" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Clients</span>
                 </button>
                 <button @click="activeTab = 'employes'" 
                         :class="activeTab === 'employes' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="user-check" class="w-4 h-4 inline mr-2"></i>
-                    Employés
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Employés</span>
                 </button>
                 <button @click="activeTab = 'informations'" 
                         :class="activeTab === 'informations' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
-                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
-                    <i data-lucide="info" class="w-4 h-4 inline mr-2"></i>
-                    Informations
+                        class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition flex items-center space-x-1.5 sm:space-x-2">
+                    <i data-lucide="info" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Informations</span>
                 </button>
             </nav>
         </div>
     </div>
     
     <!-- Tab Content: Aperçu -->
-    <div x-show="activeTab === 'apercu'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'apercu'" x-transition class="space-y-4 sm:space-y-6">
         
         <!-- Graphiques -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <!-- Evolution CA -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4">Évolution du CA</h3>
-                <div class="h-64">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-3 sm:mb-4">Évolution du CA</h3>
+                <div class="h-48 sm:h-64">
                     <canvas id="caChart"></canvas>
                 </div>
             </div>
             
             <!-- Répartition selon secteur -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4" x-text="getSecteurChartTitle()"></h3>
-                <div class="h-64">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-3 sm:mb-4" x-text="getSecteurChartTitle()"></h3>
+                <div class="h-48 sm:h-64">
                     <canvas id="secteurChart"></canvas>
                 </div>
             </div>
         </div>
         
         <!-- Activité récente -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4">Activité récente</h3>
-            <div class="space-y-3">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+            <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-3 sm:mb-4">Activité récente</h3>
+            <div class="space-y-2 sm:space-y-3">
                 <template x-for="activite in activitesRecentes" :key="activite.id">
-                    <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                    <div class="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                              :class="activite.iconBg">
-                            <i :data-lucide="activite.icon" class="w-5 h-5" :class="activite.iconColor"></i>
+                            <i :data-lucide="activite.icon" class="w-4 h-4 sm:w-5 sm:h-5" :class="activite.iconColor"></i>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="activite.titre"></p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="activite.description"></p>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate" x-text="activite.titre"></p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate" x-text="activite.description"></p>
                         </div>
-                        <span class="text-xs text-gray-400 dark:text-gray-500" x-text="activite.date"></span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0" x-text="activite.date"></span>
                     </div>
                 </template>
             </div>
@@ -200,13 +200,13 @@
     </div>
     
     <!-- Tab Content: Ventes -->
-    <div x-show="activeTab === 'ventes'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'ventes'" x-transition class="space-y-4 sm:space-y-6">
         
         <!-- Filtres -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <select x-model="ventesFiltre.periode" 
-                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                        class="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none">
                     <option value="today">Aujourd'hui</option>
                     <option value="week">Cette semaine</option>
                     <option value="month">Ce mois</option>
@@ -215,91 +215,125 @@
                 <input type="text" 
                        x-model="ventesFiltre.search"
                        placeholder="Rechercher une vente..." 
-                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                       class="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-walee-blue outline-none">
             </div>
         </div>
         
-        <!-- Liste des ventes -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Vente</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Client</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendeur</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <template x-for="vente in filteredVentes" :key="vente.id">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-6 py-4">
-                                <p class="font-medium text-gray-900 dark:text-white" x-text="vente.numero"></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.date"></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm text-gray-900 dark:text-white" x-text="vente.client"></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="vente.vendeur"></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium"
-                                      :class="vente.statut === 'Payée' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'">
-                                    <span x-text="vente.statut"></span>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <button @click="viewVente(vente)" 
-                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
-                                    <i data-lucide="eye" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
-                                </button>
-                            </td>
+        <!-- Liste des ventes - Mobile View -->
+        <div class="block lg:hidden space-y-3">
+            <template x-for="vente in filteredVentes" :key="vente.id">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm" @click="viewVente(vente)">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.date"></p>
+                        </div>
+                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium"
+                              :class="vente.statut === 'Payée' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'">
+                            <span x-text="vente.statut"></span>
+                        </span>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Client:</span>
+                            <span class="font-medium text-gray-900 dark:text-white" x-text="vente.client"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Vendeur:</span>
+                            <span class="text-gray-700 dark:text-gray-300" x-text="vente.vendeur"></span>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t dark:border-gray-700">
+                            <span class="text-gray-600 dark:text-gray-400">Montant:</span>
+                            <span class="font-bold text-walee-blue" x-text="formatMoney(vente.montant)"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        
+        <!-- Liste des ventes - Desktop Table -->
+        <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Vente</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Client</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendeur</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
                         </tr>
-                    </template>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="vente in filteredVentes" :key="vente.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-6 py-4">
+                                    <p class="font-medium text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.date"></p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-900 dark:text-white" x-text="vente.client"></p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300" x-text="vente.vendeur"></p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium"
+                                          :class="vente.statut === 'Payée' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'">
+                                        <span x-text="vente.statut"></span>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button @click="viewVente(vente)" 
+                                            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                                        <i data-lucide="eye" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
         </div>
         
     </div>
     
     <!-- Tab Content: Produits/Services (adapté au secteur) -->
-    <div x-show="activeTab === 'produits'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'produits'" x-transition class="space-y-4 sm:space-y-6">
         
         <!-- Header avec bouton ajout -->
-        <div class="flex items-center justify-between">
-            <h3 class="text-xl font-bold text-walee-dark dark:text-white" x-text="getSecteurLabel('produits')"></h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h3 class="text-lg sm:text-xl font-bold text-walee-dark dark:text-white" x-text="getSecteurLabel('produits')"></h3>
             <button @click="addProduit()" 
-                    class="flex items-center space-x-2 px-4 py-2 bg-walee-green text-white rounded-lg hover:bg-emerald-600 transition">
+                    class="flex items-center justify-center space-x-2 px-4 py-2 bg-walee-green text-white rounded-lg hover:bg-emerald-600 transition text-sm sm:text-base">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>Ajouter</span>
             </button>
         </div>
         
         <!-- Grille de produits/services -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <template x-for="produit in produits" :key="produit.id">
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer"
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition cursor-pointer"
                      @click="viewProduit(produit)">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                            <i :data-lucide="getProduitIcon()" class="w-6 h-6 text-gray-600 dark:text-gray-400"></i>
+                    <div class="flex items-start justify-between mb-3 sm:mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i :data-lucide="getProduitIcon()" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400"></i>
                         </div>
                         <span class="px-2 py-1 rounded-full text-xs font-medium"
                               :class="produit.stock > produit.seuilMin ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'">
                             <span x-text="produit.stock > produit.seuilMin ? 'En stock' : 'Stock faible'"></span>
                         </span>
                     </div>
-                    <h4 class="font-bold text-gray-900 dark:text-white mb-2" x-text="produit.nom"></h4>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" x-text="produit.reference"></p>
+                    <h4 class="font-bold text-sm sm:text-base text-gray-900 dark:text-white mb-2 truncate" x-text="produit.nom"></h4>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 truncate" x-text="produit.reference"></p>
                     <div class="flex items-center justify-between">
-                        <span class="text-lg font-bold text-walee-blue" x-text="formatMoney(produit.prix)"></span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">Stock: <span x-text="produit.stock"></span></span>
+                        <span class="text-base sm:text-lg font-bold text-walee-blue truncate" x-text="formatMoney(produit.prix)"></span>
+                        <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">Stock: <span x-text="produit.stock"></span></span>
                     </div>
                 </div>
             </template>
@@ -308,33 +342,33 @@
     </div>
     
     <!-- Tab Content: Clients -->
-    <div x-show="activeTab === 'clients'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'clients'" x-transition class="space-y-4 sm:space-y-6">
         
         <!-- Liste des clients -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white">Clients de l'entreprise</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white">Clients de l'entreprise</h3>
                 <button @click="addClient()" 
-                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                        class="flex items-center justify-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                     <span>Nouveau client</span>
                 </button>
             </div>
             
-            <div class="space-y-3">
+            <div class="space-y-2 sm:space-y-3">
                 <template x-for="client in clients" :key="client.id">
-                    <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+                    <div class="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
                          @click="viewClient(client)">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                              :class="client.gradient">
                             <span x-text="client.initiales"></span>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="client.nom"></p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="client.telephone"></p>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate" x-text="client.nom"></p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400" x-text="client.telephone"></p>
                         </div>
-                        <div class="text-right">
-                            <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(client.totalAchats)"></p>
+                        <div class="text-right flex-shrink-0">
+                            <p class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white" x-text="formatMoney(client.totalAchats)"></p>
                             <p class="text-xs text-gray-500 dark:text-gray-400" x-text="client.nombreAchats + ' achats'"></p>
                         </div>
                     </div>
@@ -345,36 +379,36 @@
     </div>
     
     <!-- Tab Content: Employés -->
-    <div x-show="activeTab === 'employes'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'employes'" x-transition class="space-y-4 sm:space-y-6">
         
         <!-- Liste des employés -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white">Équipe</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white">Équipe</h3>
                 <button @click="addEmploye()" 
-                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                        class="flex items-center justify-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                     <span>Ajouter un employé</span>
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <template x-for="employe in employes" :key="employe.id">
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 sm:p-4 hover:shadow-md transition cursor-pointer"
                          @click="viewEmploye(employe)">
-                        <div class="flex items-center space-x-3 mb-3">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                        <div class="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                                  :class="employe.gradient">
                                 <span x-text="employe.initiales"></span>
                             </div>
-                            <div class="flex-1">
-                                <p class="font-medium text-gray-900 dark:text-white" x-text="employe.nom"></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="employe.role"></p>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate" x-text="employe.nom"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="employe.role"></p>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-400" x-text="employe.telephone"></span>
-                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                        <div class="flex items-center justify-between text-xs sm:text-sm">
+                            <span class="text-gray-600 dark:text-gray-400 truncate" x-text="employe.telephone"></span>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium flex-shrink-0"
                                   :class="employe.actif ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'">
                                 <span x-text="employe.actif ? 'Actif' : 'Inactif'"></span>
                             </span>
@@ -387,141 +421,141 @@
     </div>
     
     <!-- Tab Content: Informations -->
-    <div x-show="activeTab === 'informations'" x-transition class="space-y-6">
+    <div x-show="activeTab === 'informations'" x-transition class="space-y-4 sm:space-y-6">
         
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             
             <!-- Informations générales -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Informations générales</h3>
-                <div class="space-y-4">
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="building-2" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Nom légal</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.nomLegal"></p>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-4 sm:mb-6">Informations générales</h3>
+                <div class="space-y-3 sm:space-y-4">
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="building-2" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Nom légal</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white break-words" x-text="entreprise.nomLegal"></p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="hash" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">RCCM / N° d'immatriculation</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.rccm"></p>
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="hash" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">RCCM / N° d'immatriculation</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white break-all" x-text="entreprise.rccm"></p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="tag" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Secteur d'activité</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.secteur"></p>
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="tag" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Secteur d'activité</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white" x-text="entreprise.secteur"></p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="map-pin" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Adresse</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.adresse"></p>
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="map-pin" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Adresse</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white break-words" x-text="entreprise.adresse"></p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="phone" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Téléphone</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.telephone"></p>
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="phone" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Téléphone</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white" x-text="entreprise.telephone"></p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
-                        <i data-lucide="mail" class="w-5 h-5 text-gray-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.email"></p>
+                    <div class="flex items-start space-x-2 sm:space-x-3">
+                        <i data-lucide="mail" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Email</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white break-all" x-text="entreprise.email"></p>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Paramètres spécifiques au secteur -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Paramètres du secteur</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-4 sm:mb-6">Paramètres du secteur</h3>
                 
                 <!-- Pressing -->
-                <div x-show="entreprise.secteur === 'Pressing'" class="space-y-4">
-                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <p class="font-medium text-gray-900 dark:text-white mb-2">Services proposés</p>
+                <div x-show="entreprise.secteur === 'Pressing'" class="space-y-3 sm:space-y-4">
+                    <div class="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">Services proposés</p>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Lavage</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Repassage</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Nettoyage à sec</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Express</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Lavage</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Repassage</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Nettoyage à sec</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Express</span>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Délai standard</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">24-48h</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Délai standard</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">24-48h</span>
                     </div>
                 </div>
                 
                 <!-- Supermarché -->
-                <div x-show="entreprise.secteur === 'Supermarché'" class="space-y-4">
-                    <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <p class="font-medium text-gray-900 dark:text-white mb-2">Catégories de produits</p>
+                <div x-show="entreprise.secteur === 'Supermarché'" class="space-y-3 sm:space-y-4">
+                    <div class="p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">Catégories de produits</p>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Alimentation</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Boissons</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Hygiène</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Entretien</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Alimentation</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Boissons</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Hygiène</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Entretien</span>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Références en stock</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">1,234</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Références en stock</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">1,234</span>
                     </div>
                 </div>
                 
                 <!-- Restaurant -->
-                <div x-show="entreprise.secteur === 'Restaurant'" class="space-y-4">
-                    <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <p class="font-medium text-gray-900 dark:text-white mb-2">Type de cuisine</p>
+                <div x-show="entreprise.secteur === 'Restaurant'" class="space-y-3 sm:space-y-4">
+                    <div class="p-3 sm:p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">Type de cuisine</p>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Africaine</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Française</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Fast-food</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Africaine</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Française</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Fast-food</span>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Capacité</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">50 couverts</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Capacité</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">50 couverts</span>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Horaires</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">11h - 23h</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Horaires</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">11h - 23h</span>
                     </div>
                 </div>
                 
                 <!-- Vente de véhicules -->
-                <div x-show="entreprise.secteur === 'Vente de véhicules'" class="space-y-4">
-                    <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <p class="font-medium text-gray-900 dark:text-white mb-2">Types de véhicules</p>
+                <div x-show="entreprise.secteur === 'Vente de véhicules'" class="space-y-3 sm:space-y-4">
+                    <div class="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white mb-2">Types de véhicules</p>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Voitures</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Motos</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Camions</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Voitures</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Motos</span>
+                            <span class="px-2.5 sm:px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs sm:text-sm">Camions</span>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Véhicules en stock</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">24</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Véhicules en stock</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">24</span>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">Garantie standard</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">12 mois</span>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Garantie standard</span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">12 mois</span>
                     </div>
                 </div>
                 
                 <!-- Autres secteurs (générique) -->
-                <div x-show="!['Pressing', 'Supermarché', 'Restaurant', 'Vente de véhicules'].includes(entreprise.secteur)" class="space-y-4">
+                <div x-show="!['Pressing', 'Supermarché', 'Restaurant', 'Vente de véhicules'].includes(entreprise.secteur)" class="space-y-3 sm:space-y-4">
                     <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center">
                             Paramètres spécifiques disponibles selon le secteur d'activité
                         </p>
                     </div>
@@ -530,76 +564,76 @@
             </div>
             
             <!-- Documents -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Documents</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
-                                <i data-lucide="file-text" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-4 sm:mb-6">Documents</h3>
+                <div class="space-y-2 sm:space-y-3">
+                    <div class="flex items-center justify-between p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+                        <div class="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="file-text" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400"></i>
                             </div>
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">Registre de commerce</p>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">Registre de commerce</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">PDF • 2.4 MB</p>
                             </div>
                         </div>
-                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition flex-shrink-0">
                             <i data-lucide="download" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
                         </button>
                     </div>
-                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                                <i data-lucide="file-text" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    <div class="flex items-center justify-between p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+                        <div class="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="file-text" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400"></i>
                             </div>
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">Attestation fiscale</p>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate">Attestation fiscale</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">PDF • 1.8 MB</p>
                             </div>
                         </div>
-                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition flex-shrink-0">
                             <i data-lucide="download" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
                         </button>
                     </div>
                 </div>
                 
-                <button class="mt-4 w-full flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <i data-lucide="upload" class="w-5 h-5 text-gray-400"></i>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Ajouter un document</span>
+                <button class="mt-3 sm:mt-4 w-full flex items-center justify-center space-x-2 px-4 py-2.5 sm:py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i data-lucide="upload" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400"></i>
+                    <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Ajouter un document</span>
                 </button>
             </div>
             
             <!-- Paramètres avancés -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Paramètres</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 class="text-base sm:text-lg font-bold text-walee-dark dark:text-white mb-4 sm:mb-6">Paramètres</h3>
+                <div class="space-y-3 sm:space-y-4">
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
-                            <p class="font-medium text-gray-900 dark:text-white">TVA</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Taxe sur la valeur ajoutée</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">TVA</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Taxe sur la valeur ajoutée</p>
                         </div>
-                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.tva + '%'"></span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white" x-text="entreprise.tva + '%'"></span>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
-                            <p class="font-medium text-gray-900 dark:text-white">Devise</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Monnaie par défaut</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">Devise</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Monnaie par défaut</p>
                         </div>
-                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.devise"></span>
+                        <span class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white" x-text="entreprise.devise"></span>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
-                            <p class="font-medium text-gray-900 dark:text-white">Fuseau horaire</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Heure locale</p>
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">Fuseau horaire</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Heure locale</p>
                         </div>
-                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.timezone"></span>
+                        <span class="font-semibold text-xs sm:text-base text-gray-900 dark:text-white truncate ml-2" x-text="entreprise.timezone"></span>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div>
-                            <p class="font-medium text-gray-900 dark:text-white">Notifications</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Alertes actives</p>
+                    <div class="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">Notifications</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Alertes actives</p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                             <input type="checkbox" x-model="entreprise.notifications" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
                         </label>
@@ -776,7 +810,10 @@ function entrepriseDetailData() {
                                 labels: {
                                     color: textColor,
                                     padding: 12,
-                                    usePointStyle: true
+                                    usePointStyle: true,
+                                    font: {
+                                        size: window.innerWidth < 640 ? 10 : 12
+                                    }
                                 }
                             }
                         },

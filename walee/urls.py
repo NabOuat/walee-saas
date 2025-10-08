@@ -40,6 +40,8 @@ urlpatterns = [
     path("dashboard/caissier/", views.CaissierView.as_view(), name='caissier'),
     path("dashboard/gestionnaire-stock/", views.GestionnaireStockView.as_view(), name='gestionnaire_stock'),
     path("dashboard/comptable/", views.ComptableView.as_view(), name='comptable'),
+    path("dashboard/gerant/", views.GerantView.as_view(), name='gerant'),
+    path("dashboard/vendeur/", views.VendeurView.as_view(), name='vendeur'),
 ]
 
 # Serve static and media files in development

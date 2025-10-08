@@ -138,7 +138,14 @@
                         <td class="px-6 py-4">
                             <div>
                                 <p class="font-semibold text-gray-900 dark:text-white" x-text="produit.nom"></p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="produit.reference"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    <i data-lucide="hash" class="w-3 h-3 inline"></i>
+                                    <span x-text="produit.reference"></span>
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                    <i data-lucide="barcode" class="w-3 h-3 inline"></i>
+                                    <span x-text="produit.codeBarre"></span>
+                                </p>
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -231,11 +238,11 @@ function gestionnaireStockData() {
         },
         
         products: [
-            { id: 1, nom: 'Laptop HP Pavilion', reference: 'PRD-001', categorie: 'Électronique', quantite: 15, seuilMin: 10 },
-            { id: 2, nom: 'iPhone 13 Pro', reference: 'PRD-002', categorie: 'Électronique', quantite: 5, seuilMin: 10 },
-            { id: 3, nom: 'T-shirt Nike', reference: 'PRD-003', categorie: 'Vêtements', quantite: 0, seuilMin: 20 },
-            { id: 4, nom: 'Riz 50kg', reference: 'PRD-004', categorie: 'Alimentation', quantite: 45, seuilMin: 30 },
-            { id: 5, nom: 'Samsung Galaxy S23', reference: 'PRD-005', categorie: 'Électronique', quantite: 8, seuilMin: 10 }
+            { id: 1, nom: 'Laptop HP Pavilion', reference: 'PRD-001', codeBarre: '5901234123457', categorie: 'Électronique', quantite: 15, seuilMin: 10 },
+            { id: 2, nom: 'iPhone 13 Pro', reference: 'PRD-002', codeBarre: '0190199218792', categorie: 'Électronique', quantite: 5, seuilMin: 10 },
+            { id: 3, nom: 'T-shirt Nike', reference: 'PRD-003', codeBarre: '0887224466894', categorie: 'Vêtements', quantite: 0, seuilMin: 20 },
+            { id: 4, nom: 'Riz 50kg', reference: 'PRD-004', codeBarre: '6001234567890', categorie: 'Alimentation', quantite: 45, seuilMin: 30 },
+            { id: 5, nom: 'Samsung Galaxy S23', reference: 'PRD-005', codeBarre: '8806094667523', categorie: 'Électronique', quantite: 8, seuilMin: 10 }
         ],
         
         recentMovements: [
@@ -248,7 +255,8 @@ function gestionnaireStockData() {
             return this.products.filter(p => {
                 const matchSearch = !this.searchQuery || 
                     p.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    p.reference.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    p.reference.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    p.codeBarre.includes(this.searchQuery);
                 
                 const matchStatus = !this.filterStatus ||
                     (this.filterStatus === 'ok' && p.quantite >= p.seuilMin) ||

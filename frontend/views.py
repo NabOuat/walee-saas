@@ -106,6 +106,16 @@ class ComptableView(TemplateView):
     template_name = 'dashboard/roles/comptable.html'
 
 
+class GerantView(TemplateView):
+    """Manager operational dashboard view"""
+    template_name = 'dashboard/roles/gerant.html'
+
+
+class VendeurView(TemplateView):
+    """Salesperson interface view"""
+    template_name = 'dashboard/roles/vendeur.html'
+
+
 # Function-based views (alternative)
 def home(request):
     """Landing page"""
