@@ -9,50 +9,75 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'images/logo.svg' %}">
     
-    <!-- ========================================
-         OPTION 1 : MODE PRODUCTION (Recommandé)
-         Héberger les assets localement
-    ========================================= -->
-    
-    <!-- Tailwind CSS compilé (local) -->
-    <link rel="stylesheet" href="{% static 'css/tailwind.min.css' %}">
-    
-    <!-- Alpine.js (local) -->
-    <script defer src="{% static 'js/alpine.min.js' %}"></script>
-    
-    <!-- Lucide Icons (local) -->
-    <script src="{% static 'js/lucide.min.js' %}"></script>
-    
-    <!-- Chart.js (local - only on pages that need it) -->
-    {% block charts_js %}{% endblock %}
-    
-    <!-- Google Fonts (avec fallback) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap">
-    
-    <!-- ========================================
-         OPTION 2 : MODE DÉVELOPPEMENT (CDN avec fallback)
-         Pour le développement uniquement
-    ========================================= -->
-    
-    <!--
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
     <script>
-        // Si CDN échoue, charger version locale
-        if (typeof tailwind === 'undefined') {
-            document.write('<link rel="stylesheet" href="{% static "css/tailwind.min.css" %}">');
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'walee-blue': '#2563EB',
+                        'walee-indigo': '#1E3A8A',
+                        'walee-green': '#10B981',
+                        'walee-red': '#EF4444',
+                        'walee-gray': '#F3F4F6',
+                        'walee-dark': '#111827',
+                        'walee-bg': '#FAFAFA',
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'slide-down': 'slideDown 0.3s ease-out',
+                        'scale-in': 'scaleIn 0.3s ease-out',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        slideDown: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        scaleIn: {
+                            '0%': { transform: 'scale(0.9)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                    },
+                }
+            }
         }
     </script>
-    
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>
-        setTimeout(() => {
-            if (typeof Alpine === 'undefined') {
-                document.write('<script defer src="{% static "js/alpine.min.js" %}"><\/script>');
-            }
-        }, 2000);
-    </script>
-    -->
     
     <!-- ========================================
          CRITICAL CSS INLINE (pour performance)
@@ -103,6 +128,33 @@
         ::-webkit-scrollbar-thumb {
             background: var(--color-blue);
             border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #1E3A8A;
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-blue {
+            background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%);
+        }
+        .gradient-green {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        
+        /* Glass morphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        /* Hover effects */
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
         
         /* Mode offline indicator */
@@ -170,10 +222,12 @@
                 sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false',
                 
                 init() {
-                    // Initialiser les icônes quand disponibles
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
+                    // Initialiser les icônes Lucide
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                    });
                     
                     // Watch dark mode
                     this.$watch('darkMode', val => {
@@ -184,12 +238,12 @@
             }
         }
         
-        // Service Worker pour mode offline (optionnel)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(err => {
-                console.log('Service Worker registration failed:', err);
-            });
-        }
+        // Réinitialiser les icônes après chargement complet
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}
