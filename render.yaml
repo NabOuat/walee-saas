@@ -14,14 +14,12 @@ services:
       - key: ALLOWED_HOSTS
         value: .onrender.com
       - key: DATABASE_URL
-        fromDatabase:
-          name: walee-db
-          property: connectionString
+        sync: false
+        # À remplir manuellement avec la connection string Supabase
+        # Format: postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+      - key: SUPABASE_URL
+        value: https://mqhmwffpbumevkhtdjnd.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaG13ZmZwYnVtZXZraHRkam5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4Mzk5NjEsImV4cCI6MjA3NTQxNTk2MX0.Nka5IQNRWDMrFZKK31k3bHbxgR3F_HA2ZeWE58gzkew
       - key: WEB_CONCURRENCY
         value: 4
-
-databases:
-  - name: walee-db
-    databaseName: walee
-    user: walee
-    plan: free

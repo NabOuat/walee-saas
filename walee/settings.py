@@ -77,7 +77,7 @@ WSGI_APPLICATION = "walee.wsgi.application"
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Production: PostgreSQL sur Render
+    # Production: PostgreSQL (Supabase ou Render)
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -93,6 +93,10 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+# Supabase Configuration (pour API directe si nécessaire)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://mqhmwffpbumevkhtdjnd.supabase.co')
+SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 
 
 # Password validation
