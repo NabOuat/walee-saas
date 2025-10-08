@@ -45,6 +45,11 @@ class EntreprisesView(TemplateView):
     template_name = 'dashboard/admin/entreprises.html'
 
 
+class EntrepriseDetailView(TemplateView):
+    """Entreprise detail view"""
+    template_name = 'dashboard/admin/entreprise_detail.html'
+
+
 class EmployeesView(TemplateView):
     """Employees management view"""
     template_name = 'dashboard/admin/employees.html'

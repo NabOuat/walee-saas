@@ -580,20 +580,8 @@ function entreprisesData() {
         },
         
         selectEntreprise(entreprise) {
-            if (entreprise.active) {
-                // Si déjà active, aller au dashboard
-                window.location.href = '{% url "dashboard" %}';
-            } else {
-                // Marquer comme active
-                this.entreprises.forEach(e => e.active = false);
-                entreprise.active = true;
-                
-                // Sauvegarder dans localStorage
-                localStorage.setItem('entrepriseActive', entreprise.id);
-                
-                // Animation de confirmation (pas de redirection)
-                // L'utilisateur reste sur la page pour voir le changement
-            }
+            // Rediriger vers la vue détaillée de l'entreprise
+            window.location.href = `/dashboard/entreprises/${entreprise.id}/`;
         },
         
         editEntreprise(entreprise) {

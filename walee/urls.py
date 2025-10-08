@@ -26,6 +26,7 @@ urlpatterns = [
     # Dashboard
     path("dashboard/", views.DashboardView.as_view(), name='dashboard'),
     path("dashboard/entreprises/", views.EntreprisesView.as_view(), name='entreprises'),
+    path("dashboard/entreprises/<int:id>/", views.EntrepriseDetailView.as_view(), name='entreprise_detail'),
     path("dashboard/employees/", views.EmployeesView.as_view(), name='employees'),
     path("dashboard/ventes/", views.VentesView.as_view(), name='ventes'),
     path("dashboard/stock/", views.StockView.as_view(), name='stock'),

@@ -1,0 +1,895 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ entreprise.nom }} - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="entrepriseDetailData()">
+    
+    <!-- Header avec retour -->
+    <div class="mb-6">
+        <a href="{% url 'entreprises' %}" class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-walee-blue transition mb-4">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Retour aux entreprises</span>
+        </a>
+        
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <!-- Logo/Icône entreprise -->
+                <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                     :class="entreprise.gradient">
+                    <span x-text="entreprise.initiales"></span>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white" x-text="entreprise.nom"></h1>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium"
+                              :class="entreprise.actif ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'">
+                            <span x-text="entreprise.actif ? 'Active' : 'Inactive'"></span>
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="tag" class="w-4 h-4"></i>
+                            <span x-text="entreprise.secteur"></span>
+                        </span>
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span x-text="entreprise.ville"></span>
+                        </span>
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Créée le <span x-text="entreprise.dateCreation"></span></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center space-x-3">
+                <button @click="editEntreprise()" 
+                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="edit" class="w-4 h-4"></i>
+                    <span>Modifier</span>
+                </button>
+                <button @click="showSettings = true" 
+                        class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i data-lucide="settings" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- CA du mois -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                </div>
+                <span class="text-green-500 text-sm font-medium" x-text="stats.caEvolution"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">CA du mois</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="formatMoney(stats.caMois)"></p>
+        </div>
+        
+        <!-- Ventes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <span class="text-blue-500 text-sm font-medium" x-text="stats.ventesEvolution"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Ventes</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.ventesTotal"></p>
+        </div>
+        
+        <!-- Clients -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <span class="text-purple-500 text-sm font-medium">+<span x-text="stats.nouveauxClients"></span></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Clients</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.clientsTotal"></p>
+        </div>
+        
+        <!-- Employés -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <i data-lucide="user-check" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <span class="text-orange-500 text-sm font-medium" x-text="stats.employesActifs + ' actifs'"></span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Employés</p>
+            <p class="text-2xl font-bold text-walee-dark dark:text-white" x-text="stats.employesTotal"></p>
+        </div>
+    </div>
+    
+    <!-- Tabs Navigation -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
+                <button @click="activeTab = 'apercu'" 
+                        :class="activeTab === 'apercu' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 inline mr-2"></i>
+                    Aperçu
+                </button>
+                <button @click="activeTab = 'ventes'" 
+                        :class="activeTab === 'ventes' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="trending-up" class="w-4 h-4 inline mr-2"></i>
+                    Ventes
+                </button>
+                <button @click="activeTab = 'produits'" 
+                        :class="activeTab === 'produits' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>
+                    <span x-text="getSecteurLabel('produits')"></span>
+                </button>
+                <button @click="activeTab = 'clients'" 
+                        :class="activeTab === 'clients' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="users" class="w-4 h-4 inline mr-2"></i>
+                    Clients
+                </button>
+                <button @click="activeTab = 'employes'" 
+                        :class="activeTab === 'employes' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="user-check" class="w-4 h-4 inline mr-2"></i>
+                    Employés
+                </button>
+                <button @click="activeTab = 'informations'" 
+                        :class="activeTab === 'informations' ? 'border-walee-blue text-walee-blue' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition">
+                    <i data-lucide="info" class="w-4 h-4 inline mr-2"></i>
+                    Informations
+                </button>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Tab Content: Aperçu -->
+    <div x-show="activeTab === 'apercu'" x-transition class="space-y-6">
+        
+        <!-- Graphiques -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Evolution CA -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4">Évolution du CA</h3>
+                <div class="h-64">
+                    <canvas id="caChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Répartition selon secteur -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4" x-text="getSecteurChartTitle()"></h3>
+                <div class="h-64">
+                    <canvas id="secteurChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activité récente -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-4">Activité récente</h3>
+            <div class="space-y-3">
+                <template x-for="activite in activitesRecentes" :key="activite.id">
+                    <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                             :class="activite.iconBg">
+                            <i :data-lucide="activite.icon" class="w-5 h-5" :class="activite.iconColor"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="activite.titre"></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="activite.description"></p>
+                        </div>
+                        <span class="text-xs text-gray-400 dark:text-gray-500" x-text="activite.date"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Ventes -->
+    <div x-show="activeTab === 'ventes'" x-transition class="space-y-6">
+        
+        <!-- Filtres -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <select x-model="ventesFiltre.periode" 
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="year">Cette année</option>
+                </select>
+                <input type="text" 
+                       x-model="ventesFiltre.search"
+                       placeholder="Rechercher une vente..." 
+                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+            </div>
+        </div>
+        
+        <!-- Liste des ventes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Vente</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Client</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendeur</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="vente in filteredVentes" :key="vente.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                            <td class="px-6 py-4">
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.date"></p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-sm text-gray-900 dark:text-white" x-text="vente.client"></p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="vente.vendeur"></p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium"
+                                      :class="vente.statut === 'Payée' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'">
+                                    <span x-text="vente.statut"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <button @click="viewVente(vente)" 
+                                        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Produits/Services (adapté au secteur) -->
+    <div x-show="activeTab === 'produits'" x-transition class="space-y-6">
+        
+        <!-- Header avec bouton ajout -->
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold text-walee-dark dark:text-white" x-text="getSecteurLabel('produits')"></h3>
+            <button @click="addProduit()" 
+                    class="flex items-center space-x-2 px-4 py-2 bg-walee-green text-white rounded-lg hover:bg-emerald-600 transition">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Ajouter</span>
+            </button>
+        </div>
+        
+        <!-- Grille de produits/services -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="produit in produits" :key="produit.id">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer"
+                     @click="viewProduit(produit)">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                            <i :data-lucide="getProduitIcon()" class="w-6 h-6 text-gray-600 dark:text-gray-400"></i>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium"
+                              :class="produit.stock > produit.seuilMin ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'">
+                            <span x-text="produit.stock > produit.seuilMin ? 'En stock' : 'Stock faible'"></span>
+                        </span>
+                    </div>
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-2" x-text="produit.nom"></h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" x-text="produit.reference"></p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-bold text-walee-blue" x-text="formatMoney(produit.prix)"></span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Stock: <span x-text="produit.stock"></span></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Clients -->
+    <div x-show="activeTab === 'clients'" x-transition class="space-y-6">
+        
+        <!-- Liste des clients -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white">Clients de l'entreprise</h3>
+                <button @click="addClient()" 
+                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Nouveau client</span>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <template x-for="client in clients" :key="client.id">
+                    <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+                         @click="viewClient(client)">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                             :class="client.gradient">
+                            <span x-text="client.initiales"></span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="client.nom"></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="client.telephone"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(client.totalAchats)"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="client.nombreAchats + ' achats'"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Employés -->
+    <div x-show="activeTab === 'employes'" x-transition class="space-y-6">
+        
+        <!-- Liste des employés -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white">Équipe</h3>
+                <button @click="addEmploye()" 
+                        class="flex items-center space-x-2 px-4 py-2 bg-walee-blue text-white rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Ajouter un employé</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="employe in employes" :key="employe.id">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                         @click="viewEmploye(employe)">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                                 :class="employe.gradient">
+                                <span x-text="employe.initiales"></span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="employe.nom"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="employe.role"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400" x-text="employe.telephone"></span>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                  :class="employe.actif ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'">
+                                <span x-text="employe.actif ? 'Actif' : 'Inactif'"></span>
+                            </span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Tab Content: Informations -->
+    <div x-show="activeTab === 'informations'" x-transition class="space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Informations générales -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Informations générales</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="building-2" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Nom légal</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.nomLegal"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="hash" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">RCCM / N° d'immatriculation</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.rccm"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="tag" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Secteur d'activité</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.secteur"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Adresse</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.adresse"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="phone" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Téléphone</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.telephone"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="mail" class="w-5 h-5 text-gray-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="entreprise.email"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Paramètres spécifiques au secteur -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Paramètres du secteur</h3>
+                
+                <!-- Pressing -->
+                <div x-show="entreprise.secteur === 'Pressing'" class="space-y-4">
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p class="font-medium text-gray-900 dark:text-white mb-2">Services proposés</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Lavage</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Repassage</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Nettoyage à sec</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Express</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Délai standard</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">24-48h</span>
+                    </div>
+                </div>
+                
+                <!-- Supermarché -->
+                <div x-show="entreprise.secteur === 'Supermarché'" class="space-y-4">
+                    <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <p class="font-medium text-gray-900 dark:text-white mb-2">Catégories de produits</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Alimentation</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Boissons</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Hygiène</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Entretien</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Références en stock</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">1,234</span>
+                    </div>
+                </div>
+                
+                <!-- Restaurant -->
+                <div x-show="entreprise.secteur === 'Restaurant'" class="space-y-4">
+                    <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <p class="font-medium text-gray-900 dark:text-white mb-2">Type de cuisine</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Africaine</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Française</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Fast-food</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Capacité</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">50 couverts</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Horaires</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">11h - 23h</span>
+                    </div>
+                </div>
+                
+                <!-- Vente de véhicules -->
+                <div x-show="entreprise.secteur === 'Vente de véhicules'" class="space-y-4">
+                    <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <p class="font-medium text-gray-900 dark:text-white mb-2">Types de véhicules</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Voitures</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Motos</span>
+                            <span class="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-sm">Camions</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Véhicules en stock</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">24</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Garantie standard</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">12 mois</span>
+                    </div>
+                </div>
+                
+                <!-- Autres secteurs (générique) -->
+                <div x-show="!['Pressing', 'Supermarché', 'Restaurant', 'Vente de véhicules'].includes(entreprise.secteur)" class="space-y-4">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+                            Paramètres spécifiques disponibles selon le secteur d'activité
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Documents -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Documents</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Registre de commerce</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">PDF • 2.4 MB</p>
+                            </div>
+                        </div>
+                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                            <i data-lucide="download" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Attestation fiscale</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">PDF • 1.8 MB</p>
+                            </div>
+                        </div>
+                        <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition">
+                            <i data-lucide="download" class="w-4 h-4 text-gray-600 dark:text-gray-400"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button class="mt-4 w-full flex items-center justify-center space-x-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i data-lucide="upload" class="w-5 h-5 text-gray-400"></i>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Ajouter un document</span>
+                </button>
+            </div>
+            
+            <!-- Paramètres avancés -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-walee-dark dark:text-white mb-6">Paramètres</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">TVA</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Taxe sur la valeur ajoutée</p>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.tva + '%'"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Devise</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Monnaie par défaut</p>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.devise"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Fuseau horaire</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Heure locale</p>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="entreprise.timezone"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">Notifications</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Alertes actives</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" x-model="entreprise.notifications" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function entrepriseDetailData() {
+    return {
+        activeTab: 'apercu',
+        showSettings: false,
+        
+        // Données entreprise (à remplacer par données réelles du backend)
+        entreprise: {
+            id: 1,
+            nom: 'ACME Corporation',
+            nomLegal: 'ACME Corporation SARL',
+            initiales: 'AC',
+            secteur: 'Supermarché', // Pressing, Supermarché, Restaurant, Vente de véhicules, etc.
+            rccm: 'CI-ABJ-2023-B-12345',
+            adresse: '123 Boulevard de la République, Abidjan, Côte d\'Ivoire',
+            ville: 'Abidjan',
+            telephone: '+225 27 XX XX XX XX',
+            email: 'contact@acme.ci',
+            dateCreation: '15/01/2023',
+            actif: true,
+            tva: 18,
+            devise: 'FCFA',
+            timezone: 'Africa/Abidjan',
+            notifications: true,
+            gradient: 'bg-gradient-to-br from-walee-blue to-walee-indigo'
+        },
+        
+        stats: {
+            caMois: 5200000,
+            caEvolution: '+15.3%',
+            ventesTotal: 156,
+            ventesEvolution: '+8.2%',
+            clientsTotal: 89,
+            nouveauxClients: 12,
+            employesTotal: 8,
+            employesActifs: 6
+        },
+        
+        activitesRecentes: [
+            { id: 1, titre: 'Nouvelle vente', description: 'VNT-001 • 125,000 FCFA', date: 'Il y a 5 min', icon: 'shopping-cart', iconBg: 'bg-green-100 dark:bg-green-900', iconColor: 'text-green-600 dark:text-green-400' },
+            { id: 2, titre: 'Produit ajouté', description: 'Laptop HP Pavilion', date: 'Il y a 1h', icon: 'package', iconBg: 'bg-blue-100 dark:bg-blue-900', iconColor: 'text-blue-600 dark:text-blue-400' },
+            { id: 3, titre: 'Nouveau client', description: 'Jean Kouassi', date: 'Il y a 2h', icon: 'user-plus', iconBg: 'bg-purple-100 dark:bg-purple-900', iconColor: 'text-purple-600 dark:text-purple-400' }
+        ],
+        
+        ventes: [
+            { id: 1, numero: 'VNT-001', date: 'Aujourd\'hui 14:30', client: 'Jean Kouassi', vendeur: 'Marie Martin', montant: 125000, statut: 'Payée' },
+            { id: 2, numero: 'VNT-002', date: 'Aujourd\'hui 13:15', client: 'Fatou Diallo', vendeur: 'Jean Dupont', montant: 89500, statut: 'En attente' },
+            { id: 3, numero: 'VNT-003', date: 'Hier 16:20', client: 'Yao Brou', vendeur: 'Sophie Laurent', montant: 245000, statut: 'Payée' }
+        ],
+        
+        produits: [
+            { id: 1, nom: 'Laptop HP Pavilion', reference: 'PRD-001', prix: 450000, stock: 15, seuilMin: 10 },
+            { id: 2, nom: 'iPhone 13 Pro', reference: 'PRD-002', prix: 650000, stock: 8, seuilMin: 10 },
+            { id: 3, nom: 'Samsung Galaxy S23', reference: 'PRD-003', prix: 550000, stock: 5, seuilMin: 10 }
+        ],
+        
+        clients: [
+            { id: 1, nom: 'Jean Kouassi', initiales: 'JK', telephone: '+225 07 XX XX', totalAchats: 5600000, nombreAchats: 45, gradient: 'bg-gradient-to-br from-walee-blue to-walee-indigo' },
+            { id: 2, nom: 'Fatou Diallo', initiales: 'FD', telephone: '+225 05 XX XX', totalAchats: 4200000, nombreAchats: 38, gradient: 'bg-gradient-to-br from-purple-500 to-pink-600' },
+            { id: 3, nom: 'Yao Brou', initiales: 'YB', telephone: '+225 01 XX XX', totalAchats: 3800000, nombreAchats: 32, gradient: 'bg-gradient-to-br from-green-500 to-emerald-600' }
+        ],
+        
+        employes: [
+            { id: 1, nom: 'Marie Martin', initiales: 'MM', role: 'Gérante', telephone: '+225 07 XX XX', actif: true, gradient: 'bg-gradient-to-br from-walee-blue to-walee-indigo' },
+            { id: 2, nom: 'Jean Dupont', initiales: 'JD', role: 'Caissier', telephone: '+225 05 XX XX', actif: true, gradient: 'bg-gradient-to-br from-green-500 to-emerald-600' },
+            { id: 3, nom: 'Sophie Laurent', initiales: 'SL', role: 'Vendeuse', telephone: '+225 01 XX XX', actif: true, gradient: 'bg-gradient-to-br from-purple-500 to-pink-600' },
+            { id: 4, nom: 'Pierre Dubois', initiales: 'PD', role: 'Magasinier', telephone: '+225 09 XX XX', actif: false, gradient: 'bg-gradient-to-br from-gray-400 to-gray-600' }
+        ],
+        
+        ventesFiltre: {
+            periode: 'month',
+            search: ''
+        },
+        
+        get filteredVentes() {
+            return this.ventes.filter(v => {
+                if (!this.ventesFiltre.search) return true;
+                return v.numero.toLowerCase().includes(this.ventesFiltre.search.toLowerCase()) ||
+                       v.client.toLowerCase().includes(this.ventesFiltre.search.toLowerCase());
+            });
+        },
+        
+        init() {
+            this.$nextTick(() => {
+                this.initCharts();
+            });
+        },
+        
+        initCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#9CA3AF' : '#6B7280';
+            const gridColor = isDark ? '#374151' : '#E5E7EB';
+            
+            // CA Chart
+            const caCtx = document.getElementById('caChart');
+            if (caCtx) {
+                new Chart(caCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                        datasets: [{
+                            label: 'CA (FCFA)',
+                            data: [3200000, 3800000, 4100000, 4500000, 4800000, 5200000],
+                            borderColor: '#2563EB',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => (ctx.parsed.y / 1000000).toFixed(1) + 'M FCFA'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: gridColor },
+                                ticks: {
+                                    color: textColor,
+                                    callback: (val) => (val / 1000000).toFixed(1) + 'M'
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Secteur Chart (adapté au type d'entreprise)
+            const secteurCtx = document.getElementById('secteurChart');
+            if (secteurCtx) {
+                const chartData = this.getSecteurChartData();
+                new Chart(secteurCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            data: chartData.data,
+                            backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    padding: 12,
+                                    usePointStyle: true
+                                }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+        },
+        
+        getSecteurLabel(context) {
+            const labels = {
+                'Pressing': {
+                    produits: 'Services'
+                },
+                'Restaurant': {
+                    produits: 'Menu'
+                },
+                'Vente de véhicules': {
+                    produits: 'Véhicules'
+                },
+                'Supermarché': {
+                    produits: 'Produits'
+                }
+            };
+            
+            return labels[this.entreprise.secteur]?.[context] || 'Produits';
+        },
+        
+        getSecteurChartTitle() {
+            const titles = {
+                'Pressing': 'Répartition par service',
+                'Restaurant': 'Répartition par catégorie',
+                'Vente de véhicules': 'Répartition par type',
+                'Supermarché': 'Répartition par rayon'
+            };
+            return titles[this.entreprise.secteur] || 'Répartition des ventes';
+        },
+        
+        getSecteurChartData() {
+            const data = {
+                'Pressing': {
+                    labels: ['Lavage', 'Repassage', 'Nettoyage à sec', 'Express', 'Retouches'],
+                    data: [35, 25, 20, 15, 5]
+                },
+                'Restaurant': {
+                    labels: ['Plats', 'Boissons', 'Desserts', 'Entrées', 'Menu du jour'],
+                    data: [40, 25, 15, 10, 10]
+                },
+                'Vente de véhicules': {
+                    labels: ['Voitures', 'Motos', 'Camions', 'Pièces', 'Services'],
+                    data: [50, 20, 15, 10, 5]
+                },
+                'Supermarché': {
+                    labels: ['Alimentation', 'Boissons', 'Hygiène', 'Entretien', 'Autres'],
+                    data: [35, 25, 20, 15, 5]
+                }
+            };
+            
+            return data[this.entreprise.secteur] || {
+                labels: ['Catégorie 1', 'Catégorie 2', 'Catégorie 3', 'Autres'],
+                data: [40, 30, 20, 10]
+            };
+        },
+        
+        getProduitIcon() {
+            const icons = {
+                'Pressing': 'shirt',
+                'Restaurant': 'utensils',
+                'Vente de véhicules': 'car',
+                'Supermarché': 'shopping-bag'
+            };
+            return icons[this.entreprise.secteur] || 'package';
+        },
+        
+        editEntreprise() {
+            alert('✏️ Modification de l\'entreprise\n\nFonctionnalité à venir');
+        },
+        
+        viewVente(vente) {
+            alert(`📋 Détails de la vente ${vente.numero}\n\nClient: ${vente.client}\nMontant: ${this.formatMoney(vente.montant)}`);
+        },
+        
+        viewProduit(produit) {
+            alert(`📦 Détails du produit\n\n${produit.nom}\nPrix: ${this.formatMoney(produit.prix)}\nStock: ${produit.stock}`);
+        },
+        
+        viewClient(client) {
+            alert(`👤 Détails du client\n\n${client.nom}\nTotal achats: ${this.formatMoney(client.totalAchats)}\nNombre d'achats: ${client.nombreAchats}`);
+        },
+        
+        viewEmploye(employe) {
+            alert(`👨‍💼 Détails de l'employé\n\n${employe.nom}\nRôle: ${employe.role}\nStatut: ${employe.actif ? 'Actif' : 'Inactif'}`);
+        },
+        
+        addProduit() {
+            alert(`➕ Ajouter ${this.getSecteurLabel('produits')}\n\nFonctionnalité à venir`);
+        },
+        
+        addClient() {
+            alert('➕ Ajouter un client\n\nFonctionnalité à venir');
+        },
+        
+        addEmploye() {
+            alert('➕ Ajouter un employé\n\nFonctionnalité à venir');
+        },
+        
+        formatMoney(amount) {
+            if (amount >= 1000000) {
+                return (amount / 1000000).toFixed(1) + 'M FCFA';
+            }
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}
