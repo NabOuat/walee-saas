@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Page non trouvée - Walee{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-walee-blue via-walee-indigo to-purple-900 relative overflow-hidden">
+    
+    <!-- Animated Background -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-walee-green opacity-20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+    </div>
+    
+    <!-- Content -->
+    <div class="relative z-10 text-center px-4 animate-fade-in">
+        
+        <!-- Mascot -->
+        <div class="mb-8 animate-bounce-slow">
+            <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-64 h-64 mx-auto drop-shadow-2xl">
+        </div>
+        
+        <!-- Error Message -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-12 shadow-2xl border border-white/20">
+            <h1 class="text-9xl font-bold font-poppins text-white mb-4 animate-pulse">404</h1>
+            <h2 class="text-3xl font-bold text-white mb-4">Page non trouvée</h2>
+            <p class="text-xl text-blue-100 mb-8 max-w-md mx-auto">
+                Oups ! La page que vous recherchez semble avoir disparu dans les nuages...
+            </p>
+            
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <a href="{% url 'home' %}" 
+                   class="flex items-center space-x-2 px-8 py-4 bg-white text-walee-blue font-semibold rounded-xl hover:shadow-2xl transform hover:scale-105 transition duration-200">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span>Retour à l'accueil</span>
+                </a>
+                <button onclick="history.back()" 
+                        class="flex items-center space-x-2 px-8 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition duration-200 border border-white/30">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>Page précédente</span>
+                </button>
+            </div>
+            
+            <!-- Help Links -->
+            <div class="mt-8 pt-8 border-t border-white/20">
+                <p class="text-blue-200 mb-4">Besoin d'aide ?</p>
+                <div class="flex items-center justify-center space-x-6 text-sm">
+                    <a href="{% url 'dashboard' %}" class="text-white hover:text-walee-green transition flex items-center space-x-1">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="text-white hover:text-walee-green transition flex items-center space-x-1">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        <span>Support</span>
+                    </a>
+                    <a href="#" class="text-white hover:text-walee-green transition flex items-center space-x-1">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        <span>Documentation</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+{% endblock %}

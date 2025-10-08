@@ -5,6 +5,17 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 
 
+# Error handlers
+def error_404(request, exception):
+    """Custom 404 error page"""
+    return render(request, '404.html', status=404)
+
+
+def error_500(request):
+    """Custom 500 error page"""
+    return render(request, '500.html', status=500)
+
+
 class HomeView(TemplateView):
     """Landing page view"""
     template_name = 'home.html'

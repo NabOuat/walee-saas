@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erreur serveur - Walee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-red-500 via-red-600 to-red-700">
+    
+    <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
+        
+        <!-- Animated Background -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-orange-400 opacity-20 rounded-full blur-3xl animate-float"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-red-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+        </div>
+        
+        <!-- Content -->
+        <div class="relative z-10 text-center px-4 animate-fade-in max-w-2xl">
+            
+            <!-- Icon -->
+            <div class="mb-8">
+                <div class="w-32 h-32 mx-auto bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center animate-float">
+                    <i data-lucide="alert-triangle" class="w-16 h-16 text-white"></i>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-12 shadow-2xl border border-white/20">
+                <h1 class="text-8xl font-bold text-white mb-4">500</h1>
+                <h2 class="text-3xl font-bold text-white mb-4">Erreur serveur</h2>
+                <p class="text-xl text-red-100 mb-8">
+                    Oups ! Une erreur s'est produite sur nos serveurs. Nos équipes ont été notifiées et travaillent à résoudre le problème.
+                </p>
+                
+                <!-- Actions -->
+                <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <a href="/" 
+                       class="flex items-center space-x-2 px-8 py-4 bg-white text-red-600 font-semibold rounded-xl hover:shadow-2xl transform hover:scale-105 transition duration-200">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                        <span>Retour à l'accueil</span>
+                    </a>
+                    <button onclick="location.reload()" 
+                            class="flex items-center space-x-2 px-8 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition duration-200 border border-white/30">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+                
+                <!-- Help -->
+                <div class="mt-8 pt-8 border-t border-white/20">
+                    <p class="text-red-100 text-sm mb-4">
+                        Si le problème persiste, contactez notre support :
+                    </p>
+                    <div class="flex items-center justify-center space-x-6 text-sm">
+                        <a href="mailto:support@walee.com" class="text-white hover:text-red-200 transition flex items-center space-x-1">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            <span>support@walee.com</span>
+                        </a>
+                        <a href="tel:+2250700000000" class="text-white hover:text-red-200 transition flex items-center space-x-1">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                            <span>+225 07 00 00 00 00</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Error ID (for debugging) -->
+                <div class="mt-6 text-xs text-red-200 font-mono">
+                    Error ID: {{ request_id|default:"N/A" }}
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+    <script>
+        lucide.createIcons();
+    </script>
+    
+</body>
+</html>

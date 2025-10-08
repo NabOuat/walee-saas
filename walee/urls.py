@@ -7,6 +7,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from frontend import views
 
+# Custom error handlers
+handler404 = 'frontend.views.error_404'
+handler500 = 'frontend.views.error_500'
+
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),

@@ -74,7 +74,7 @@
                 </div>
                 
                 <!-- Login Form -->
-                <form class="space-y-6" x-data="{ showPassword: false, loginMethod: 'email' }" @submit.prevent="window.location.href='{% url 'loading' %}'">
+                <form class="space-y-6" x-data="loginFormData()" @submit.prevent="handleSubmit($event)" id="loginForm">
                     
                     <!-- Login Method Switcher -->
                     <div class="flex items-center justify-center space-x-2 bg-gray-100 rounded-xl p-1">
@@ -254,7 +254,61 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/cdn-fallback.js' %}"></script>
 <script>
+    function loginFormData() {
+        return {
+            showPassword: false,
+            loginMethod: 'email',
+            
+            handleSubmit(event) {
+                const form = event.target;
+                
+                // Get form values
+                const email = form.querySelector('#email')?.value;
+                const phone = form.querySelector('#phone')?.value;
+                const password = form.querySelector('#password').value;
+                
+                // Validate based on login method
+                let isValid = true;
+                
+                if (this.loginMethod === 'email') {
+                    const emailInput = form.querySelector('#email');
+                    const result = WaleeValidation.validateEmail(email);
+                    if (!result.valid) {
+                        WaleeValidation.showError(emailInput, result.message);
+                        isValid = false;
+                    } else {
+                        WaleeValidation.clearError(emailInput);
+                    }
+                } else {
+                    const phoneInput = form.querySelector('#phone');
+                    const result = WaleeValidation.validatePhone(phone);
+                    if (!result.valid) {
+                        WaleeValidation.showError(phoneInput, result.message);
+                        isValid = false;
+                    } else {
+                        WaleeValidation.clearError(phoneInput);
+                    }
+                }
+                
+                // Validate password
+                const passwordInput = form.querySelector('#password');
+                if (!password) {
+                    WaleeValidation.showError(passwordInput, 'Mot de passe requis');
+                    isValid = false;
+                } else {
+                    WaleeValidation.clearError(passwordInput);
+                }
+                
+                // If valid, redirect
+                if (isValid) {
+                    window.location.href = '{% url "loading" %}';
+                }
+            }
+        }
+    }
+    
     // Reinitialize icons after Alpine.js renders
     document.addEventListener('alpine:init', () => {
         setTimeout(() => {
@@ -268,6 +322,14 @@
             setTimeout(() => {
                 lucide.createIcons();
             }, 50);
+        }
+    });
+    
+    // Setup real-time validation
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('loginForm');
+        if (form && typeof WaleeValidation !== 'undefined') {
+            WaleeValidation.setupRealTimeValidation(form);
         }
     });
 </script>
