@@ -1,0 +1,46 @@
+[
+  {
+    "model": "accounts.categorieintegration",
+    "fields": {
+      "nom": "Gestion",
+      "slug": "gestion",
+      "description": "Outils de gestion quotidienne",
+      "icone": "briefcase",
+      "couleur": "#10B981",
+      "ordre": 1
+    }
+  },
+  {
+    "model": "accounts.categorieintegration",
+    "fields": {
+      "nom": "Intelligence",
+      "slug": "intelligence",
+      "description": "Intelligence artificielle et automatisation",
+      "icone": "brain",
+      "couleur": "#8B5CF6",
+      "ordre": 2
+    }
+  },
+  {
+    "model": "accounts.categorieintegration",
+    "fields": {
+      "nom": "Communication",
+      "slug": "communication",
+      "description": "Communication avec vos clients",
+      "icone": "message-circle",
+      "couleur": "#3B82F6",
+      "ordre": 3
+    }
+  },
+  {
+    "model": "accounts.categorieintegration",
+    "fields": {
+      "nom": "Paiement",
+      "slug": "paiement",
+      "description": "Solutions de paiement",
+      "icone": "credit-card",
+      "couleur": "#F59E0B",
+      "ordre": 4
+    }
+  }
+]

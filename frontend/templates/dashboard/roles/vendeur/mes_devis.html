@@ -1,0 +1,434 @@
+{% extends "dashboard/roles/vendeur/base_vendeur.html" %}
+{% load static %}
+
+{% block title %}Mes Devis - Vendeur - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="mesDevisData()" x-init="init()">
+    
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold font-poppins text-gray-900 dark:text-white">
+                Mes Devis
+            </h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Gérez et suivez vos devis clients
+            </p>
+        </div>
+        
+        <button @click="createDevis()" 
+                class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg hover:from-green-700 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium shadow-sm hover:shadow-md">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Nouveau Devis</span>
+        </button>
+    </div>
+
+    <!-- Stats avec Animation -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-200 cursor-pointer"
+             @click="filterByStatus('all')">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+            </div>
+            <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Total Devis</p>
+            <p class="text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-300" x-text="devis.length"></p>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200 cursor-pointer"
+             @click="filterByStatus('Accepté')">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
+            <p class="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide mb-1">Acceptés</p>
+            <p class="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300" x-text="devis.filter(d => d.statut === 'Accepté').length"></p>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 hover:shadow-md transition-all duration-200 cursor-pointer"
+             @click="filterByStatus('En attente')">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+            </div>
+            <p class="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">En Attente</p>
+            <p class="text-xl sm:text-2xl font-bold text-orange-700 dark:text-orange-300" x-text="devis.filter(d => d.statut === 'En attente').length"></p>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+            <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">Valeur Totale</p>
+            <p class="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-300" x-text="formatMoney(getTotalValue())"></p>
+        </div>
+    </div>
+
+    <!-- Barre de Recherche et Filtres -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <!-- Recherche -->
+            <div class="flex-1">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           @input="applyFilters()"
+                           placeholder="Rechercher par numéro, client..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            <!-- Filtre Statut -->
+            <select x-model="filterStatus" 
+                    @change="applyFilters()"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                <option value="all">Tous les statuts</option>
+                <option value="En attente">En attente</option>
+                <option value="Accepté">Accepté</option>
+                <option value="Refusé">Refusé</option>
+            </select>
+
+            <!-- Tri -->
+            <select x-model="sortBy" 
+                    @change="applyFilters()"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition">
+                <option value="date-desc">Plus récent</option>
+                <option value="date-asc">Plus ancien</option>
+                <option value="montant-desc">Montant décroissant</option>
+                <option value="montant-asc">Montant croissant</option>
+            </select>
+
+            <!-- Vue -->
+            <div class="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button @click="viewMode = 'grid'" 
+                        :class="viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+                        class="p-2 rounded transition">
+                    <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                </button>
+                <button @click="viewMode = 'list'" 
+                        :class="viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+                        class="p-2 rounded transition">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtres Actifs -->
+        <div x-show="filterStatus !== 'all' || searchQuery !== ''" 
+             x-transition
+             class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Filtres actifs:</span>
+            <button x-show="searchQuery !== ''" 
+                    @click="searchQuery = ''; applyFilters()"
+                    class="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                <span x-text="'Recherche: ' + searchQuery"></span>
+                <i data-lucide="x" class="w-3 h-3"></i>
+            </button>
+            <button x-show="filterStatus !== 'all'" 
+                    @click="filterStatus = 'all'; applyFilters()"
+                    class="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                <span x-text="'Statut: ' + filterStatus"></span>
+                <i data-lucide="x" class="w-3 h-3"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Résultats -->
+    <div x-show="filteredDevis.length === 0" class="text-center py-12">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="inbox" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 font-medium">Aucun devis trouvé</p>
+        <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Essayez de modifier vos filtres</p>
+    </div>
+
+    <!-- Vue Grille -->
+    <div x-show="viewMode === 'grid' && filteredDevis.length > 0" 
+         x-transition
+         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="devis in filteredDevis" :key="devis.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-700 transition-all duration-200 group">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-1 group-hover:text-green-600 dark:group-hover:text-green-400 transition" x-text="devis.numero"></h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 truncate" x-text="devis.client"></p>
+                    </div>
+                    <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                          :class="getStatutClass(devis.statut)">
+                        <span x-text="devis.statut"></span>
+                    </span>
+                </div>
+
+                <!-- Détails -->
+                <div class="space-y-2.5 mb-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Date</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="devis.date"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i data-lucide="coins" class="w-4 h-4"></i>
+                            <span>Montant</span>
+                        </div>
+                        <span class="font-bold text-green-600 dark:text-green-400" x-text="formatMoney(devis.montant)"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i data-lucide="timer" class="w-4 h-4"></i>
+                            <span>Validité</span>
+                        </div>
+                        <span class="text-gray-900 dark:text-white" x-text="devis.validite"></span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <button @click="viewDevis(devis)" 
+                            class="flex-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        <span>Voir</span>
+                    </button>
+                    <button x-show="devis.statut === 'Accepté'" 
+                            @click="convertToFacture(devis)" 
+                            class="flex-1 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2">
+                        <i data-lucide="file-check" class="w-4 h-4"></i>
+                        <span>Convertir</span>
+                    </button>
+                    <button @click="downloadPDF(devis)" 
+                            class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
+                            title="Télécharger PDF">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Vue Liste -->
+    <div x-show="viewMode === 'list' && filteredDevis.length > 0" 
+         x-transition
+         class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- Mobile -->
+        <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
+            <template x-for="devis in filteredDevis" :key="devis.id">
+                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-bold text-gray-900 dark:text-white" x-text="devis.numero"></span>
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold"
+                                      :class="getStatutClass(devis.statut)"
+                                      x-text="devis.statut"></span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 truncate" x-text="devis.client"></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Date:</span>
+                            <span class="ml-1 text-gray-900 dark:text-white font-medium" x-text="devis.date"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Validité:</span>
+                            <span class="ml-1 text-gray-900 dark:text-white font-medium" x-text="devis.validite"></span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-green-600 dark:text-green-400" x-text="formatMoney(devis.montant)"></span>
+                        <div class="flex gap-1">
+                            <button @click="viewDevis(devis)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            <button x-show="devis.statut === 'Accepté'" @click="convertToFacture(devis)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition">
+                                <i data-lucide="file-check" class="w-4 h-4"></i>
+                            </button>
+                            <button @click="downloadPDF(devis)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Desktop -->
+        <div class="hidden sm:block overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Numéro</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Client</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Validité</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="devis in filteredDevis" :key="devis.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                            <td class="px-6 py-4 text-sm font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap" x-text="devis.numero"></td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white" x-text="devis.client"></td>
+                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap" x-text="devis.date"></td>
+                            <td class="px-6 py-4 text-right text-sm font-bold text-green-600 dark:text-green-400 whitespace-nowrap" x-text="formatMoney(devis.montant)"></td>
+                            <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap" x-text="devis.validite"></td>
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                                      :class="getStatutClass(devis.statut)"
+                                      x-text="devis.statut"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button @click="viewDevis(devis)" 
+                                            class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                            title="Voir détails">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <button x-show="devis.statut === 'Accepté'" 
+                                            @click="convertToFacture(devis)" 
+                                            class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition"
+                                            title="Convertir en facture">
+                                        <i data-lucide="file-check" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click="downloadPDF(devis)" 
+                                            class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                                            title="Télécharger PDF">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function mesDevisData() {
+    return {
+        viewMode: 'grid',
+        searchQuery: '',
+        filterStatus: 'all',
+        sortBy: 'date-desc',
+        
+        devisList: [
+            { id: 1, numero: 'DEV-001', client: 'Entreprise A', date: '18/10/2025', montant: 450000, validite: '30 jours', statut: 'En attente' },
+            { id: 2, numero: 'DEV-002', client: 'Client B', date: '17/10/2025', montant: 280000, validite: '15 jours', statut: 'Accepté' },
+            { id: 3, numero: 'DEV-003', client: 'Société C', date: '16/10/2025', montant: 150000, validite: '30 jours', statut: 'Refusé' },
+            { id: 4, numero: 'DEV-004', client: 'Client D', date: '15/10/2025', montant: 520000, validite: '45 jours', statut: 'En attente' },
+            { id: 5, numero: 'DEV-005', client: 'Entreprise E', date: '14/10/2025', montant: 380000, validite: '30 jours', statut: 'Accepté' },
+            { id: 6, numero: 'DEV-006', client: 'Société F', date: '13/10/2025', montant: 195000, validite: '20 jours', statut: 'En attente' },
+            { id: 7, numero: 'DEV-007', client: 'Client G', date: '12/10/2025', montant: 680000, validite: '45 jours', statut: 'Accepté' }
+        ],
+        
+        get devis() {
+            return this.devisList;
+        },
+        
+        get filteredDevis() {
+            let result = this.devisList;
+            
+            // Filtre par recherche
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                result = result.filter(d => 
+                    d.numero.toLowerCase().includes(query) ||
+                    d.client.toLowerCase().includes(query)
+                );
+            }
+            
+            // Filtre par statut
+            if (this.filterStatus !== 'all') {
+                result = result.filter(d => d.statut === this.filterStatus);
+            }
+            
+            // Tri
+            result = [...result].sort((a, b) => {
+                switch(this.sortBy) {
+                    case 'date-desc':
+                        return new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-'));
+                    case 'date-asc':
+                        return new Date(a.date.split('/').reverse().join('-')) - new Date(b.date.split('/').reverse().join('-'));
+                    case 'montant-desc':
+                        return b.montant - a.montant;
+                    case 'montant-asc':
+                        return a.montant - b.montant;
+                    default:
+                        return 0;
+                }
+            });
+            
+            return result;
+        },
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        applyFilters() {
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        filterByStatus(status) {
+            this.filterStatus = status;
+            this.applyFilters();
+        },
+        
+        getTotalValue() {
+            return this.devis.reduce((sum, d) => sum + d.montant, 0);
+        },
+        
+        getStatutClass(statut) {
+            const classes = {
+                'En attente': 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+                'Accepté': 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+                'Refusé': 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        },
+        
+        createDevis() {
+            alert('📝 Création d\'un nouveau devis');
+        },
+        
+        viewDevis(devis) {
+            alert(`📄 Détails du devis ${devis.numero}`);
+        },
+        
+        convertToFacture(devis) {
+            if (confirm(`Convertir le devis ${devis.numero} en facture ?`)) {
+                alert(`✅ Devis ${devis.numero} converti en facture`);
+            }
+        },
+        
+        downloadPDF(devis) {
+            alert(`📥 Téléchargement PDF de ${devis.numero}`);
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

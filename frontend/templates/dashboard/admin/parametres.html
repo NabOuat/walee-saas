@@ -434,29 +434,79 @@
     <!-- Tab Content: Intégrations -->
     <div x-show="activeTab === 'integrations'" x-transition.opacity class="space-y-6">
         
+        <!-- Filtres -->
+        <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+            <button 
+                @click="categorieIntegration = 'toutes'"
+                :class="categorieIntegration === 'toutes' ? 'bg-walee-blue text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap">
+                Toutes
+            </button>
+            <template x-for="cat in categoriesIntegrations" :key="cat.slug">
+                <button 
+                    @click="categorieIntegration = cat.slug"
+                    :class="categorieIntegration === cat.slug ? 'bg-walee-blue text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex items-center space-x-2">
+                    <i :data-lucide="cat.icone" class="w-4 h-4"></i>
+                    <span x-text="cat.nom"></span>
+                </button>
+            </template>
+        </div>
+        
+        <!-- Grille des intégrations -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             
-            <template x-for="integration in integrations" :key="integration.id">
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                     @click="showInfo('integration_' + integration.id)">
-                    <div class="flex items-center space-x-4 mb-4">
+            <template x-for="integration in integrationsFiltrees" :key="integration.id">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start space-x-4 mb-4">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                             :class="integration.bgColor">
-                            <i :data-lucide="integration.icon" class="w-6 h-6" :class="integration.iconColor"></i>
+                             :style="{backgroundColor: integration.couleur + '20'}">
+                            <i :data-lucide="integration.icone" class="w-6 h-6" :style="{color: integration.couleur}"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-gray-900 dark:text-white" x-text="integration.name"></h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="integration.description"></p>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <h4 class="font-bold text-gray-900 dark:text-white" x-text="integration.nom"></h4>
+                                <span x-show="integration.populaire" class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-semibold rounded-full">
+                                    Populaire
+                                </span>
+                                <span x-show="!integration.gratuit" class="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-semibold rounded-full">
+                                    <span x-text="integration.prix_mensuel"></span> FCFA/mois
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="integration.description_courte"></p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer" @click.stop>
-                            <input type="checkbox" x-model="integration.enabled" class="sr-only peer">
+                            <input type="checkbox" 
+                                   :checked="integration.est_activee" 
+                                   @change="toggleIntegration(integration)"
+                                   class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-walee-blue"></div>
                         </label>
                     </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400" x-text="integration.details"></p>
+                    
+                    <!-- Fonctionnalités (2 premières) -->
+                    <ul class="space-y-1 mb-3">
+                        <template x-for="(fonc, index) in integration.fonctionnalites.slice(0, 2)" :key="index">
+                            <li class="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                                <i data-lucide="check" class="w-3 h-3 text-green-500 mr-2"></i>
+                                <span x-text="fonc"></span>
+                            </li>
+                        </template>
+                    </ul>
+                    
+                    <button @click="voirDetailsIntegration(integration)"
+                            class="text-sm text-walee-blue hover:text-blue-700 dark:hover:text-blue-400 font-medium">
+                        Voir détails →
+                    </button>
                 </div>
             </template>
             
+        </div>
+        
+        <!-- Message si aucune intégration -->
+        <div x-show="integrationsFiltrees.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
+            <i data-lucide="inbox" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+            <p class="text-gray-600 dark:text-gray-400">Aucune intégration dans cette catégorie</p>
         </div>
         
     </div>
@@ -564,48 +614,92 @@ function parametresData() {
             { id: 3, month: 'Novembre 2023', date: '15/11/2023', amount: '25,000' }
         ],
         
-        integrations: [
-            { 
-                id: 1, 
-                name: 'WhatsApp Business', 
-                description: 'Notifications clients',
-                details: 'Envoyez des notifications de vente et factures via WhatsApp',
-                icon: 'message-circle',
-                bgColor: 'bg-green-100 dark:bg-green-900/30',
-                iconColor: 'text-green-600 dark:text-green-400',
-                enabled: false
-            },
-            { 
-                id: 2, 
-                name: 'Stripe', 
-                description: 'Paiements en ligne',
-                details: 'Acceptez les paiements par carte bancaire',
-                icon: 'credit-card',
-                bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-                iconColor: 'text-purple-600 dark:text-purple-400',
-                enabled: true
-            },
-            { 
-                id: 3, 
-                name: 'Google Analytics', 
-                description: 'Analyse de trafic',
-                details: 'Suivez vos performances avec Google Analytics',
-                icon: 'bar-chart-2',
-                bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-                iconColor: 'text-orange-600 dark:text-orange-400',
-                enabled: false
-            },
-            { 
-                id: 4, 
-                name: 'Zapier', 
-                description: 'Automatisations',
-                details: 'Connectez Walee à 5000+ applications',
-                icon: 'zap',
-                bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-                iconColor: 'text-blue-600 dark:text-blue-400',
-                enabled: false
+        // Intégrations (chargées depuis l'API)
+        integrations: [],
+        categoriesIntegrations: [],
+        categorieIntegration: 'toutes',
+        
+        async init() {
+            await this.chargerIntegrations();
+            await this.chargerCategoriesIntegrations();
+        },
+        
+        async chargerIntegrations() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/integrations/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.integrations = data.data;
+                }
+            } catch (error) {
+                console.error('Erreur chargement intégrations:', error);
             }
-        ],
+        },
+        
+        async chargerCategoriesIntegrations() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/integrations/categories/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.categoriesIntegrations = data.data;
+                }
+            } catch (error) {
+                console.error('Erreur chargement catégories:', error);
+            }
+        },
+        
+        async toggleIntegration(integration) {
+            const action = integration.est_activee ? 'desactiver' : 'activer';
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`/api/integrations/${action}/${integration.slug}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    integration.est_activee = !integration.est_activee;
+                    // Notification de succès
+                    console.log(data.message);
+                }
+            } catch (error) {
+                console.error('Erreur toggle intégration:', error);
+            }
+        },
+        
+        voirDetailsIntegration(integration) {
+            this.showInfo('integration_detail');
+            this.infoModal = {
+                title: integration.nom,
+                description: integration.description,
+                icon: integration.icone,
+                iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+                iconColor: 'text-blue-600 dark:text-blue-400',
+                tips: integration.fonctionnalites
+            };
+        },
+        
+        get integrationsFiltrees() {
+            if (this.categorieIntegration === 'toutes') {
+                return this.integrations;
+            }
+            return this.integrations.filter(i => i.categorie.slug === this.categorieIntegration);
+        },
         
         infoContent: {
             'apparence': {

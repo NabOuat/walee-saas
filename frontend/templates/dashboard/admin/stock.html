@@ -4,7 +4,7 @@
 {% block title %}Stock - Walee{% endblock %}
 
 {% block dashboard_content %}
-<div x-data="stockData()">
+<div x-data="stockApp()" x-init="init()">
     
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -423,8 +423,16 @@
 
 {% block extra_js %}
 <script>
-function stockData() {
+function stockApp() {
     return {
+        init() {
+            // Initialisation
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 100);
+        },
         showAddProductModal: false,
         selectedEntreprise: '',
         searchQuery: '',

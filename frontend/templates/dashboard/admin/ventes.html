@@ -4,7 +4,7 @@
 {% block title %}Ventes - Walee{% endblock %}
 
 {% block dashboard_content %}
-<div x-data="ventesData()">
+<div x-data="ventesApp()" x-init="init()">
     
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -451,8 +451,16 @@
 
 {% block extra_js %}
 <script>
-function ventesData() {
+function ventesApp() {
     return {
+        init() {
+            // Initialisation
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 100);
+        },
         showNewSaleModal: false,
         selectedEntreprise: '',
         searchQuery: '',

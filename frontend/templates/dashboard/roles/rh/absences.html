@@ -1,0 +1,339 @@
+{% extends "dashboard/roles/rh/base_rh.html" %}
+{% load static %}
+{% block title %}Gestion des Absences - RH - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="absencesData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Absences</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Suivi en temps réel</p>
+        </div>
+        <button @click.prevent="openModal('nouvelle')" 
+                class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Déclarer Absence</span>
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="user-check" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-green-900 dark:text-green-100">42</p>
+            <p class="text-xs text-green-600 dark:text-green-400 font-medium">Présents Aujourd'hui</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+            <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="user-x" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-red-900 dark:text-red-100" x-text="absences.filter(a=>a.statut==='Absent').length"></p>
+            <p class="text-xs text-red-600 dark:text-red-400 font-medium">Absents</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+            <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-orange-900 dark:text-orange-100">1</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 font-medium">Retards</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="percent" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-blue-900 dark:text-blue-100">93%</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Taux Présence</p>
+        </div>
+    </div>
+
+    <!-- Absences List -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Absences du Jour</h3>
+        </div>
+        <div class="p-6 space-y-3">
+            <template x-for="absence in absences" :key="absence.id">
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-400 to-orange-400 flex items-center justify-center text-white font-bold">
+                            <span x-text="absence.employe.split(' ').map(n=>n[0]).join('')"></span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 dark:text-white" x-text="absence.employe"></h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400" x-text="absence.poste"></p>
+                            <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span class="flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    <span x-text="absence.date"></span>
+                                </span>
+                                <span class="px-2 py-0.5 rounded-full font-semibold" 
+                                      :class="absence.type==='Maladie'?'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400':'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'" 
+                                      x-text="absence.type"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <template x-if="absence.justificatif">
+                            <span class="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <i data-lucide="file-check" class="w-4 h-4"></i>
+                                <span>Justifié</span>
+                            </span>
+                        </template>
+                        <template x-if="!absence.justificatif">
+                            <span class="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                <span>Non justifié</span>
+                            </span>
+                        </template>
+                        <button @click.prevent="viewDetails(absence)" 
+                                class="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Modal Détails Absence -->
+    <div x-show="modalOpen === 'details'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+                <template x-if="selectedAbsence">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-red-400 to-orange-400 flex items-center justify-center text-white text-xl font-bold">
+                                    <span x-text="selectedAbsence.employe.split(' ').map(n=>n[0]).join('')"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedAbsence.employe"></h3>
+                                    <p class="text-gray-600 dark:text-gray-400" x-text="selectedAbsence.poste"></p>
+                                    <span class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="selectedAbsence.type==='Maladie'?'bg-red-100 text-red-700':'bg-orange-100 text-orange-700'"
+                                          x-text="selectedAbsence.type"></span>
+                                </div>
+                            </div>
+                            <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Info Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    Date d'absence
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedAbsence.date"></p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="file-text" class="w-3 h-3"></i>
+                                    Justificatif
+                                </p>
+                                <p class="font-medium" :class="selectedAbsence.justificatif?'text-green-600':'text-orange-600'">
+                                    <span x-text="selectedAbsence.justificatif ? 'Fourni' : 'Non fourni'"></span>
+                                </p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="tag" class="w-3 h-3"></i>
+                                    Type
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedAbsence.type"></p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                    Statut
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedAbsence.statut"></p>
+                            </div>
+                        </div>
+
+                        <!-- Commentaire -->
+                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+                            <p class="text-xs text-blue-600 dark:text-blue-400 mb-2 font-semibold flex items-center gap-1">
+                                <i data-lucide="message-square" class="w-3 h-3"></i>
+                                Commentaire
+                            </p>
+                            <p class="text-sm text-blue-900 dark:text-blue-100">
+                                Absence pour raison de santé. Certificat médical fourni.
+                            </p>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button @click.prevent="validerAbsence(selectedAbsence)"
+                                    class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-5 h-5"></i>
+                                <span>Valider</span>
+                            </button>
+                            <button @click.prevent="rejeterAbsence(selectedAbsence)"
+                                    class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                                <span>Rejeter</span>
+                            </button>
+                            <button @click="closeModal()"
+                                    class="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Absence -->
+    <div x-show="modalOpen === 'nouvelle'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Déclarer une Absence</h3>
+                    <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveAbsence()" class="space-y-4">
+                    <select required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Sélectionner un employé...</option>
+                        <option>Jean Kouassi</option>
+                        <option>Marie Diabaté</option>
+                        <option>Paul Traoré</option>
+                    </select>
+
+                    <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+
+                    <select required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Type d'absence...</option>
+                        <option>Maladie</option>
+                        <option>Congé</option>
+                        <option>Personnel</option>
+                        <option>Autre</option>
+                    </select>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="justificatif" class="w-4 h-4 text-indigo-600 rounded">
+                        <label for="justificatif" class="text-sm text-gray-700 dark:text-gray-300">Justificatif fourni</label>
+                    </div>
+
+                    <textarea placeholder="Commentaire..." rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg"></textarea>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" @click="closeModal()" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                            Annuler
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-transition 
+         class="fixed top-4 right-4 z-50 max-w-md" 
+         style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+            <div :class="{
+                'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400': toast.type === 'success',
+                'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400': toast.type === 'info',
+                'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': toast.type === 'error'
+            }" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                <i :data-lucide="toast.type === 'success' ? 'check-circle' : (toast.type === 'error' ? 'alert-circle' : 'info')" class="w-5 h-5"></i>
+            </div>
+            <p class="flex-1 text-sm font-medium text-gray-900 dark:text-white" x-text="toast.message"></p>
+            <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function absencesData() {
+    return {
+        modalOpen: null,
+        selectedAbsence: null,
+        toast: { show: false, message: '', type: 'success' },
+        
+        absences: [
+            { id: 1, employe: 'Sophie Koné', poste: 'Comptable', date: '20/10/2025', type: 'Maladie', justificatif: true, statut: 'Absent' },
+            { id: 2, employe: 'Ahmed Touré', poste: 'Vendeur', date: '20/10/2025', type: 'Personnel', justificatif: false, statut: 'Absent' },
+            { id: 3, employe: 'Fatou Diallo', poste: 'RH', date: '20/10/2025', type: 'Congé', justificatif: true, statut: 'Absent' }
+        ],
+
+        init() {
+            lucide.createIcons();
+        },
+
+        openModal(type) {
+            this.modalOpen = type;
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        closeModal() {
+            this.modalOpen = null;
+            this.selectedAbsence = null;
+        },
+
+        viewDetails(absence) {
+            this.selectedAbsence = absence;
+            this.openModal('details');
+        },
+
+        validerAbsence(absence) {
+            this.showToast(`✅ Absence de ${absence.employe} validée`, 'success');
+            this.closeModal();
+        },
+
+        rejeterAbsence(absence) {
+            this.showToast(`❌ Absence de ${absence.employe} rejetée`, 'error');
+            this.closeModal();
+        },
+
+        saveAbsence() {
+            this.showToast('✅ Absence enregistrée avec succès !', 'success');
+            this.closeModal();
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 3000);
+            this.$nextTick(() => lucide.createIcons());
+        }
+    }
+}
+</script>
+{% endblock %}

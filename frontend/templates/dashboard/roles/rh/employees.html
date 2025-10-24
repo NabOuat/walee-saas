@@ -1,0 +1,418 @@
+{% extends "dashboard/roles/rh/base_rh.html" %}
+{% load static %}
+
+{% block title %}Gestion des Employés - RH - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="employeesData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Employés</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Vue d'ensemble du personnel</p>
+        </div>
+        <button @click.prevent="openModal('nouveau')" 
+                class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Nouvel Employé</span>
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="users" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-blue-900 dark:text-blue-100" x-text="employees.length"></p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Employés</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="user-check" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-green-900 dark:text-green-100" x-text="employees.filter(e=>e.statut==='Actif').length"></p>
+            <p class="text-xs text-green-600 dark:text-green-400 font-medium">Actifs</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="briefcase" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-purple-900 dark:text-purple-100">8</p>
+            <p class="text-xs text-purple-600 dark:text-purple-400 font-medium">Départements</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+            <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-orange-900 dark:text-orange-100">3</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 font-medium">En Congé</p>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           placeholder="Rechercher un employé..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <select x-model="filterDepartement" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                <option value="">Tous les départements</option>
+                <option>Ventes</option>
+                <option>Comptabilité</option>
+                <option>RH</option>
+                <option>IT</option>
+                <option>Marketing</option>
+            </select>
+            <select x-model="filterStatut" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                <option value="">Tous les statuts</option>
+                <option>Actif</option>
+                <option>En Congé</option>
+                <option>Inactif</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Employees Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="employee in filteredEmployees" :key="employee.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
+                <!-- Card Header with Avatar -->
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white relative">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold border-2 border-white/30">
+                                <span x-text="employee.nom.split(' ').map(n=>n[0]).join('')"></span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg" x-text="employee.nom"></h3>
+                                <p class="text-sm text-white/80" x-text="employee.poste"></p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                              :class="{
+                                  'bg-green-400/20 text-green-100': employee.statut === 'Actif',
+                                  'bg-orange-400/20 text-orange-100': employee.statut === 'En Congé',
+                                  'bg-gray-400/20 text-gray-100': employee.statut === 'Inactif'
+                              }"
+                              x-text="employee.statut"></span>
+                    </div>
+                </div>
+
+                <!-- Card Body -->
+                <div class="p-6 space-y-4">
+                    <!-- Info Grid -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                <i data-lucide="briefcase" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Département</p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="employee.departement"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+                                <i data-lucide="calendar" class="w-4 h-4 text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Ancienneté</p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="employee.anciennete"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                                <i data-lucide="mail" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                                <p class="font-medium text-gray-900 dark:text-white text-xs truncate" x-text="employee.email"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                <i data-lucide="phone" class="w-4 h-4 text-orange-600 dark:text-orange-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Téléphone</p>
+                                <p class="font-medium text-gray-900 dark:text-white text-xs" x-text="employee.telephone"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Bar -->
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="text-gray-600 dark:text-gray-400">Performance</span>
+                            <span class="font-semibold text-gray-900 dark:text-white" x-text="employee.performance + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                                 :style="`width: ${employee.performance}%`"></div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2 pt-2">
+                        <button @click.prevent="viewEmployee(employee)"
+                                class="flex-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-sm font-medium flex items-center justify-center gap-1">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>Voir</span>
+                        </button>
+                        <button @click.prevent="editEmployee(employee)"
+                                class="flex-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-sm font-medium flex items-center justify-center gap-1">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                            <span>Modifier</span>
+                        </button>
+                        <button @click.prevent="showEmployeeMenu(employee)"
+                                class="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="filteredEmployees.length === 0" class="text-center py-12">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="users" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Aucun employé trouvé</h3>
+        <p class="text-gray-600 dark:text-gray-400">Essayez de modifier vos filtres de recherche</p>
+    </div>
+
+    <!-- Modal Détails Employé -->
+    <div x-show="modalOpen === 'details'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full p-6">
+                <template x-if="selectedEmployee">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                                    <span x-text="selectedEmployee.nom.split(' ').map(n=>n[0]).join('')"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedEmployee.nom"></h3>
+                                    <p class="text-gray-600 dark:text-gray-400" x-text="selectedEmployee.poste"></p>
+                                    <span class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="{
+                                              'bg-green-100 text-green-700': selectedEmployee.statut === 'Actif',
+                                              'bg-orange-100 text-orange-700': selectedEmployee.statut === 'En Congé',
+                                              'bg-gray-100 text-gray-700': selectedEmployee.statut === 'Inactif'
+                                          }"
+                                          x-text="selectedEmployee.statut"></span>
+                                </div>
+                            </div>
+                            <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Info Tabs -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+                            <div class="flex gap-4">
+                                <button @click="activeTab = 'info'" 
+                                        :class="activeTab === 'info' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600'"
+                                        class="px-4 py-2 border-b-2 font-medium transition">
+                                    Informations
+                                </button>
+                                <button @click="activeTab = 'contrat'" 
+                                        :class="activeTab === 'contrat' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600'"
+                                        class="px-4 py-2 border-b-2 font-medium transition">
+                                    Contrat
+                                </button>
+                                <button @click="activeTab = 'historique'" 
+                                        :class="activeTab === 'historique' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600'"
+                                        class="px-4 py-2 border-b-2 font-medium transition">
+                                    Historique
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div x-show="activeTab === 'info'" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Email</p>
+                                    <p class="font-medium text-gray-900 dark:text-white" x-text="selectedEmployee.email"></p>
+                                </div>
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Téléphone</p>
+                                    <p class="font-medium text-gray-900 dark:text-white" x-text="selectedEmployee.telephone"></p>
+                                </div>
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Département</p>
+                                    <p class="font-medium text-gray-900 dark:text-white" x-text="selectedEmployee.departement"></p>
+                                </div>
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Ancienneté</p>
+                                    <p class="font-medium text-gray-900 dark:text-white" x-text="selectedEmployee.anciennete"></p>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Performance</p>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full"
+                                             :style="`width: ${selectedEmployee.performance}%`"></div>
+                                    </div>
+                                    <span class="font-bold text-gray-900 dark:text-white" x-text="selectedEmployee.performance + '%'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div x-show="activeTab === 'contrat'" class="space-y-4">
+                            <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <p class="text-sm text-blue-900 dark:text-blue-100">📄 Contrat CDI - Temps plein</p>
+                                <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">Date de début: 15/01/2023</p>
+                            </div>
+                        </div>
+
+                        <div x-show="activeTab === 'historique'" class="space-y-3">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Promotion - Chef d'équipe</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">01/06/2024</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Formation - Leadership</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">15/03/2024</p>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <button @click.prevent="editEmployee(selectedEmployee)"
+                                    class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+                                Modifier
+                            </button>
+                            <button @click="closeModal()"
+                                    class="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-transition 
+         class="fixed top-4 right-4 z-50 max-w-md" 
+         style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+            <div :class="{
+                'bg-green-100 text-green-600': toast.type === 'success',
+                'bg-blue-100 text-blue-600': toast.type === 'info',
+                'bg-red-100 text-red-600': toast.type === 'error'
+            }" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                <i :data-lucide="toast.type === 'success' ? 'check-circle' : (toast.type === 'error' ? 'alert-circle' : 'info')" class="w-5 h-5"></i>
+            </div>
+            <p class="flex-1 text-sm font-medium text-gray-900 dark:text-white" x-text="toast.message"></p>
+            <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function employeesData() {
+    return {
+        modalOpen: null,
+        activeTab: 'info',
+        searchQuery: '',
+        filterDepartement: '',
+        filterStatut: '',
+        toast: { show: false, message: '', type: 'success' },
+        selectedEmployee: null,
+        
+        employees: [
+            { id: 1, nom: 'Jean Kouassi', poste: 'Directeur Commercial', departement: 'Ventes', email: 'jean.k@walee.ci', telephone: '+225 07 12 34 56', anciennete: '3 ans', statut: 'Actif', performance: 92 },
+            { id: 2, nom: 'Marie Diabaté', poste: 'Comptable Senior', departement: 'Comptabilité', email: 'marie.d@walee.ci', telephone: '+225 05 98 76 54', anciennete: '5 ans', statut: 'Actif', performance: 88 },
+            { id: 3, nom: 'Paul Traoré', poste: 'Chef de Projet IT', departement: 'IT', email: 'paul.t@walee.ci', telephone: '+225 01 23 45 67', anciennete: '2 ans', statut: 'Actif', performance: 95 },
+            { id: 4, nom: 'Sophie Koné', poste: 'RH Manager', departement: 'RH', email: 'sophie.k@walee.ci', telephone: '+225 07 11 22 33', anciennete: '4 ans', statut: 'En Congé', performance: 90 },
+            { id: 5, nom: 'Ahmed Touré', poste: 'Vendeur', departement: 'Ventes', email: 'ahmed.t@walee.ci', telephone: '+225 05 44 55 66', anciennete: '1 an', statut: 'Actif', performance: 78 },
+            { id: 6, nom: 'Fatou Diallo', poste: 'Assistante RH', departement: 'RH', email: 'fatou.d@walee.ci', telephone: '+225 01 77 88 99', anciennete: '2 ans', statut: 'Actif', performance: 85 },
+            { id: 7, nom: 'Ibrahim Sanogo', poste: 'Développeur', departement: 'IT', email: 'ibrahim.s@walee.ci', telephone: '+225 07 99 00 11', anciennete: '3 ans', statut: 'Actif', performance: 91 },
+            { id: 8, nom: 'Aïcha Bamba', poste: 'Marketing Manager', departement: 'Marketing', email: 'aicha.b@walee.ci', telephone: '+225 05 22 33 44', anciennete: '4 ans', statut: 'Actif', performance: 87 }
+        ],
+
+        get filteredEmployees() {
+            return this.employees.filter(emp => {
+                const matchSearch = !this.searchQuery || 
+                    emp.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    emp.poste.toLowerCase().includes(this.searchQuery.toLowerCase());
+                
+                const matchDepartement = !this.filterDepartement || emp.departement === this.filterDepartement;
+                const matchStatut = !this.filterStatut || emp.statut === this.filterStatut;
+                
+                return matchSearch && matchDepartement && matchStatut;
+            });
+        },
+
+        init() {
+            lucide.createIcons();
+        },
+
+        openModal(type) {
+            this.modalOpen = type;
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        closeModal() {
+            this.modalOpen = null;
+            this.selectedEmployee = null;
+        },
+
+        viewEmployee(employee) {
+            this.selectedEmployee = employee;
+            this.activeTab = 'info';
+            this.openModal('details');
+        },
+
+        editEmployee(employee) {
+            this.showToast(`✏️ Modification de ${employee.nom}...`, 'info');
+            this.closeModal();
+        },
+
+        showEmployeeMenu(employee) {
+            this.showToast(`📋 Menu pour ${employee.nom}`, 'info');
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 3000);
+            this.$nextTick(() => lucide.createIcons());
+        }
+    }
+}
+</script>
+{% endblock %}

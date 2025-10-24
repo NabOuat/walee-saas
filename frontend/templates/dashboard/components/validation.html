@@ -1,0 +1,744 @@
+<!-- ============================================
+     SYSTÈME DE VALIDATION PROFESSIONNEL - WALEE
+     Validation côté client avec Alpine.js
+     ============================================ -->
+
+<script>
+// Configuration globale de validation
+document.addEventListener('alpine:init', () => {
+    
+    // Store de règles de validation
+    Alpine.store('validation', {
+        // Règles de base
+        rules: {
+            // Champs requis
+            required: (value) => {
+                if (value === null || value === undefined) return 'Ce champ est requis';
+                if (typeof value === 'string' && value.trim() === '') return 'Ce champ est requis';
+                if (Array.isArray(value) && value.length === 0) return 'Ce champ est requis';
+                return true;
+            },
+            
+            // Email
+            email: (value) => {
+                if (!value) return true; // Skip si vide (utiliser required séparément)
+                const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                return emailRegex.test(value) || 'Adresse email invalide';
+            },
+            
+            // Téléphone ivoirien
+            phone: (value) => {
+                if (!value) return true;
+                const phoneRegex = /^[0-9]{10}$/;
+                const cleaned = value.replace(/[\s\-\(\)]/g, '');
+                return phoneRegex.test(cleaned) || 'Numéro invalide (10 chiffres requis)';
+            },
+            
+            // Téléphone mobile ivoirien (commence par 01, 05, 07)
+            phoneMobile: (value) => {
+                if (!value) return true;
+                const cleaned = value.replace(/[\s\-\(\)]/g, '');
+                const mobileRegex = /^(01|05|07)[0-9]{8}$/;
+                return mobileRegex.test(cleaned) || 'Numéro mobile invalide (doit commencer par 01, 05 ou 07)';
+            },
+            
+            // Longueur minimale
+            min: (min) => (value) => {
+                if (!value) return true;
+                return value.length >= min || `Minimum ${min} caractères requis`;
+            },
+            
+            // Longueur maximale
+            max: (max) => (value) => {
+                if (!value) return true;
+                return value.length <= max || `Maximum ${max} caractères autorisés`;
+            },
+            
+            // Longueur exacte
+            length: (len) => (value) => {
+                if (!value) return true;
+                return value.length === len || `Doit contenir exactement ${len} caractères`;
+            },
+            
+            // Nombre
+            number: (value) => {
+                if (!value && value !== 0) return true;
+                return !isNaN(value) || 'Doit être un nombre valide';
+            },
+            
+            // Nombre entier
+            integer: (value) => {
+                if (!value && value !== 0) return true;
+                return Number.isInteger(Number(value)) || 'Doit être un nombre entier';
+            },
+            
+            // Nombre positif
+            positive: (value) => {
+                if (!value && value !== 0) return true;
+                return parseFloat(value) > 0 || 'Doit être un nombre positif';
+            },
+            
+            // Minimum (nombre)
+            minValue: (min) => (value) => {
+                if (!value && value !== 0) return true;
+                return parseFloat(value) >= min || `Valeur minimale: ${min}`;
+            },
+            
+            // Maximum (nombre)
+            maxValue: (max) => (value) => {
+                if (!value && value !== 0) return true;
+                return parseFloat(value) <= max || `Valeur maximale: ${max}`;
+            },
+            
+            // URL
+            url: (value) => {
+                if (!value) return true;
+                const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+                return urlRegex.test(value) || 'URL invalide (doit commencer par http:// ou https://)';
+            },
+            
+            // Correspondance entre deux champs
+            match: (fieldName) => (value, formData) => {
+                return value === formData[fieldName] || `Doit correspondre au champ "${fieldName}"`;
+            },
+            
+            // Code postal ivoirien
+            postalCode: (value) => {
+                if (!value) return true;
+                const postalRegex = /^[0-9]{2}$/;
+                return postalRegex.test(value) || 'Code postal invalide (2 chiffres)';
+            },
+            
+            // CNPS (Numéro sécurité sociale ivoirienne)
+            cnps: (value) => {
+                if (!value) return true;
+                const cnpsRegex = /^[0-9]{10,12}$/;
+                return cnpsRegex.test(value.replace(/[\s\-]/g, '')) || 'Numéro CNPS invalide';
+            },
+            
+            // Compte bancaire IBAN Côte d'Ivoire
+            iban: (value) => {
+                if (!value) return true;
+                const ibanRegex = /^CI[0-9]{2}\s?[A-Z0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}$/;
+                const cleaned = value.replace(/\s/g, '');
+                return ibanRegex.test(cleaned) || 'IBAN invalide (format: CI00 1234 5678 9012 3456)';
+            },
+            
+            // Montant FCFA
+            montantFCFA: (value) => {
+                if (!value && value !== 0) return true;
+                const amount = parseFloat(value);
+                if (isNaN(amount)) return 'Montant invalide';
+                if (amount < 0) return 'Le montant ne peut pas être négatif';
+                if (amount % 1 !== 0) return 'Le montant doit être un nombre entier (pas de centimes en FCFA)';
+                return true;
+            },
+            
+            // Mot de passe fort
+            strongPassword: (value) => {
+                if (!value) return true;
+                if (value.length < 8) return 'Le mot de passe doit contenir au moins 8 caractères';
+                if (!/[A-Z]/.test(value)) return 'Le mot de passe doit contenir au moins une majuscule';
+                if (!/[a-z]/.test(value)) return 'Le mot de passe doit contenir au moins une minuscule';
+                if (!/[0-9]/.test(value)) return 'Le mot de passe doit contenir au moins un chiffre';
+                if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) return 'Le mot de passe doit contenir au moins un caractère spécial';
+                return true;
+            },
+            
+            // Date (format ISO ou DD/MM/YYYY)
+            date: (value) => {
+                if (!value) return true;
+                const dateRegex = /^(\d{4}-\d{2}-\d{2})|(\d{2}\/\d{2}\/\d{4})$/;
+                if (!dateRegex.test(value)) return 'Format de date invalide (JJ/MM/AAAA ou AAAA-MM-JJ)';
+                
+                // Vérifier si la date est valide
+                let date;
+                if (value.includes('/')) {
+                    const [day, month, year] = value.split('/');
+                    date = new Date(year, month - 1, day);
+                } else {
+                    date = new Date(value);
+                }
+                
+                return !isNaN(date.getTime()) || 'Date invalide';
+            },
+            
+            // Date dans le futur
+            futureDate: (value) => {
+                if (!value) return true;
+                const inputDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return inputDate >= today || 'La date doit être dans le futur';
+            },
+            
+            // Date dans le passé
+            pastDate: (value) => {
+                if (!value) return true;
+                const inputDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return inputDate <= today || 'La date doit être dans le passé';
+            },
+            
+            // Alphanumérique uniquement
+            alphanumeric: (value) => {
+                if (!value) return true;
+                return /^[a-zA-Z0-9]+$/.test(value) || 'Seuls les lettres et chiffres sont autorisés';
+            },
+            
+            // Lettres uniquement
+            alpha: (value) => {
+                if (!value) return true;
+                return /^[a-zA-ZÀ-ÿ\s]+$/.test(value) || 'Seules les lettres sont autorisées';
+            },
+            
+            // Chiffres uniquement
+            numeric: (value) => {
+                if (!value) return true;
+                return /^[0-9]+$/.test(value) || 'Seuls les chiffres sont autorisés';
+            },
+            
+            // Taille de fichier (en MB)
+            fileSize: (maxSizeMB) => (file) => {
+                if (!file) return true;
+                const sizeMB = file.size / (1024 * 1024);
+                return sizeMB <= maxSizeMB || `Fichier trop volumineux (max ${maxSizeMB}MB)`;
+            },
+            
+            // Type de fichier
+            fileType: (allowedTypes) => (file) => {
+                if (!file) return true;
+                const fileType = file.type || file.name.split('.').pop();
+                const isAllowed = allowedTypes.some(type => {
+                    if (type.includes('*')) {
+                        const category = type.split('/')[0];
+                        return fileType.startsWith(category);
+                    }
+                    return fileType === type || fileType.endsWith(type);
+                });
+                return isAllowed || `Type de fichier non autorisé (autorisés: ${allowedTypes.join(', ')})`;
+            }
+        },
+        
+        // Messages personnalisés en français
+        messages: {
+            required: 'Ce champ est requis',
+            email: 'Veuillez saisir une adresse email valide',
+            phone: 'Numéro de téléphone invalide',
+            min: 'Trop court',
+            max: 'Trop long',
+            number: 'Doit être un nombre',
+            url: 'URL invalide'
+        }
+    });
+});
+
+// Classe Validator pour gérer la validation des formulaires
+function createValidator() {
+    return {
+        errors: {},
+        touched: {},
+        isSubmitted: false,
+        
+        // Valider un champ unique
+        validate(field, value, rules, formData = {}) {
+            this.touched[field] = true;
+            this.errors[field] = '';
+            
+            if (!Array.isArray(rules)) {
+                console.error(`Les règles pour le champ "${field}" doivent être un tableau`);
+                return false;
+            }
+            
+            for (let rule of rules) {
+                if (typeof rule !== 'function') {
+                    console.error(`Règle invalide pour le champ "${field}"`, rule);
+                    continue;
+                }
+                
+                const result = rule.length > 1 ? rule(value, formData) : rule(value);
+                
+                if (result !== true) {
+                    this.errors[field] = result;
+                    return false;
+                }
+            }
+            
+            return true;
+        },
+        
+        // Valider tous les champs du formulaire
+        validateAll(formData, validationRules) {
+            this.isSubmitted = true;
+            let isValid = true;
+            
+            for (let field in validationRules) {
+                if (!this.validate(field, formData[field], validationRules[field], formData)) {
+                    isValid = false;
+                }
+            }
+            
+            return isValid;
+        },
+        
+        // Vérifier si un champ a une erreur
+        hasError(field) {
+            return this.touched[field] && this.errors[field];
+        },
+        
+        // Récupérer le message d'erreur d'un champ
+        getError(field) {
+            return this.errors[field] || '';
+        },
+        
+        // Vérifier si le formulaire a des erreurs
+        hasErrors() {
+            return Object.values(this.errors).some(error => error !== '');
+        },
+        
+        // Réinitialiser la validation
+        reset() {
+            this.errors = {};
+            this.touched = {};
+            this.isSubmitted = false;
+        },
+        
+        // Réinitialiser un champ spécifique
+        resetField(field) {
+            this.errors[field] = '';
+            this.touched[field] = false;
+        },
+        
+        // Marquer tous les champs comme touchés (utile après submit)
+        touchAll(fields) {
+            fields.forEach(field => {
+                this.touched[field] = true;
+            });
+        },
+        
+        // Obtenir la classe CSS pour un champ
+        getFieldClass(field, baseClass = '') {
+            if (!this.touched[field] && !this.isSubmitted) return baseClass;
+            
+            if (this.hasError(field)) {
+                return `${baseClass} border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500`;
+            } else {
+                return `${baseClass} border-green-500 dark:border-green-500 focus:ring-green-500 focus:border-green-500`;
+            }
+        }
+    }
+}
+
+// Helper pour formater les messages d'erreur
+function formatValidationErrors(errors) {
+    return Object.entries(errors)
+        .filter(([_, error]) => error)
+        .map(([field, error]) => `${field}: ${error}`)
+        .join('\n');
+}
+</script>
+
+<!-- ============================================
+     STYLES DE VALIDATION
+     ============================================ -->
+<style>
+    /* Champ avec erreur */
+    .input-error {
+        @apply border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50 dark:bg-red-900/10;
+    }
+    
+    /* Champ valide */
+    .input-valid {
+        @apply border-green-500 dark:border-green-500 focus:ring-green-500 focus:border-green-500 bg-green-50 dark:bg-green-900/10;
+    }
+    
+    /* Message d'erreur */
+    .error-message {
+        @apply text-red-600 dark:text-red-400 text-xs mt-1.5 flex items-start space-x-1.5 font-medium;
+    }
+    
+    .error-message svg {
+        @apply flex-shrink-0 mt-0.5;
+    }
+    
+    /* Message de succès */
+    .success-message {
+        @apply text-green-600 dark:text-green-400 text-xs mt-1.5 flex items-center space-x-1.5 font-medium;
+    }
+    
+    /* Icône de validation */
+    .validation-icon {
+        @apply absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none;
+    }
+    
+    /* Label avec champ requis */
+    .label-required::after {
+        content: ' *';
+        @apply text-red-500;
+    }
+    
+    /* Container de champ avec validation */
+    .form-field {
+        @apply relative mb-4;
+    }
+    
+    /* Animation des erreurs */
+    .error-enter {
+        animation: slideDown 0.2s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Indicateur de force du mot de passe */
+    .password-strength {
+        @apply h-1 w-full rounded-full mt-2 overflow-hidden bg-gray-200 dark:bg-gray-700;
+    }
+    
+    .password-strength-bar {
+        @apply h-full transition-all duration-300;
+    }
+    
+    .password-strength-weak {
+        @apply w-1/3 bg-red-500;
+    }
+    
+    .password-strength-medium {
+        @apply w-2/3 bg-orange-500;
+    }
+    
+    .password-strength-strong {
+        @apply w-full bg-green-500;
+    }
+</style>
+
+<!-- ============================================
+     COMPOSANTS RÉUTILISABLES
+     ============================================ -->
+
+<!-- Composant Input avec Validation -->
+<template x-component="validated-input">
+    <div class="form-field">
+        <label :for="id" 
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+               :class="{ 'label-required': required }">
+            <span x-text="label"></span>
+        </label>
+        
+        <div class="relative">
+            <input :type="type"
+                   :id="id"
+                   :name="name"
+                   :placeholder="placeholder"
+                   x-model="modelValue"
+                   @blur="onBlur"
+                   @input="onInput"
+                   :class="getFieldClass()"
+                   class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 transition">
+            
+            <!-- Icône de validation -->
+            <div class="validation-icon" x-show="showIcon && (touched || isSubmitted)">
+                <i x-show="!hasError" data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+                <i x-show="hasError" data-lucide="x-circle" class="w-5 h-5 text-red-500"></i>
+            </div>
+        </div>
+        
+        <!-- Message d'erreur -->
+        <p x-show="hasError && (touched || isSubmitted)" 
+           x-text="errorMessage" 
+           class="error-message error-enter">
+        </p>
+        
+        <!-- Message d'aide -->
+        <p x-show="helpText && !hasError" 
+           x-text="helpText"
+           class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+        </p>
+    </div>
+</template>
+
+<!-- ============================================
+     EXEMPLES D'UTILISATION
+     ============================================ -->
+
+<!-- 
+EXEMPLE 1: FORMULAIRE DE CONNEXION
+================================== -->
+<!--
+<div x-data="loginForm()">
+    <form @submit.prevent="submit()">
+        <div class="form-field">
+            <label for="email" class="label-required">Email</label>
+            <div class="relative">
+                <input type="email" 
+                       id="email"
+                       x-model="formData.email"
+                       @blur="validator.validate('email', formData.email, [
+                           $store.validation.rules.required,
+                           $store.validation.rules.email
+                       ])"
+                       :class="validator.getFieldClass('email', 'w-full px-4 py-2.5 border rounded-lg')"
+                       placeholder="votre@email.com">
+                
+                <div class="validation-icon" x-show="validator.touched.email">
+                    <i x-show="!validator.hasError('email')" data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+                    <i x-show="validator.hasError('email')" data-lucide="x-circle" class="w-5 h-5 text-red-500"></i>
+                </div>
+            </div>
+            <p x-show="validator.hasError('email')" 
+               x-text="validator.getError('email')" 
+               class="error-message"></p>
+        </div>
+
+        <div class="form-field">
+            <label for="password" class="label-required">Mot de passe</label>
+            <div class="relative">
+                <input :type="showPassword ? 'text' : 'password'" 
+                       id="password"
+                       x-model="formData.password"
+                       @blur="validator.validate('password', formData.password, [
+                           $store.validation.rules.required,
+                           $store.validation.rules.min(8)
+                       ])"
+                       :class="validator.getFieldClass('password', 'w-full px-4 py-2.5 border rounded-lg')"
+                       placeholder="••••••••">
+                
+                <button type="button" 
+                        @click="showPassword = !showPassword"
+                        class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p x-show="validator.hasError('password')" 
+               x-text="validator.getError('password')" 
+               class="error-message"></p>
+        </div>
+
+        <button type="submit" 
+                :disabled="validator.hasErrors()"
+                class="w-full py-3 bg-blue-600 text-white rounded-lg">
+            Se connecter
+        </button>
+    </form>
+</div>
+
+<script>
+function loginForm() {
+    return {
+        formData: {
+            email: '',
+            password: ''
+        },
+        validator: createValidator(),
+        showPassword: false,
+        
+        submit() {
+            const rules = {
+                email: [
+                    Alpine.store('validation').rules.required,
+                    Alpine.store('validation').rules.email
+                ],
+                password: [
+                    Alpine.store('validation').rules.required,
+                    Alpine.store('validation').rules.min(8)
+                ]
+            };
+            
+            if (this.validator.validateAll(this.formData, rules)) {
+                console.log('Formulaire valide', this.formData);
+                // Envoyer les données au serveur
+            } else {
+                console.log('Erreurs:', this.validator.errors);
+            }
+        }
+    }
+}
+</script>
+-->
+
+<!-- 
+EXEMPLE 2: FORMULAIRE D'INSCRIPTION
+=================================== -->
+<!--
+<div x-data="registerForm()">
+    <form @submit.prevent="submit()">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="form-field">
+                <label class="label-required">Prénom</label>
+                <input type="text" 
+                       x-model="formData.firstName"
+                       @blur="validateField('firstName')"
+                       :class="validator.getFieldClass('firstName', 'w-full px-4 py-2.5 border rounded-lg')">
+                <p x-show="validator.hasError('firstName')" 
+                   x-text="validator.getError('firstName')" 
+                   class="error-message"></p>
+            </div>
+
+            <div class="form-field">
+                <label class="label-required">Nom</label>
+                <input type="text" 
+                       x-model="formData.lastName"
+                       @blur="validateField('lastName')"
+                       :class="validator.getFieldClass('lastName', 'w-full px-4 py-2.5 border rounded-lg')">
+                <p x-show="validator.hasError('lastName')" 
+                   x-text="validator.getError('lastName')" 
+                   class="error-message"></p>
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label class="label-required">Téléphone</label>
+            <input type="tel" 
+                   x-model="formData.phone"
+                   @blur="validateField('phone')"
+                   :class="validator.getFieldClass('phone', 'w-full px-4 py-2.5 border rounded-lg')"
+                   placeholder="01 23 45 67 89">
+            <p x-show="validator.hasError('phone')" 
+               x-text="validator.getError('phone')" 
+               class="error-message"></p>
+        </div>
+
+        <div class="form-field">
+            <label class="label-required">Mot de passe</label>
+            <input type="password" 
+                   x-model="formData.password"
+                   @input="checkPasswordStrength(); validateField('password')"
+                   :class="validator.getFieldClass('password', 'w-full px-4 py-2.5 border rounded-lg')">
+            
+            <div class="password-strength" x-show="formData.password">
+                <div class="password-strength-bar" :class="passwordStrengthClass"></div>
+            </div>
+            <p x-show="formData.password" 
+               x-text="passwordStrengthText"
+               class="text-xs mt-1" :class="passwordStrengthColor"></p>
+            
+            <p x-show="validator.hasError('password')" 
+               x-text="validator.getError('password')" 
+               class="error-message"></p>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg">
+            S'inscrire
+        </button>
+    </form>
+</div>
+
+<script>
+function registerForm() {
+    return {
+        formData: {
+            firstName: '',
+            lastName: '',
+            phone: '',
+            password: ''
+        },
+        validator: createValidator(),
+        passwordStrength: 0,
+        
+        validationRules: {
+            firstName: [
+                Alpine.store('validation').rules.required,
+                Alpine.store('validation').rules.alpha,
+                Alpine.store('validation').rules.min(2)
+            ],
+            lastName: [
+                Alpine.store('validation').rules.required,
+                Alpine.store('validation').rules.alpha,
+                Alpine.store('validation').rules.min(2)
+            ],
+            phone: [
+                Alpine.store('validation').rules.required,
+                Alpine.store('validation').rules.phoneMobile
+            ],
+            password: [
+                Alpine.store('validation').rules.required,
+                Alpine.store('validation').rules.strongPassword
+            ]
+        },
+        
+        validateField(field) {
+            this.validator.validate(
+                field, 
+                this.formData[field], 
+                this.validationRules[field],
+                this.formData
+            );
+        },
+        
+        checkPasswordStrength() {
+            const password = this.formData.password;
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            this.passwordStrength = strength;
+        },
+        
+        get passwordStrengthClass() {
+            if (this.passwordStrength <= 2) return 'password-strength-weak';
+            if (this.passwordStrength <= 3) return 'password-strength-medium';
+            return 'password-strength-strong';
+        },
+        
+        get passwordStrengthText() {
+            if (this.passwordStrength <= 2) return 'Faible';
+            if (this.passwordStrength <= 3) return 'Moyen';
+            return 'Fort';
+        },
+        
+        get passwordStrengthColor() {
+            if (this.passwordStrength <= 2) return 'text-red-600';
+            if (this.passwordStrength <= 3) return 'text-orange-600';
+            return 'text-green-600';
+        },
+        
+        submit() {
+            if (this.validator.validateAll(this.formData, this.validationRules)) {
+                console.log('Inscription valide', this.formData);
+            }
+        }
+    }
+}
+</script>
+-->
+
+<!-- 
+EXEMPLE 3: VALIDATION DE MONTANT
+================================ -->
+<!--
+<div x-data="{ 
+    montant: '', 
+    validator: createValidator(),
+    
+    validateMontant() {
+        this.validator.validate('montant', this.montant, [
+            Alpine.store('validation').rules.required,
+            Alpine.store('validation').rules.montantFCFA,
+            Alpine.store('validation').rules.positive
+        ]);
+    }
+}">
+    <label class="label-required">Montant (FCFA)</label>
+    <input type="number" 
+           x-model="montant"
+           @blur="validateMontant()"
+           :class="validator.getFieldClass('montant', 'w-full px-4 py-2.5 border rounded-lg')"
+           placeholder="0">
+    <p x-show="validator.hasError('montant')" 
+       x-text="validator.getError('montant')" 
+       class="error-message"></p>
+</div>
+-->

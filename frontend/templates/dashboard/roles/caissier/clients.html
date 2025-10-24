@@ -1,0 +1,128 @@
+{% extends "dashboard/roles/caissier/base_caissier.html" %}
+{% load static %}
+
+{% block title %}Clients - Caissier - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="clientsData()" x-init="init()">
+    
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Clients</h1>
+            <p class="text-gray-600 dark:text-gray-400">Consultation rapide des clients</p>
+        </div>
+        <div class="relative">
+            <i data-lucide="search" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" x-model="searchQuery" @input="filtrerClients()" placeholder="Rechercher..." class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-green-500">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="users" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="clients.length"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Clients</p>
+        </div>
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="star" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="clients.filter(c => c.fidelite).length"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Clients Fidélité</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="shopping-bag" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="clients.reduce((sum, c) => sum + c.achats, 0)"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Achats</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="client in clientsFiltres" :key="client.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-xl flex items-center justify-center">
+                            <i data-lucide="user" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white" x-text="client.nom"></h3>
+                            <p class="text-xs text-gray-500" x-text="client.telephone"></p>
+                        </div>
+                    </div>
+                    <span x-show="client.fidelite" class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-semibold">
+                        <i data-lucide="star" class="w-3 h-3 inline"></i>
+                    </span>
+                </div>
+                
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Achats:</span>
+                        <span class="font-bold text-gray-900 dark:text-white" x-text="client.achats"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Total dépensé:</span>
+                        <span class="font-bold text-green-600" x-text="formatMoney(client.totalDepense)"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm" x-show="client.fidelite">
+                        <span class="text-gray-600 dark:text-gray-400">Points:</span>
+                        <span class="font-bold text-yellow-600" x-text="client.points"></span>
+                    </div>
+                </div>
+                
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Dernier achat: <span class="font-semibold" x-text="client.dernierAchat"></span>
+                    </p>
+                </div>
+            </div>
+        </template>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function clientsData() {
+    return {
+        searchQuery: '',
+        clients: [
+            { id: 1, nom: 'Jean Dupont', telephone: '07 12 34 56 78', achats: 15, totalDepense: 2500000, fidelite: true, points: 250, dernierAchat: '20/10/2025' },
+            { id: 2, nom: 'Marie Kouassi', telephone: '05 98 76 54 32', achats: 8, totalDepense: 1200000, fidelite: true, points: 120, dernierAchat: '19/10/2025' },
+            { id: 3, nom: 'Paul Martin', telephone: '01 23 45 67 89', achats: 3, totalDepense: 450000, fidelite: false, points: 0, dernierAchat: '15/10/2025' },
+            { id: 4, nom: 'Sophie Traoré', telephone: '07 11 22 33 44', achats: 22, totalDepense: 3800000, fidelite: true, points: 380, dernierAchat: '21/10/2025' },
+            { id: 5, nom: 'Ahmed Diallo', telephone: '05 55 66 77 88', achats: 12, totalDepense: 1800000, fidelite: true, points: 180, dernierAchat: '18/10/2025' },
+            { id: 6, nom: 'Client Passage', telephone: '-', achats: 1, totalDepense: 150000, fidelite: false, points: 0, dernierAchat: '21/10/2025' }
+        ],
+        clientsFiltres: [],
+        
+        init() {
+            this.clientsFiltres = this.clients;
+            lucide.createIcons();
+        },
+        
+        filtrerClients() {
+            if (!this.searchQuery) {
+                this.clientsFiltres = this.clients;
+                return;
+            }
+            
+            const query = this.searchQuery.toLowerCase();
+            this.clientsFiltres = this.clients.filter(c => 
+                c.nom.toLowerCase().includes(query) || 
+                c.telephone.includes(query)
+            );
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

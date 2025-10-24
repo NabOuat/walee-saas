@@ -1,0 +1,2692 @@
+-- ============================================================================
+-- BASE DE DONNÉES SAAS DE GESTION MULTI-ENTREPRISES
+-- Version: 1.0
+-- SGBD: PostgreSQL 14+
+-- Encodage: UTF8
+-- ============================================================================
+
+-- Extensions nécessaires
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- Pour recherche full-text
+
+-- ============================================================================
+-- SECTION 1: GESTION DES UTILISATEURS ET ORGANISATIONS
+-- ============================================================================
+
+-- Table des utilisateurs principaux (peuvent avoir plusieurs entreprises)
+CREATE TABLE utilisateurs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supabase_user_id UUID UNIQUE, -- Lien avec auth externe
+    email TEXT NOT NULL UNIQUE,
+    nom_complet TEXT NOT NULL,
+    telephone TEXT,
+    avatar_url TEXT,
+    langue VARCHAR(5) DEFAULT 'fr',
+    fuseau_horaire VARCHAR(50) DEFAULT 'Africa/Abidjan',
+    actif BOOLEAN DEFAULT TRUE,
+    email_verifie BOOLEAN DEFAULT FALSE,
+    date_verification_email TIMESTAMPTZ,
+    derniere_connexion TIMESTAMPTZ,
+    preferences JSONB DEFAULT '{}',
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')
+);
+
+CREATE INDEX idx_utilisateurs_email ON utilisateurs(email) WHERE date_suppression IS NULL;
+CREATE INDEX idx_utilisateurs_supabase ON utilisateurs(supabase_user_id);
+CREATE INDEX idx_utilisateurs_actif ON utilisateurs(actif) WHERE actif = TRUE;
+
+COMMENT ON TABLE utilisateurs IS 'Utilisateurs principaux du système, peuvent gérer plusieurs entreprises';
+COMMENT ON COLUMN utilisateurs.preferences IS 'Préférences utilisateur: notifications, thème, etc.';
+
+-- ============================================================================
+-- Plans d'abonnement
+CREATE TABLE plans_abonnement (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nom VARCHAR(100) NOT NULL UNIQUE,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    prix_mensuel NUMERIC(12,2) NOT NULL DEFAULT 0,
+    prix_annuel NUMERIC(12,2),
+    devise VARCHAR(5) DEFAULT 'XOF',
+    nombre_max_employes INT,
+    nombre_max_articles INT,
+    nombre_max_factures_mois INT,
+    espace_stockage_mo INT DEFAULT 1000, -- en Mo
+    marketplace_actif BOOLEAN DEFAULT FALSE,
+    api_acces BOOLEAN DEFAULT FALSE,
+    support_niveau VARCHAR(50) DEFAULT 'email', -- email, prioritaire, 24/7
+    fonctionnalites JSONB DEFAULT '[]',
+    actif BOOLEAN DEFAULT TRUE,
+    ordre_affichage INT DEFAULT 0,
+    date_creation TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO plans_abonnement (nom, code, prix_mensuel, prix_annuel, description, fonctionnalites) VALUES
+('Gratuit', 'FREE', 0, 0, 'Plan de démarrage gratuit', '["caisse_basique", "max_5_produits", "1_utilisateur"]'),
+('Standard', 'STANDARD', 15000, 150000, 'Pour petites entreprises', '["caisse_complete", "stock", "facturation", "max_3_utilisateurs", "max_100_produits"]'),
+('Premium', 'PREMIUM', 45000, 450000, 'Pour entreprises en croissance', '["tout_standard", "comptabilite", "max_10_utilisateurs", "produits_illimites", "multi_entrepots", "api"]'),
+('Enterprise', 'ENTERPRISE', 0, 0, 'Sur mesure pour grandes entreprises', '["tout_premium", "utilisateurs_illimites", "marketplace", "support_24_7", "personnalisation"]');
+
+-- ============================================================================
+-- Organisations/Entreprises
+CREATE TABLE organisations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    proprietaire_id UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE RESTRICT,
+    
+    -- Informations de base
+    nom_commercial TEXT NOT NULL,
+    raison_sociale TEXT,
+    acronyme VARCHAR(10) NOT NULL, -- Pour préfixer les identifiants
+    sigle VARCHAR(20),
+    
+    -- Identification légale
+    numero_identification TEXT, -- RCCM, SIRET, etc.
+    numero_tva TEXT,
+    code_naf VARCHAR(10),
+    forme_juridique VARCHAR(100), -- SARL, SA, EI, etc.
+    
+    -- Coordonnées
+    adresse_ligne1 TEXT,
+    adresse_ligne2 TEXT,
+    ville VARCHAR(100),
+    code_postal VARCHAR(20),
+    region VARCHAR(100),
+    pays VARCHAR(100) DEFAULT 'Côte d''Ivoire',
+    
+    -- Contact
+    email_contact TEXT,
+    telephone_principal TEXT,
+    telephone_secondaire TEXT,
+    site_web TEXT,
+    
+    -- Configuration
+    devise VARCHAR(5) DEFAULT 'XOF',
+    fuseau_horaire VARCHAR(50) DEFAULT 'Africa/Abidjan',
+    langue_defaut VARCHAR(5) DEFAULT 'fr',
+    
+    -- Abonnement
+    plan_id UUID REFERENCES plans_abonnement(id),
+    statut_abonnement VARCHAR(50) DEFAULT 'actif', -- actif, suspendu, resilie, essai
+    date_debut_abonnement DATE,
+    date_fin_abonnement DATE,
+    date_fin_essai DATE,
+    
+    -- Branding
+    logo_url TEXT,
+    couleur_principale VARCHAR(7), -- HEX color
+    couleur_secondaire VARCHAR(7),
+    
+    -- Paramètres marketplace
+    marketplace_actif BOOLEAN DEFAULT FALSE,
+    marketplace_slug VARCHAR(100) UNIQUE, -- URL publique: /store/{slug}
+    marketplace_description TEXT,
+    marketplace_banniere_url TEXT,
+    
+    -- Paramètres métier
+    parametres_facturation JSONB DEFAULT '{}',
+    parametres_caisse JSONB DEFAULT '{}',
+    parametres_stock JSONB DEFAULT '{}',
+    parametres_comptabilite JSONB DEFAULT '{}',
+    
+    -- Statut
+    actif BOOLEAN DEFAULT TRUE,
+    verifie BOOLEAN DEFAULT FALSE,
+    date_verification TIMESTAMPTZ,
+    
+    -- Audit
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    CONSTRAINT acronyme_format CHECK (acronyme ~ '^[A-Z0-9]{2,10}$'),
+    CONSTRAINT couleur_hex CHECK (couleur_principale ~ '^#[0-9A-Fa-f]{6}$' OR couleur_principale IS NULL)
+);
+
+CREATE UNIQUE INDEX idx_organisations_acronyme ON organisations(UPPER(acronyme)) WHERE date_suppression IS NULL;
+CREATE INDEX idx_organisations_proprietaire ON organisations(proprietaire_id);
+CREATE INDEX idx_organisations_plan ON organisations(plan_id);
+CREATE INDEX idx_organisations_marketplace ON organisations(marketplace_slug) WHERE marketplace_actif = TRUE;
+CREATE INDEX idx_organisations_actif ON organisations(actif, statut_abonnement);
+
+COMMENT ON TABLE organisations IS 'Entreprises/organisations clientes du SaaS';
+COMMENT ON COLUMN organisations.acronyme IS 'Utilisé pour préfixer les identifiants des sous-comptes (ex: ACME-001)';
+COMMENT ON COLUMN organisations.marketplace_slug IS 'URL unique pour la boutique en ligne de l''entreprise';
+
+-- ============================================================================
+-- Association utilisateurs-organisations (un utilisateur peut gérer plusieurs entreprises)
+CREATE TABLE utilisateurs_organisations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    utilisateur_id UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL DEFAULT 'gestionnaire', -- proprietaire, gestionnaire, observateur
+    est_principal BOOLEAN DEFAULT FALSE, -- Organisation principale de l'utilisateur
+    date_ajout TIMESTAMPTZ DEFAULT NOW(),
+    ajoute_par UUID REFERENCES utilisateurs(id),
+    
+    UNIQUE(utilisateur_id, organisation_id)
+);
+
+CREATE INDEX idx_user_org_utilisateur ON utilisateurs_organisations(utilisateur_id);
+CREATE INDEX idx_user_org_organisation ON utilisateurs_organisations(organisation_id);
+
+COMMENT ON TABLE utilisateurs_organisations IS 'Association N-N: un utilisateur peut gérer plusieurs organisations';
+
+-- ============================================================================
+-- SECTION 2: GESTION DES EMPLOYÉS ET PERMISSIONS
+-- ============================================================================
+
+-- Employés (comptes liés à une organisation spécifique)
+CREATE TABLE employes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Identifiant unique avec préfixe
+    code_employe VARCHAR(50) NOT NULL, -- Format: {ACRONYME}-EMP-{numero}
+    
+    -- Informations personnelles
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL,
+    nom_complet TEXT GENERATED ALWAYS AS (prenom || ' ' || nom) STORED,
+    email TEXT,
+    telephone TEXT,
+    date_naissance DATE,
+    lieu_naissance TEXT,
+    sexe VARCHAR(1) CHECK (sexe IN ('M', 'F', 'A')), -- M, F, Autre
+    
+    -- Identification
+    numero_piece_identite TEXT,
+    type_piece_identite VARCHAR(50), -- CNI, Passeport, etc.
+    
+    -- Adresse
+    adresse_ligne1 TEXT,
+    adresse_ligne2 TEXT,
+    ville VARCHAR(100),
+    code_postal VARCHAR(20),
+    
+    -- Informations d'emploi
+    poste VARCHAR(100),
+    departement VARCHAR(100),
+    type_contrat VARCHAR(50), -- CDI, CDD, Stage, Freelance
+    date_embauche DATE,
+    date_fin_contrat DATE,
+    
+    -- Accès système
+    utilisateur_id UUID REFERENCES utilisateurs(id), -- Si l'employé a un compte utilisateur
+    acces_caisse BOOLEAN DEFAULT FALSE,
+    acces_stock BOOLEAN DEFAULT FALSE,
+    acces_ventes BOOLEAN DEFAULT FALSE,
+    acces_rapports BOOLEAN DEFAULT FALSE,
+    code_pin VARCHAR(6), -- Pour ouverture caisse
+    
+    -- Rémunération (optionnel)
+    salaire_base NUMERIC(14,2),
+    devise_salaire VARCHAR(5),
+    
+    -- Photo et documents
+    photo_url TEXT,
+    documents JSONB DEFAULT '[]', -- [{type, url, date_ajout}]
+    
+    -- Statut
+    statut VARCHAR(50) DEFAULT 'actif', -- actif, conge, suspendu, demissionnaire, licencie
+    actif BOOLEAN DEFAULT TRUE,
+    
+    -- Notes
+    notes TEXT,
+    
+    -- Audit
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, code_employe)
+);
+
+CREATE INDEX idx_employes_organisation ON employes(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_employes_code ON employes(organisation_id, code_employe);
+CREATE INDEX idx_employes_actif ON employes(actif, statut);
+CREATE INDEX idx_employes_nom ON employes USING gin(to_tsvector('french', nom_complet));
+
+COMMENT ON TABLE employes IS 'Employés des organisations, peuvent avoir accès limité au système';
+COMMENT ON COLUMN employes.code_employe IS 'Identifiant unique préfixé par l''acronyme de l''organisation';
+
+-- ============================================================================
+-- Rôles (RBAC - Role Based Access Control)
+CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    nom VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    description TEXT,
+    
+    -- Rôle système (non modifiable)
+    systeme BOOLEAN DEFAULT FALSE,
+    
+    -- Permissions (stockées en JSON pour flexibilité)
+    permissions JSONB DEFAULT '{}',
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code)
+);
+
+CREATE INDEX idx_roles_organisation ON roles(organisation_id);
+
+-- Insertion des rôles système par défaut
+INSERT INTO roles (organisation_id, nom, code, systeme, permissions) 
+SELECT 
+    o.id,
+    r.nom,
+    r.code,
+    TRUE,
+    r.permissions::jsonb
+FROM organisations o
+CROSS JOIN (VALUES
+    ('Administrateur', 'ADMIN', '{"*": ["create", "read", "update", "delete", "manage"]}'),
+    ('Gérant', 'MANAGER', '{"caisse": ["*"], "stock": ["*"], "ventes": ["*"], "clients": ["*"], "rapports": ["read"]}'),
+    ('Caissier', 'CASHIER', '{"caisse": ["create", "read"], "ventes": ["create", "read"], "clients": ["read"]}'),
+    ('Gestionnaire de stock', 'STOCK_MANAGER', '{"stock": ["*"], "produits": ["*"], "fournisseurs": ["read"]}'),
+    ('Vendeur', 'SALES', '{"ventes": ["create", "read"], "clients": ["read", "create"], "produits": ["read"]}'),
+    ('Comptable', 'ACCOUNTANT', '{"comptabilite": ["*"], "factures": ["*"], "paiements": ["read"], "rapports": ["read"]}')
+) r(nom, code, permissions);
+
+-- Association employés-rôles
+CREATE TABLE employes_roles (
+    employe_id UUID NOT NULL REFERENCES employes(id) ON DELETE CASCADE,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    date_attribution TIMESTAMPTZ DEFAULT NOW(),
+    attribue_par UUID REFERENCES utilisateurs(id),
+    
+    PRIMARY KEY(employe_id, role_id)
+);
+
+-- ============================================================================
+-- SECTION 3: GESTION DES CLIENTS (CRM)
+-- ============================================================================
+
+-- Catégories de clients
+CREATE TABLE categories_clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    nom VARCHAR(100) NOT NULL,
+    code VARCHAR(50),
+    description TEXT,
+    remise_defaut NUMERIC(5,2) DEFAULT 0, -- Remise en %
+    couleur VARCHAR(7),
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code)
+);
+
+-- Clients
+CREATE TABLE clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Identifiant unique
+    code_client VARCHAR(50) NOT NULL, -- Format: {ACRONYME}-CLI-{numero}
+    
+    -- Type de client
+    type_client VARCHAR(50) DEFAULT 'particulier', -- particulier, entreprise
+    categorie_id UUID REFERENCES categories_clients(id),
+    
+    -- Informations personnelles (particulier)
+    civilite VARCHAR(10), -- M., Mme, Mlle
+    nom TEXT,
+    prenom TEXT,
+    nom_complet TEXT,
+    date_naissance DATE,
+    
+    -- Informations entreprise
+    raison_sociale TEXT,
+    numero_identification TEXT, -- RCCM, SIRET
+    numero_tva TEXT,
+    
+    -- Contact
+    email TEXT,
+    telephone_principal TEXT,
+    telephone_secondaire TEXT,
+    site_web TEXT,
+    
+    -- Adresse de facturation
+    adresse_facturation JSONB, -- {ligne1, ligne2, ville, code_postal, pays}
+    
+    -- Adresse de livraison (peut être différente)
+    adresse_livraison JSONB,
+    
+    -- Informations commerciales
+    source_acquisition VARCHAR(100), -- Publicité, Bouche-à-oreille, etc.
+    represente_par TEXT, -- Nom du commercial/vendeur
+    conditions_paiement VARCHAR(100) DEFAULT 'comptant', -- comptant, 30j, 60j
+    plafond_credit NUMERIC(14,2) DEFAULT 0,
+    remise_permanente NUMERIC(5,2) DEFAULT 0,
+    
+    -- Notes et tags
+    notes TEXT,
+    tags TEXT[], -- Pour recherche et segmentation
+    
+    -- Statut
+    actif BOOLEAN DEFAULT TRUE,
+    blackliste BOOLEAN DEFAULT FALSE,
+    raison_blacklist TEXT,
+    
+    -- Statistiques (calculées)
+    nombre_commandes INT DEFAULT 0,
+    montant_total_achats NUMERIC(14,2) DEFAULT 0,
+    montant_credit_restant NUMERIC(14,2) DEFAULT 0,
+    derniere_commande TIMESTAMPTZ,
+    
+    -- Audit
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, code_client)
+);
+
+CREATE INDEX idx_clients_organisation ON clients(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_clients_code ON clients(organisation_id, code_client);
+CREATE INDEX idx_clients_nom ON clients USING gin(to_tsvector('french', COALESCE(nom_complet, raison_sociale, '')));
+CREATE INDEX idx_clients_email ON clients(email) WHERE email IS NOT NULL;
+CREATE INDEX idx_clients_telephone ON clients(telephone_principal);
+CREATE INDEX idx_clients_tags ON clients USING gin(tags);
+CREATE INDEX idx_clients_actif ON clients(actif) WHERE actif = TRUE;
+
+COMMENT ON TABLE clients IS 'Clients des organisations (B2C et B2B)';
+
+-- ============================================================================
+-- SECTION 4: GESTION DES PRODUITS ET SERVICES
+-- ============================================================================
+
+-- Catégories de produits (hiérarchiques)
+CREATE TABLE categories_produits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    parent_id UUID REFERENCES categories_produits(id) ON DELETE SET NULL,
+    
+    nom VARCHAR(200) NOT NULL,
+    code VARCHAR(50),
+    description TEXT,
+    image_url TEXT,
+    
+    -- Marketplace
+    visible_marketplace BOOLEAN DEFAULT FALSE,
+    ordre_affichage INT DEFAULT 0,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code)
+);
+
+CREATE INDEX idx_categories_org ON categories_produits(organisation_id);
+CREATE INDEX idx_categories_parent ON categories_produits(parent_id);
+
+-- Marques
+CREATE TABLE marques (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    nom VARCHAR(100) NOT NULL,
+    code VARCHAR(50),
+    description TEXT,
+    logo_url TEXT,
+    site_web TEXT,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code)
+);
+
+-- Unités de mesure
+CREATE TABLE unites_mesure (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID REFERENCES organisations(id) ON DELETE CASCADE, -- NULL = unité globale
+    
+    nom VARCHAR(50) NOT NULL,
+    symbole VARCHAR(10) NOT NULL,
+    type VARCHAR(50), -- poids, volume, longueur, piece
+    
+    actif BOOLEAN DEFAULT TRUE
+);
+
+-- Unités de base
+INSERT INTO unites_mesure (nom, symbole, type) VALUES
+('Pièce', 'pc', 'piece'),
+('Kilogramme', 'kg', 'poids'),
+('Gramme', 'g', 'poids'),
+('Litre', 'L', 'volume'),
+('Mètre', 'm', 'longueur'),
+('Boîte', 'boîte', 'piece'),
+('Carton', 'ctn', 'piece'),
+('Palette', 'pal', 'piece');
+
+-- Produits (articles de base)
+CREATE TABLE produits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Identification
+    code_produit VARCHAR(100) NOT NULL, -- SKU interne
+    code_barre VARCHAR(100), -- EAN, UPC
+    reference_fournisseur TEXT,
+    
+    -- Informations de base
+    nom TEXT NOT NULL,
+    nom_court VARCHAR(100),
+    description TEXT,
+    description_longue TEXT, -- Pour marketplace
+    
+    -- Classification
+    categorie_id UUID REFERENCES categories_produits(id),
+    marque_id UUID REFERENCES marques(id),
+    type_produit VARCHAR(50) DEFAULT 'physique', -- physique, service, numerique
+    
+    -- Images et médias
+    image_principale_url TEXT,
+    images_urls TEXT[], -- URLs des images additionnelles
+    video_url TEXT,
+    
+    -- Prix
+    prix_achat_ht NUMERIC(14,2),
+    prix_vente_ht NUMERIC(14,2) NOT NULL,
+    prix_vente_ttc NUMERIC(14,2),
+    marge_calculee NUMERIC(14,2) GENERATED ALWAYS AS (prix_vente_ht - COALESCE(prix_achat_ht, 0)) STORED,
+    taux_tva NUMERIC(5,2) DEFAULT 18.00,
+    
+    -- Unités
+    unite_mesure_id UUID REFERENCES unites_mesure(id),
+    contenance NUMERIC(10,3), -- Quantité dans l'unité (ex: 1.5L)
+    
+    -- Gestion du stock
+    gere_stock BOOLEAN DEFAULT TRUE,
+    stock_alerte INT DEFAULT 10,
+    stock_minimum INT DEFAULT 5,
+    stock_maximum INT,
+    
+    -- Caractéristiques
+    poids NUMERIC(10,3), -- en kg
+    longueur NUMERIC(10,2), -- en cm
+    largeur NUMERIC(10,2),
+    hauteur NUMERIC(10,2),
+    
+    -- Attributs personnalisés (JSON flexible)
+    attributs JSONB DEFAULT '{}', -- {couleur: "rouge", taille: "L"}
+    
+    -- Marketplace
+    publie_marketplace BOOLEAN DEFAULT FALSE,
+    meta_titre TEXT,
+    meta_description TEXT,
+    tags_marketplace TEXT[],
+    
+    -- Statut
+    actif BOOLEAN DEFAULT TRUE,
+    en_vedette BOOLEAN DEFAULT FALSE,
+    
+    -- Notes
+    notes_internes TEXT,
+    
+    -- Audit
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, code_produit)
+);
+
+CREATE INDEX idx_produits_organisation ON produits(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_produits_code ON produits(code_produit);
+CREATE INDEX idx_produits_barre ON produits(code_barre) WHERE code_barre IS NOT NULL;
+CREATE INDEX idx_produits_categorie ON produits(categorie_id);
+CREATE INDEX idx_produits_marque ON produits(marque_id);
+CREATE INDEX idx_produits_nom ON produits USING gin(to_tsvector('french', nom));
+CREATE INDEX idx_produits_marketplace ON produits(organisation_id, publie_marketplace) WHERE publie_marketplace = TRUE;
+CREATE INDEX idx_produits_tags ON produits USING gin(tags_marketplace);
+CREATE INDEX idx_produits_prix ON produits(prix_vente_ttc);
+
+-- Variantes de produits (tailles, couleurs, etc.)
+CREATE TABLE variantes_produits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    produit_id UUID NOT NULL REFERENCES produits(id) ON DELETE CASCADE,
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    code_variante VARCHAR(100) NOT NULL,
+    nom_variante VARCHAR(200),
+    
+    -- Attributs spécifiques (couleur, taille, etc.)
+    attributs JSONB NOT NULL, -- {couleur: "Bleu", taille: "M"}
+    
+    -- Prix spécifiques (si différent du produit parent)
+    prix_achat_ht NUMERIC(14,2),
+    prix_vente_ht NUMERIC(14,2),
+    prix_vente_ttc NUMERIC(14,2),
+    
+    -- Codes spécifiques
+    code_barre VARCHAR(100),
+    reference_fournisseur TEXT,
+    
+    -- Image spécifique
+    image_url TEXT,
+    
+    -- Stock
+    stock_alerte INT,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code_variante)
+);
+
+CREATE INDEX idx_variantes_produit ON variantes_produits(produit_id);
+CREATE INDEX idx_variantes_org ON variantes_produits(organisation_id);
+CREATE INDEX idx_variantes_code_barre ON variantes_produits(code_barre) WHERE code_barre IS NOT NULL;
+
+-- ============================================================================
+-- SECTION 5: GESTION DES FOURNISSEURS
+-- ============================================================================
+
+CREATE TABLE fournisseurs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    code_fournisseur VARCHAR(50) NOT NULL,
+    
+    -- Informations
+    raison_sociale TEXT NOT NULL,
+    nom_commercial TEXT,
+    numero_identification TEXT,
+    numero_tva TEXT,
+    
+    -- Contact
+    email TEXT,
+    telephone_principal TEXT,
+    telephone_secondaire TEXT,
+    site_web TEXT,
+    personne_contact TEXT,
+    
+    -- Adresse
+    adresse JSONB,
+    
+    -- Conditions commerciales
+    delai_livraison_jours INT,
+    conditions_paiement VARCHAR(100),
+    devise VARCHAR(5) DEFAULT 'XOF',
+    
+    -- Évaluation
+    note_qualite NUMERIC(3,2), -- sur 5
+    note_delais NUMERIC(3,2),
+    note_prix NUMERIC(3,2),
+    
+    -- Statistiques
+    nombre_commandes INT DEFAULT 0,
+    montant_total_achats NUMERIC(14,2) DEFAULT 0,
+    derniere_commande TIMESTAMPTZ,
+    
+    notes TEXT,
+    actif BOOLEAN DEFAULT TRUE,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, code_fournisseur)
+);
+
+CREATE INDEX idx_fournisseurs_org ON fournisseurs(organisation_id) WHERE date_suppression IS NULL;
+
+-- ============================================================================
+-- SECTION 6: GESTION DES ENTREPÔTS ET STOCK
+-- ============================================================================
+
+CREATE TABLE entrepots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    code_entrepot VARCHAR(50) NOT NULL,
+    nom VARCHAR(200) NOT NULL,
+    type VARCHAR(50) DEFAULT 'principal', -- principal, secondaire, depot, magasin
+    
+    -- Adresse
+    adresse_ligne1 TEXT,
+    adresse_ligne2 TEXT,
+    ville VARCHAR(100),
+    code_postal VARCHAR(20),
+    
+    -- Responsable
+    responsable_id UUID REFERENCES employes(id),
+    telephone TEXT,
+    
+    -- Caractéristiques
+    superficie_m2 NUMERIC(10,2),
+    capacite_stockage TEXT,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code_entrepot)
+);
+
+CREATE INDEX idx_entrepots_org ON entrepots(organisation_id);
+
+-- Stock par entrepôt et variante
+CREATE TABLE stocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    entrepot_id UUID NOT NULL REFERENCES entrepots(id) ON DELETE CASCADE,
+    produit_id UUID NOT NULL REFERENCES produits(id) ON DELETE CASCADE,
+    variante_id UUID REFERENCES variantes_produits(id) ON DELETE CASCADE,
+    
+    -- Quantités
+    quantite_disponible NUMERIC(12,3) DEFAULT 0,
+    quantite_reservee NUMERIC(12,3) DEFAULT 0,
+    quantite_en_commande NUMERIC(12,3) DEFAULT 0,
+    quantite_totale NUMERIC(12,3) GENERATED ALWAYS AS (quantite_disponible + quantite_reservee) STORED,
+    
+    -- Emplacement dans l'entrepôt
+    emplacement VARCHAR(100), -- Allée-Rayon-Niveau (ex: A-12-3)
+    
+    -- Valeurs
+    valeur_stock_achat NUMERIC(14,2), -- Valeur au coût d'achat
+    valeur_stock_vente NUMERIC(14,2), -- Valeur au prix de vente
+    
+    -- Dates
+    date_dernier_mouvement TIMESTAMPTZ,
+    date_derniere_entree TIMESTAMPTZ,
+    date_derniere_sortie TIMESTAMPTZ,
+    date_dernier_inventaire TIMESTAMPTZ,
+    
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(entrepot_id, produit_id, COALESCE(variante_id, '00000000-0000-0000-0000-000000000000'::uuid))
+);
+
+CREATE INDEX idx_stocks_org ON stocks(organisation_id);
+CREATE INDEX idx_stocks_entrepot ON stocks(entrepot_id);
+CREATE INDEX idx_stocks_produit ON stocks(produit_id);
+CREATE INDEX idx_stocks_alerte ON stocks(organisation_id, quantite_disponible) WHERE quantite_disponible > 0;
+
+-- Mouvements de stock (traçabilité complète)
+CREATE TABLE mouvements_stock (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    stock_id UUID NOT NULL REFERENCES stocks(id),
+    entrepot_origine_id UUID REFERENCES entrepots(id),
+    entrepot_destination_id UUID REFERENCES entrepots(id),
+    
+    -- Type de mouvement
+    type_mouvement VARCHAR(50) NOT NULL, -- entree, sortie, transfert, ajustement, inventaire, perte, casse, retour
+    motif TEXT,
+    
+    -- Quantité
+    quantite NUMERIC(12,3) NOT NULL,
+    quantite_avant NUMERIC(12,3),
+    quantite_apres NUMERIC(12,3),
+    
+    -- Valeur
+    cout_unitaire NUMERIC(14,2),
+    valeur_totale NUMERIC(14,2),
+    
+    -- Référence au document source
+    document_type VARCHAR(50), -- commande_achat, vente, inventaire, etc.
+    document_id UUID,
+    numero_document TEXT,
+    
+    -- Lot et traçabilité
+    numero_lot TEXT,
+    date_peremption DATE,
+    numero_serie TEXT,
+    
+    notes TEXT,
+    
+    effectue_par UUID REFERENCES utilisateurs(id),
+    date_mouvement TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT check_entrepots CHECK (
+        (type_mouvement = 'transfert' AND entrepot_origine_id IS NOT NULL AND entrepot_destination_id IS NOT NULL)
+        OR type_mouvement != 'transfert'
+    )
+);
+
+CREATE INDEX idx_mouvements_org ON mouvements_stock(organisation_id);
+CREATE INDEX idx_mouvements_stock ON mouvements_stock(stock_id);
+CREATE INDEX idx_mouvements_date ON mouvements_stock(date_mouvement DESC);
+CREATE INDEX idx_mouvements_type ON mouvements_stock(type_mouvement);
+CREATE INDEX idx_mouvements_document ON mouvements_stock(document_type, document_id);
+
+-- Inventaires physiques
+CREATE TABLE inventaires (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    entrepot_id UUID NOT NULL REFERENCES entrepots(id),
+    
+    numero_inventaire VARCHAR(50) NOT NULL,
+    date_debut DATE NOT NULL,
+    date_fin DATE,
+    
+    statut VARCHAR(50) DEFAULT 'en_cours', -- en_cours, termine, valide, annule
+    
+    -- Responsables
+    responsable_id UUID REFERENCES employes(id),
+    equipe_ids UUID[],
+    
+    -- Résultats
+    nombre_produits_comptes INT DEFAULT 0,
+    ecarts_positifs_valeur NUMERIC(14,2) DEFAULT 0,
+    ecarts_negatifs_valeur NUMERIC(14,2) DEFAULT 0,
+    
+    notes TEXT,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_validation TIMESTAMPTZ,
+    valide_par UUID REFERENCES utilisateurs(id),
+    
+    UNIQUE(organisation_id, numero_inventaire)
+);
+
+CREATE TABLE lignes_inventaire (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    inventaire_id UUID NOT NULL REFERENCES inventaires(id) ON DELETE CASCADE,
+    stock_id UUID NOT NULL REFERENCES stocks(id),
+    
+    quantite_theorique NUMERIC(12,3),
+    quantite_comptee NUMERIC(12,3),
+    ecart NUMERIC(12,3) GENERATED ALWAYS AS (quantite_comptee - quantite_theorique) STORED,
+    
+    valeur_ecart NUMERIC(14,2),
+    
+    notes TEXT,
+    compte_par UUID REFERENCES employes(id),
+    date_comptage TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
+-- SECTION 7: GESTION DES VENTES
+-- ============================================================================
+
+-- Devis
+CREATE TABLE devis (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_devis VARCHAR(50) NOT NULL,
+    reference_client TEXT,
+    
+    client_id UUID REFERENCES clients(id),
+    employe_id UUID REFERENCES employes(id),
+    
+    date_devis DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_validite DATE NOT NULL,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, envoye, accepte, refuse, expire, converti
+    
+    -- Montants
+    montant_ht NUMERIC(14,2) DEFAULT 0,
+    montant_tva NUMERIC(14,2) DEFAULT 0,
+    montant_ttc NUMERIC(14,2) DEFAULT 0,
+    remise_globale NUMERIC(14,2) DEFAULT 0,
+    remise_globale_pct NUMERIC(5,2) DEFAULT 0,
+    
+    -- Conditions
+    conditions_paiement TEXT,
+    delai_livraison TEXT,
+    validite_jours INT DEFAULT 30,
+    
+    notes TEXT,
+    notes_internes TEXT,
+    
+    -- Conversion
+    converti_en_commande BOOLEAN DEFAULT FALSE,
+    commande_id UUID,
+    date_conversion TIMESTAMPTZ,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, numero_devis)
+);
+
+CREATE INDEX idx_devis_org ON devis(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_devis_client ON devis(client_id);
+CREATE INDEX idx_devis_statut ON devis(statut);
+CREATE INDEX idx_devis_date ON devis(date_devis DESC);
+
+-- Lignes de devis
+CREATE TABLE lignes_devis (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    devis_id UUID NOT NULL REFERENCES devis(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    description TEXT,
+    
+    quantite NUMERIC(10,3) NOT NULL,
+    prix_unitaire_ht NUMERIC(14,2) NOT NULL,
+    taux_tva NUMERIC(5,2) DEFAULT 18.00,
+    
+    remise_pct NUMERIC(5,2) DEFAULT 0,
+    remise_montant NUMERIC(14,2) DEFAULT 0,
+    
+    montant_ht NUMERIC(14,2),
+    montant_tva NUMERIC(14,2),
+    montant_ttc NUMERIC(14,2),
+    
+    ordre_affichage INT DEFAULT 0
+);
+
+-- Commandes clients
+CREATE TABLE commandes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_commande VARCHAR(50) NOT NULL,
+    reference_client TEXT,
+    
+    client_id UUID REFERENCES clients(id),
+    employe_id UUID REFERENCES employes(id),
+    
+    -- Dates
+    date_commande DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_livraison_prevue DATE,
+    date_livraison_reelle DATE,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, confirmee, en_preparation, expediee, livree, annulee
+    statut_paiement VARCHAR(50) DEFAULT 'en_attente', -- en_attente, partiel, paye, rembourse
+    
+    -- Origine
+    origine VARCHAR(50) DEFAULT 'vente_directe', -- vente_directe, marketplace, telephone, email, site_web
+    devis_id UUID REFERENCES devis(id),
+    
+    -- Montants
+    montant_ht NUMERIC(14,2) DEFAULT 0,
+    montant_tva NUMERIC(14,2) DEFAULT 0,
+    montant_ttc NUMERIC(14,2) DEFAULT 0,
+    remise_globale NUMERIC(14,2) DEFAULT 0,
+    frais_livraison NUMERIC(14,2) DEFAULT 0,
+    
+    -- Paiement
+    montant_paye NUMERIC(14,2) DEFAULT 0,
+    montant_restant NUMERIC(14,2) DEFAULT 0,
+    
+    -- Livraison
+    adresse_livraison JSONB,
+    methode_livraison VARCHAR(100),
+    numero_suivi TEXT,
+    transporteur TEXT,
+    
+    notes TEXT,
+    notes_internes TEXT,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, numero_commande)
+);
+
+CREATE INDEX idx_commandes_org ON commandes(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_commandes_client ON commandes(client_id);
+CREATE INDEX idx_commandes_statut ON commandes(statut, statut_paiement);
+CREATE INDEX idx_commandes_date ON commandes(date_commande DESC);
+CREATE INDEX idx_commandes_origine ON commandes(origine);
+
+-- Lignes de commandes
+CREATE TABLE lignes_commandes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    commande_id UUID NOT NULL REFERENCES commandes(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    description TEXT,
+    
+    quantite NUMERIC(10,3) NOT NULL,
+    quantite_livree NUMERIC(10,3) DEFAULT 0,
+    
+    prix_unitaire_ht NUMERIC(14,2) NOT NULL,
+    taux_tva NUMERIC(5,2) DEFAULT 18.00,
+    
+    remise_pct NUMERIC(5,2) DEFAULT 0,
+    remise_montant NUMERIC(14,2) DEFAULT 0,
+    
+    montant_ht NUMERIC(14,2),
+    montant_tva NUMERIC(14,2),
+    montant_ttc NUMERIC(14,2),
+    
+    -- Gestion stock
+    stock_reserve BOOLEAN DEFAULT FALSE,
+    entrepot_id UUID REFERENCES entrepots(id),
+    
+    ordre_affichage INT DEFAULT 0
+);
+
+-- Factures
+CREATE TABLE factures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_facture VARCHAR(50) NOT NULL,
+    numero_facture_complet VARCHAR(100), -- Avec préfixe: FAC-2024-0001
+    
+    type_facture VARCHAR(50) DEFAULT 'vente', -- vente, acompte, avoir
+    
+    client_id UUID REFERENCES clients(id),
+    commande_id UUID REFERENCES commandes(id),
+    
+    -- Dates
+    date_facture DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_echeance DATE NOT NULL,
+    date_paiement DATE,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, emise, envoyee, payee_partiel, payee, en_retard, annulee
+    
+    -- Montants
+    montant_ht NUMERIC(14,2) DEFAULT 0,
+    montant_tva NUMERIC(14,2) DEFAULT 0,
+    montant_ttc NUMERIC(14,2) DEFAULT 0,
+    remise_globale NUMERIC(14,2) DEFAULT 0,
+    
+    montant_paye NUMERIC(14,2) DEFAULT 0,
+    montant_restant NUMERIC(14,2),
+    
+    -- Conditions
+    conditions_paiement TEXT,
+    
+    -- Avoir (si facture d'avoir)
+    facture_origine_id UUID REFERENCES factures(id),
+    motif_avoir TEXT,
+    
+    -- Documents
+    fichier_pdf_url TEXT,
+    
+    notes TEXT,
+    mentions_legales TEXT,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    date_envoi TIMESTAMPTZ,
+    date_suppression TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, numero_facture)
+);
+
+CREATE INDEX idx_factures_org ON factures(organisation_id) WHERE date_suppression IS NULL;
+CREATE INDEX idx_factures_numero ON factures(numero_facture_complet);
+CREATE INDEX idx_factures_client ON factures(client_id);
+CREATE INDEX idx_factures_commande ON factures(commande_id);
+CREATE INDEX idx_factures_statut ON factures(statut);
+CREATE INDEX idx_factures_date ON factures(date_facture DESC);
+CREATE INDEX idx_factures_echeance ON factures(date_echeance) WHERE statut NOT IN ('payee', 'annulee');
+
+-- Lignes de factures
+CREATE TABLE lignes_factures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    facture_id UUID NOT NULL REFERENCES factures(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    description TEXT,
+    
+    quantite NUMERIC(10,3) NOT NULL,
+    prix_unitaire_ht NUMERIC(14,2) NOT NULL,
+    taux_tva NUMERIC(5,2) DEFAULT 18.00,
+    
+    remise_pct NUMERIC(5,2) DEFAULT 0,
+    remise_montant NUMERIC(14,2) DEFAULT 0,
+    
+    montant_ht NUMERIC(14,2),
+    montant_tva NUMERIC(14,2),
+    montant_ttc NUMERIC(14,2),
+    
+    ordre_affichage INT DEFAULT 0
+);
+
+-- ============================================================================
+-- SECTION 8: GESTION DES PAIEMENTS
+-- ============================================================================
+
+-- Modes de paiement
+CREATE TABLE modes_paiement (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID REFERENCES organisations(id) ON DELETE CASCADE, -- NULL = mode global
+    
+    nom VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- especes, carte_bancaire, virement, cheque, mobile_money, autre
+    
+    -- Configuration
+    compte_comptable_id UUID, -- Pour intégration compta
+    commission_pct NUMERIC(5,2) DEFAULT 0,
+    frais_fixes NUMERIC(10,2) DEFAULT 0,
+    
+    -- Mobile Money
+    operateur VARCHAR(50), -- Orange Money, MTN, Moov, Wave
+    numero_compte TEXT,
+    
+    -- Carte bancaire
+    terminal_id TEXT,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    ordre_affichage INT DEFAULT 0,
+    date_creation TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Modes de paiement par défaut
+INSERT INTO modes_paiement (nom, code, type, ordre_affichage) VALUES
+('Espèces', 'ESPECES', 'especes', 1),
+('Carte Bancaire', 'CARTE', 'carte_bancaire', 2),
+('Orange Money', 'ORANGE_MONEY', 'mobile_money', 3),
+('MTN Money', 'MTN_MONEY', 'mobile_money', 4),
+('Moov Money', 'MOOV_MONEY', 'mobile_money', 5),
+('Wave', 'WAVE', 'mobile_money', 6),
+('Virement Bancaire', 'VIREMENT', 'virement', 7),
+('Chèque', 'CHEQUE', 'cheque', 8);
+
+-- Paiements
+CREATE TABLE paiements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_paiement VARCHAR(50) NOT NULL,
+    
+    -- Source
+    facture_id UUID REFERENCES factures(id),
+    commande_id UUID REFERENCES commandes(id),
+    client_id UUID REFERENCES clients(id),
+    
+    -- Informations paiement
+    mode_paiement_id UUID NOT NULL REFERENCES modes_paiement(id),
+    montant NUMERIC(14,2) NOT NULL,
+    devise VARCHAR(5) DEFAULT 'XOF',
+    
+    -- Dates
+    date_paiement DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_valeur DATE, -- Date de crédit effectif
+    
+    statut VARCHAR(50) DEFAULT 'en_attente', -- en_attente, valide, rejete, annule, rembourse
+    
+    -- Références
+    reference_transaction TEXT, -- Numéro de transaction mobile money, etc.
+    reference_interne TEXT,
+    numero_cheque TEXT,
+    numero_autorisation TEXT, -- Pour carte bancaire
+    
+    -- Compte bancaire (pour virement/chèque)
+    banque TEXT,
+    numero_compte TEXT,
+    
+    -- Frais
+    frais_transaction NUMERIC(10,2) DEFAULT 0,
+    montant_net NUMERIC(14,2),
+    
+    notes TEXT,
+    
+    -- Caisse
+    caisse_session_id UUID, -- Référence vers session de caisse
+    
+    enregistre_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_validation TIMESTAMPTZ,
+    valide_par UUID REFERENCES utilisateurs(id),
+    
+    UNIQUE(organisation_id, numero_paiement)
+);
+
+CREATE INDEX idx_paiements_org ON paiements(organisation_id);
+CREATE INDEX idx_paiements_facture ON paiements(facture_id);
+CREATE INDEX idx_paiements_client ON paiements(client_id);
+CREATE INDEX idx_paiements_date ON paiements(date_paiement DESC);
+CREATE INDEX idx_paiements_statut ON paiements(statut);
+CREATE INDEX idx_paiements_mode ON paiements(mode_paiement_id);
+
+-- ============================================================================
+-- SECTION 9: GESTION DE LA CAISSE
+-- ============================================================================
+
+-- Caisses / Points de vente
+CREATE TABLE caisses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    entrepot_id UUID REFERENCES entrepots(id),
+    
+    code_caisse VARCHAR(50) NOT NULL,
+    nom VARCHAR(100) NOT NULL,
+    type VARCHAR(50) DEFAULT 'physique', -- physique, virtuelle, mobile
+    
+    -- Localisation
+    emplacement TEXT,
+    
+    -- Configuration
+    imprimante_ticket VARCHAR(200), -- Nom/IP imprimante
+    tiroir_caisse_connecte BOOLEAN DEFAULT FALSE,
+    scanner_connecte BOOLEAN DEFAULT FALSE,
+    
+    -- Modes de paiement autorisés
+    modes_paiement_autorises UUID[], -- IDs des modes autorisés
+    
+    -- Paramètres
+    ouverture_automatique BOOLEAN DEFAULT FALSE,
+    fermeture_automatique BOOLEAN DEFAULT FALSE,
+    montant_fond_caisse NUMERIC(14,2) DEFAULT 0,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code_caisse)
+);
+
+CREATE INDEX idx_caisses_org ON caisses(organisation_id);
+
+-- Sessions de caisse (ouverture/fermeture)
+CREATE TABLE sessions_caisse (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    caisse_id UUID NOT NULL REFERENCES caisses(id) ON DELETE CASCADE,
+    
+    numero_session VARCHAR(50) NOT NULL,
+    
+    -- Responsable
+    caissier_id UUID NOT NULL REFERENCES employes(id),
+    
+    -- Dates et heures
+    date_ouverture TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    date_fermeture TIMESTAMPTZ,
+    
+    statut VARCHAR(50) DEFAULT 'ouverte', -- ouverte, fermee, validee, annulee
+    
+    -- Montants d'ouverture
+    fond_caisse_ouverture NUMERIC(14,2) DEFAULT 0,
+    
+    -- Montants de fermeture
+    fond_caisse_fermeture NUMERIC(14,2),
+    
+    -- Montants théoriques (calculés)
+    total_ventes_especes NUMERIC(14,2) DEFAULT 0,
+    total_ventes_carte NUMERIC(14,2) DEFAULT 0,
+    total_ventes_mobile NUMERIC(14,2) DEFAULT 0,
+    total_ventes_autres NUMERIC(14,2) DEFAULT 0,
+    total_ventes NUMERIC(14,2) DEFAULT 0,
+    
+    total_entrees_especes NUMERIC(14,2) DEFAULT 0,
+    total_sorties_especes NUMERIC(14,2) DEFAULT 0,
+    
+    montant_theorique_especes NUMERIC(14,2),
+    
+    -- Montants réels (comptés)
+    montant_reel_especes NUMERIC(14,2),
+    montant_reel_carte NUMERIC(14,2),
+    montant_reel_mobile NUMERIC(14,2),
+    
+    -- Écarts
+    ecart_especes NUMERIC(14,2),
+    ecart_explique TEXT,
+    
+    -- Statistiques
+    nombre_ventes INT DEFAULT 0,
+    nombre_clients INT DEFAULT 0,
+    ticket_moyen NUMERIC(14,2),
+    
+    notes_ouverture TEXT,
+    notes_fermeture TEXT,
+    
+    ouvert_par UUID REFERENCES utilisateurs(id),
+    ferme_par UUID REFERENCES utilisateurs(id),
+    valide_par UUID REFERENCES utilisateurs(id),
+    date_validation TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, numero_session)
+);
+
+CREATE INDEX idx_sessions_org ON sessions_caisse(organisation_id);
+CREATE INDEX idx_sessions_caisse ON sessions_caisse(caisse_id);
+CREATE INDEX idx_sessions_caissier ON sessions_caisse(caissier_id);
+CREATE INDEX idx_sessions_date ON sessions_caisse(date_ouverture DESC);
+CREATE INDEX idx_sessions_statut ON sessions_caisse(statut);
+
+-- Transactions de caisse
+CREATE TABLE transactions_caisse (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    session_caisse_id UUID NOT NULL REFERENCES sessions_caisse(id) ON DELETE CASCADE,
+    
+    numero_transaction VARCHAR(50) NOT NULL,
+    
+    type_transaction VARCHAR(50) NOT NULL, -- vente, remboursement, entree_fond, sortie_fond, ajustement
+    
+    -- Montant
+    montant NUMERIC(14,2) NOT NULL,
+    mode_paiement_id UUID REFERENCES modes_paiement(id),
+    
+    -- Références
+    facture_id UUID REFERENCES factures(id),
+    paiement_id UUID REFERENCES paiements(id),
+    commande_id UUID REFERENCES commandes(id),
+    
+    motif TEXT,
+    notes TEXT,
+    
+    -- Reçu
+    numero_recu VARCHAR(50),
+    recu_imprime BOOLEAN DEFAULT FALSE,
+    
+    date_transaction TIMESTAMPTZ DEFAULT NOW(),
+    effectue_par UUID REFERENCES employes(id),
+    
+    UNIQUE(organisation_id, numero_transaction)
+);
+
+CREATE INDEX idx_transactions_org ON transactions_caisse(organisation_id);
+CREATE INDEX idx_transactions_session ON transactions_caisse(session_caisse_id);
+CREATE INDEX idx_transactions_type ON transactions_caisse(type_transaction);
+CREATE INDEX idx_transactions_date ON transactions_caisse(date_transaction DESC);
+
+-- Détails transactions (pour ventes avec plusieurs articles)
+CREATE TABLE details_transactions_caisse (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_caisse_id UUID NOT NULL REFERENCES transactions_caisse(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    quantite NUMERIC(10,3) NOT NULL,
+    prix_unitaire NUMERIC(14,2) NOT NULL,
+    montant_total NUMERIC(14,2) NOT NULL,
+    
+    ordre_affichage INT DEFAULT 0
+);
+
+-- ============================================================================
+-- SECTION 10: COMPTABILITÉ
+-- ============================================================================
+
+-- Plan comptable
+CREATE TABLE plan_comptable (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_compte VARCHAR(20) NOT NULL,
+    intitule_compte TEXT NOT NULL,
+    type_compte VARCHAR(50) NOT NULL, -- actif, passif, charge, produit, capitaux
+    
+    compte_parent_id UUID REFERENCES plan_comptable(id),
+    niveau INT DEFAULT 1,
+    
+    -- Utilisation
+    imputable BOOLEAN DEFAULT TRUE, -- Peut recevoir des écritures
+    lettrable BOOLEAN DEFAULT FALSE,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_compte)
+);
+
+CREATE INDEX idx_plan_comptable_org ON plan_comptable(organisation_id);
+CREATE INDEX idx_plan_comptable_parent ON plan_comptable(compte_parent_id);
+
+-- Journaux comptables
+CREATE TABLE journaux_comptables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    code_journal VARCHAR(10) NOT NULL,
+    libelle VARCHAR(100) NOT NULL,
+    type_journal VARCHAR(50) NOT NULL, -- ventes, achats, banque, caisse, operations_diverses
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code_journal)
+);
+
+-- Journaux par défaut
+INSERT INTO journaux_comptables (organisation_id, code_journal, libelle, type_journal)
+SELECT o.id, j.code, j.libelle, j.type
+FROM organisations o
+CROSS JOIN (VALUES
+    ('VT', 'Ventes', 'ventes'),
+    ('AC', 'Achats', 'achats'),
+    ('BQ', 'Banque', 'banque'),
+    ('CA', 'Caisse', 'caisse'),
+    ('OD', 'Opérations diverses', 'operations_diverses')
+) j(code, libelle, type);
+
+-- Écritures comptables
+CREATE TABLE ecritures_comptables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    journal_id UUID NOT NULL REFERENCES journaux_comptables(id),
+    
+    numero_piece VARCHAR(50) NOT NULL,
+    date_ecriture DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_valeur DATE,
+    
+    libelle TEXT NOT NULL,
+    
+    -- Référence document source
+    document_type VARCHAR(50), -- facture, paiement, session_caisse
+    document_id UUID,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, validee, cloturee
+    
+    saisie_par UUID REFERENCES utilisateurs(id),
+    date_saisie TIMESTAMPTZ DEFAULT NOW(),
+    valide_par UUID REFERENCES utilisateurs(id),
+    date_validation TIMESTAMPTZ,
+    
+    UNIQUE(organisation_id, journal_id, numero_piece)
+);
+
+CREATE INDEX idx_ecritures_org ON ecritures_comptables(organisation_id);
+CREATE INDEX idx_ecritures_journal ON ecritures_comptables(journal_id);
+CREATE INDEX idx_ecritures_date ON ecritures_comptables(date_ecriture DESC);
+CREATE INDEX idx_ecritures_statut ON ecritures_comptables(statut);
+
+-- Lignes d'écritures (débit/crédit)
+CREATE TABLE lignes_ecritures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ecriture_id UUID NOT NULL REFERENCES ecritures_comptables(id) ON DELETE CASCADE,
+    compte_id UUID NOT NULL REFERENCES plan_comptable(id),
+    
+    libelle TEXT,
+    
+    montant_debit NUMERIC(14,2) DEFAULT 0,
+    montant_credit NUMERIC(14,2) DEFAULT 0,
+    
+    -- Lettrage (rapprochement)
+    lettre BOOLEAN DEFAULT FALSE,
+    code_lettrage VARCHAR(10),
+    date_lettrage DATE,
+    
+    ordre_affichage INT DEFAULT 0,
+    
+    CONSTRAINT check_debit_credit CHECK (
+        (montant_debit > 0 AND montant_credit = 0) OR
+        (montant_credit > 0 AND montant_debit = 0)
+    )
+);
+
+CREATE INDEX idx_lignes_ecriture ON lignes_ecritures(ecriture_id);
+CREATE INDEX idx_lignes_compte ON lignes_ecritures(compte_id);
+
+-- ============================================================================
+-- SECTION 11: MARKETPLACE (BOUTIQUE EN LIGNE)
+-- ============================================================================
+
+-- Configuration marketplace par organisation
+CREATE TABLE config_marketplace (
+    organisation_id UUID PRIMARY KEY REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Apparence
+    theme_couleur VARCHAR(7),
+    logo_boutique_url TEXT,
+    banniere_accueil_url TEXT,
+    favicon_url TEXT,
+    
+    -- Textes
+    slogan TEXT,
+    description_courte TEXT,
+    description_longue TEXT,
+    
+    -- Contact
+    email_boutique TEXT,
+    telephone_boutique TEXT,
+    whatsapp TEXT,
+    
+    -- Réseaux sociaux
+    facebook_url TEXT,
+    instagram_url TEXT,
+    twitter_url TEXT,
+    
+    -- Paramètres de vente
+    livraison_activee BOOLEAN DEFAULT TRUE,
+    frais_livraison_fixes NUMERIC(10,2),
+    livraison_gratuite_seuil NUMERIC(10,2),
+    zones_livraison JSONB, -- [{zone, frais, delai}]
+    
+    paiement_en_ligne BOOLEAN DEFAULT FALSE,
+    paiement_livraison BOOLEAN DEFAULT TRUE,
+    
+    -- Paramètres produits
+    avis_clients_actifs BOOLEAN DEFAULT TRUE,
+    notation_activee BOOLEAN DEFAULT TRUE,
+    stock_visible BOOLEAN DEFAULT FALSE,
+    
+    -- SEO
+    meta_titre TEXT,
+    meta_description TEXT,
+    meta_keywords TEXT[],
+    
+    -- Analytics
+    google_analytics_id TEXT,
+    facebook_pixel_id TEXT,
+    
+    -- Statut
+    boutique_active BOOLEAN DEFAULT FALSE,
+    mode_maintenance BOOLEAN DEFAULT FALSE,
+    message_maintenance TEXT,
+    
+    date_modification TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Commandes marketplace (commandes passées via la boutique en ligne)
+CREATE TABLE commandes_marketplace (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    commande_id UUID NOT NULL REFERENCES commandes(id) ON DELETE CASCADE,
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Informations client (peut être non-inscrit)
+    email_client TEXT NOT NULL,
+    nom_client TEXT NOT NULL,
+    telephone_client TEXT NOT NULL,
+    
+    -- Livraison
+    adresse_livraison JSONB NOT NULL,
+    instructions_livraison TEXT,
+    
+    -- Tracking
+    ip_address INET,
+    user_agent TEXT,
+    
+    -- Notifications
+    email_envoye BOOLEAN DEFAULT FALSE,
+    sms_envoye BOOLEAN DEFAULT FALSE,
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Avis clients
+CREATE TABLE avis_produits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    produit_id UUID NOT NULL REFERENCES produits(id) ON DELETE CASCADE,
+    
+    client_id UUID REFERENCES clients(id),
+    commande_id UUID
+    commande_id UUID REFERENCES commandes(id),
+    
+    -- Contenu avis
+    note INT NOT NULL CHECK (note BETWEEN 1 AND 5),
+    titre TEXT,
+    commentaire TEXT,
+    
+    -- Modération
+    statut VARCHAR(50) DEFAULT 'en_attente', -- en_attente, approuve, rejete, signale
+    modere_par UUID REFERENCES utilisateurs(id),
+    date_moderation TIMESTAMPTZ,
+    raison_rejet TEXT,
+    
+    -- Métadonnées
+    achat_verifie BOOLEAN DEFAULT FALSE,
+    recommande BOOLEAN,
+    
+    -- Médias
+    photos_urls TEXT[],
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT avis_par_client_produit UNIQUE(client_id, produit_id, commande_id)
+);
+
+CREATE INDEX idx_avis_org ON avis_produits(organisation_id);
+CREATE INDEX idx_avis_produit ON avis_produits(produit_id);
+CREATE INDEX idx_avis_statut ON avis_produits(statut);
+CREATE INDEX idx_avis_note ON avis_produits(note);
+
+-- Favoris / Wishlist
+CREATE TABLE favoris (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    produit_id UUID NOT NULL REFERENCES produits(id) ON DELETE CASCADE,
+    
+    date_ajout TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(client_id, produit_id)
+);
+
+CREATE INDEX idx_favoris_client ON favoris(client_id);
+
+-- Paniers abandonnés (pour remarketing)
+CREATE TABLE paniers_abandonnes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    client_id UUID REFERENCES clients(id),
+    email_visiteur TEXT,
+    
+    -- Contenu panier
+    contenu JSONB NOT NULL, -- [{produit_id, variante_id, quantite, prix}]
+    montant_total NUMERIC(14,2),
+    
+    -- Tracking
+    session_id TEXT,
+    ip_address INET,
+    
+    -- Relance
+    email_relance_envoye BOOLEAN DEFAULT FALSE,
+    date_relance TIMESTAMPTZ,
+    converti BOOLEAN DEFAULT FALSE,
+    commande_id UUID REFERENCES commandes(id),
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_derniere_modification TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_paniers_org ON paniers_abandonnes(organisation_id);
+CREATE INDEX idx_paniers_client ON paniers_abandonnes(client_id);
+CREATE INDEX idx_paniers_non_convertis ON paniers_abandonnes(organisation_id, converti) WHERE converti = FALSE;
+
+-- Codes promotionnels
+CREATE TABLE codes_promo (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    code VARCHAR(50) NOT NULL,
+    description TEXT,
+    
+    -- Type de réduction
+    type_reduction VARCHAR(50) NOT NULL, -- pourcentage, montant_fixe, livraison_gratuite
+    valeur_reduction NUMERIC(10,2),
+    
+    -- Conditions d'application
+    montant_minimum NUMERIC(10,2),
+    montant_maximum NUMERIC(10,2),
+    
+    -- Restrictions
+    categories_autorisees UUID[], -- IDs catégories
+    produits_autorises UUID[], -- IDs produits
+    clients_autorises UUID[], -- IDs clients (codes personnalisés)
+    
+    premiere_commande_uniquement BOOLEAN DEFAULT FALSE,
+    
+    -- Limites d'utilisation
+    nombre_utilisations_max INT,
+    nombre_utilisations_par_client INT DEFAULT 1,
+    nombre_utilisations_actuelles INT DEFAULT 0,
+    
+    -- Dates de validité
+    date_debut TIMESTAMPTZ NOT NULL,
+    date_fin TIMESTAMPTZ NOT NULL,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, code)
+);
+
+CREATE INDEX idx_codes_promo_org ON codes_promo(organisation_id);
+CREATE INDEX idx_codes_promo_code ON codes_promo(code) WHERE actif = TRUE;
+CREATE INDEX idx_codes_promo_dates ON codes_promo(date_debut, date_fin) WHERE actif = TRUE;
+
+-- Utilisation des codes promo
+CREATE TABLE utilisations_codes_promo (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code_promo_id UUID NOT NULL REFERENCES codes_promo(id) ON DELETE CASCADE,
+    commande_id UUID NOT NULL REFERENCES commandes(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES clients(id),
+    
+    montant_reduction NUMERIC(10,2) NOT NULL,
+    
+    date_utilisation TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_utilisation_promo ON utilisations_codes_promo(code_promo_id);
+CREATE INDEX idx_utilisation_client ON utilisations_codes_promo(client_id);
+
+-- ============================================================================
+-- SECTION 12: GESTION DES ACHATS FOURNISSEURS
+-- ============================================================================
+
+-- Demandes d'achat (requisitions)
+CREATE TABLE demandes_achat (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_demande VARCHAR(50) NOT NULL,
+    
+    demandeur_id UUID NOT NULL REFERENCES employes(id),
+    departement VARCHAR(100),
+    
+    date_demande DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_besoin DATE,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, en_attente, approuvee, rejetee, convertie
+    
+    motif TEXT,
+    justification TEXT,
+    
+    montant_estime NUMERIC(14,2),
+    
+    approuve_par UUID REFERENCES utilisateurs(id),
+    date_approbation TIMESTAMPTZ,
+    commentaire_approbation TEXT,
+    
+    bon_commande_id UUID,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_demande)
+);
+
+CREATE INDEX idx_demandes_achat_org ON demandes_achat(organisation_id);
+CREATE INDEX idx_demandes_achat_statut ON demandes_achat(statut);
+
+-- Lignes demandes d'achat
+CREATE TABLE lignes_demandes_achat (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    demande_achat_id UUID NOT NULL REFERENCES demandes_achat(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    designation TEXT NOT NULL,
+    
+    quantite NUMERIC(10,3) NOT NULL,
+    prix_unitaire_estime NUMERIC(14,2),
+    
+    notes TEXT
+);
+
+-- Bons de commande fournisseurs
+CREATE TABLE bons_commande (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_bon_commande VARCHAR(50) NOT NULL,
+    
+    fournisseur_id UUID NOT NULL REFERENCES fournisseurs(id),
+    demande_achat_id UUID REFERENCES demandes_achat(id),
+    
+    date_commande DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_livraison_prevue DATE,
+    date_livraison_reelle DATE,
+    
+    statut VARCHAR(50) DEFAULT 'brouillon', -- brouillon, envoye, confirme, receptionne_partiel, receptionne, annule
+    
+    -- Montants
+    montant_ht NUMERIC(14,2) DEFAULT 0,
+    montant_tva NUMERIC(14,2) DEFAULT 0,
+    montant_ttc NUMERIC(14,2) DEFAULT 0,
+    
+    -- Livraison
+    entrepot_livraison_id UUID REFERENCES entrepots(id),
+    adresse_livraison JSONB,
+    
+    -- Conditions
+    conditions_paiement TEXT,
+    delai_paiement_jours INT,
+    
+    notes TEXT,
+    
+    cree_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_bon_commande)
+);
+
+CREATE INDEX idx_bons_commande_org ON bons_commande(organisation_id);
+CREATE INDEX idx_bons_commande_fournisseur ON bons_commande(fournisseur_id);
+CREATE INDEX idx_bons_commande_statut ON bons_commande(statut);
+
+-- Lignes bons de commande
+CREATE TABLE lignes_bons_commande (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bon_commande_id UUID NOT NULL REFERENCES bons_commande(id) ON DELETE CASCADE,
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    description TEXT,
+    
+    quantite_commandee NUMERIC(10,3) NOT NULL,
+    quantite_recue NUMERIC(10,3) DEFAULT 0,
+    quantite_restante NUMERIC(10,3),
+    
+    prix_unitaire_ht NUMERIC(14,2) NOT NULL,
+    taux_tva NUMERIC(5,2) DEFAULT 18.00,
+    
+    montant_ht NUMERIC(14,2),
+    montant_tva NUMERIC(14,2),
+    montant_ttc NUMERIC(14,2),
+    
+    ordre_affichage INT DEFAULT 0
+);
+
+-- Réceptions de marchandises
+CREATE TABLE receptions_marchandises (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    bon_commande_id UUID NOT NULL REFERENCES bons_commande(id),
+    
+    numero_reception VARCHAR(50) NOT NULL,
+    
+    date_reception DATE NOT NULL DEFAULT CURRENT_DATE,
+    entrepot_id UUID NOT NULL REFERENCES entrepots(id),
+    
+    numero_bl_fournisseur TEXT, -- Bon de livraison fournisseur
+    
+    statut VARCHAR(50) DEFAULT 'en_cours', -- en_cours, termine, valide
+    
+    reception_complete BOOLEAN DEFAULT FALSE,
+    
+    notes TEXT,
+    anomalies TEXT,
+    
+    receptionne_par UUID REFERENCES employes(id),
+    valide_par UUID REFERENCES utilisateurs(id),
+    date_validation TIMESTAMPTZ,
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_reception)
+);
+
+CREATE INDEX idx_receptions_org ON receptions_marchandises(organisation_id);
+CREATE INDEX idx_receptions_bon_commande ON receptions_marchandises(bon_commande_id);
+
+-- Lignes réceptions
+CREATE TABLE lignes_receptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reception_id UUID NOT NULL REFERENCES receptions_marchandises(id) ON DELETE CASCADE,
+    ligne_bon_commande_id UUID REFERENCES lignes_bons_commande(id),
+    
+    produit_id UUID REFERENCES produits(id),
+    variante_id UUID REFERENCES variantes_produits(id),
+    
+    designation TEXT NOT NULL,
+    
+    quantite_commandee NUMERIC(10,3),
+    quantite_recue NUMERIC(10,3) NOT NULL,
+    quantite_acceptee NUMERIC(10,3),
+    quantite_rejetee NUMERIC(10,3),
+    
+    motif_rejet TEXT,
+    
+    numero_lot TEXT,
+    date_peremption DATE,
+    
+    notes TEXT
+);
+
+-- Factures fournisseurs
+CREATE TABLE factures_fournisseurs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_facture_fournisseur VARCHAR(100) NOT NULL,
+    numero_facture_interne VARCHAR(50),
+    
+    fournisseur_id UUID NOT NULL REFERENCES fournisseurs(id),
+    bon_commande_id UUID REFERENCES bons_commande(id),
+    
+    date_facture DATE NOT NULL,
+    date_echeance DATE NOT NULL,
+    date_paiement DATE,
+    
+    statut VARCHAR(50) DEFAULT 'recue', -- recue, validee, payee_partiel, payee, en_retard
+    
+    -- Montants
+    montant_ht NUMERIC(14,2) NOT NULL,
+    montant_tva NUMERIC(14,2) NOT NULL,
+    montant_ttc NUMERIC(14,2) NOT NULL,
+    
+    montant_paye NUMERIC(14,2) DEFAULT 0,
+    montant_restant NUMERIC(14,2),
+    
+    fichier_pdf_url TEXT,
+    
+    notes TEXT,
+    
+    enregistre_par UUID REFERENCES utilisateurs(id),
+    valide_par UUID REFERENCES utilisateurs(id),
+    date_validation TIMESTAMPTZ,
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_modification TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_facture_fournisseur)
+);
+
+CREATE INDEX idx_factures_fournisseurs_org ON factures_fournisseurs(organisation_id);
+CREATE INDEX idx_factures_fournisseurs_fournisseur ON factures_fournisseurs(fournisseur_id);
+CREATE INDEX idx_factures_fournisseurs_statut ON factures_fournisseurs(statut);
+CREATE INDEX idx_factures_fournisseurs_echeance ON factures_fournisseurs(date_echeance) WHERE statut NOT IN ('payee');
+
+-- Paiements fournisseurs
+CREATE TABLE paiements_fournisseurs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    numero_paiement VARCHAR(50) NOT NULL,
+    
+    fournisseur_id UUID NOT NULL REFERENCES fournisseurs(id),
+    facture_fournisseur_id UUID REFERENCES factures_fournisseurs(id),
+    
+    mode_paiement_id UUID NOT NULL REFERENCES modes_paiement(id),
+    montant NUMERIC(14,2) NOT NULL,
+    
+    date_paiement DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_valeur DATE,
+    
+    statut VARCHAR(50) DEFAULT 'en_attente',
+    
+    reference_transaction TEXT,
+    numero_cheque TEXT,
+    
+    notes TEXT,
+    
+    effectue_par UUID REFERENCES utilisateurs(id),
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, numero_paiement)
+);
+
+CREATE INDEX idx_paiements_fournisseurs_org ON paiements_fournisseurs(organisation_id);
+CREATE INDEX idx_paiements_fournisseurs_fournisseur ON paiements_fournisseurs(fournisseur_id);
+CREATE INDEX idx_paiements_fournisseurs_facture ON paiements_fournisseurs(facture_fournisseur_id);
+
+-- ============================================================================
+-- SECTION 13: PARAMÈTRES ET CONFIGURATION
+-- ============================================================================
+
+-- Séquences pour numérotation automatique
+CREATE TABLE sequences_numerotation (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    type_document VARCHAR(50) NOT NULL, -- facture, commande, devis, bon_commande, etc.
+    
+    prefixe VARCHAR(20),
+    separateur VARCHAR(5) DEFAULT '-',
+    format_numero VARCHAR(100), -- Exemple: {prefixe}{separateur}{annee}{separateur}{numero:05d}
+    
+    valeur_actuelle BIGINT DEFAULT 0,
+    increment INT DEFAULT 1,
+    
+    reinitialiser_annuellement BOOLEAN DEFAULT TRUE,
+    reinitialiser_mensuellement BOOLEAN DEFAULT FALSE,
+    
+    dernier_reset TIMESTAMPTZ,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(organisation_id, type_document)
+);
+
+-- Initialisation des séquences par défaut pour chaque organisation
+INSERT INTO sequences_numerotation (organisation_id, type_document, prefixe, format_numero)
+SELECT o.id, s.type, s.prefixe, s.format
+FROM organisations o
+CROSS JOIN (VALUES
+    ('facture', 'FAC', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('commande', 'CMD', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('devis', 'DEV', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('bon_commande', 'BC', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('reception', 'REC', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('paiement', 'PAY', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('avoir', 'AVO', '{prefixe}{separateur}{annee}{separateur}{numero:05d}'),
+    ('recu', 'RCU', '{prefixe}{separateur}{annee}{separateur}{numero:05d}')
+) s(type, prefixe, format);
+
+-- Taxes (TVA, etc.)
+CREATE TABLE taxes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID REFERENCES organisations(id) ON DELETE CASCADE, -- NULL = taxe globale
+    
+    nom VARCHAR(100) NOT NULL,
+    code VARCHAR(20) NOT NULL,
+    taux NUMERIC(5,2) NOT NULL,
+    
+    type VARCHAR(50) DEFAULT 'tva', -- tva, taxe_locale, autre
+    
+    description TEXT,
+    
+    actif BOOLEAN DEFAULT TRUE,
+    par_defaut BOOLEAN DEFAULT FALSE,
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Taxes par défaut (Côte d'Ivoire)
+INSERT INTO taxes (nom, code, taux, type, par_defaut) VALUES
+('TVA 18%', 'TVA18', 18.00, 'tva', TRUE),
+('TVA 9%', 'TVA9', 9.00, 'tva', FALSE),
+('Exonéré', 'EXONERE', 0.00, 'tva', FALSE);
+
+-- Paramètres généraux de l'organisation
+CREATE TABLE parametres_organisation (
+    organisation_id UUID PRIMARY KEY REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    -- Facturation
+    mentions_legales_facture TEXT,
+    conditions_generales_vente TEXT,
+    pied_page_facture TEXT,
+    
+    logo_facture_url TEXT,
+    format_facture VARCHAR(20) DEFAULT 'A4', -- A4, Letter
+    
+    -- Délais de paiement par défaut
+    delai_paiement_defaut_jours INT DEFAULT 30,
+    
+    -- Relances automatiques
+    relances_actives BOOLEAN DEFAULT FALSE,
+    relance_1_jours INT DEFAULT 7,
+    relance_2_jours INT DEFAULT 15,
+    relance_3_jours INT DEFAULT 30,
+    
+    -- Email
+    email_expediteur TEXT,
+    signature_email TEXT,
+    
+    -- Stock
+    alerte_stock_actif BOOLEAN DEFAULT TRUE,
+    gestion_lot_serie BOOLEAN DEFAULT FALSE,
+    gestion_peremption BOOLEAN DEFAULT FALSE,
+    
+    -- Caisse
+    impression_automatique_ticket BOOLEAN DEFAULT TRUE,
+    ouverture_tiroir_auto BOOLEAN DEFAULT TRUE,
+    
+    -- Comptabilité
+    exercice_comptable_debut DATE,
+    exercice_comptable_fin DATE,
+    
+    -- Notifications
+    notifications_email BOOLEAN DEFAULT TRUE,
+    notifications_sms BOOLEAN DEFAULT FALSE,
+    
+    date_modification TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
+-- SECTION 14: NOTIFICATIONS ET ACTIVITÉS
+-- ============================================================================
+
+-- Types de notifications
+CREATE TABLE types_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    code VARCHAR(50) NOT NULL UNIQUE,
+    nom VARCHAR(100) NOT NULL,
+    description TEXT,
+    
+    canal_email BOOLEAN DEFAULT TRUE,
+    canal_sms BOOLEAN DEFAULT FALSE,
+    canal_push BOOLEAN DEFAULT TRUE,
+    canal_in_app BOOLEAN DEFAULT TRUE,
+    
+    actif BOOLEAN DEFAULT TRUE
+);
+
+-- Notifications pré-définies
+INSERT INTO types_notifications (code, nom, description, canal_email, canal_push) VALUES
+('vente_nouvelle', 'Nouvelle vente', 'Notification lors d''une nouvelle vente', TRUE, TRUE),
+('commande_nouvelle', 'Nouvelle commande', 'Notification lors d''une nouvelle commande', TRUE, TRUE),
+('paiement_recu', 'Paiement reçu', 'Notification de réception de paiement', TRUE, TRUE),
+('stock_faible', 'Stock faible', 'Alerte de stock bas', TRUE, TRUE),
+('facture_impayee', 'Facture impayée', 'Rappel de facture impayée', TRUE, FALSE),
+('session_caisse_ouverte', 'Session caisse ouverte', 'Notification d''ouverture de caisse', FALSE, TRUE),
+('session_caisse_fermee', 'Session caisse fermée', 'Notification de fermeture de caisse', TRUE, TRUE),
+('commande_marketplace', 'Commande marketplace', 'Nouvelle commande sur la boutique en ligne', TRUE, TRUE),
+('avis_client_nouveau', 'Nouvel avis client', 'Un client a laissé un avis', TRUE, TRUE);
+
+-- Notifications
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    type_notification_id UUID REFERENCES types_notifications(id),
+    
+    destinataire_id UUID REFERENCES utilisateurs(id),
+    destinataire_email TEXT,
+    destinataire_telephone TEXT,
+    
+    titre TEXT NOT NULL,
+    message TEXT NOT NULL,
+    
+    canal VARCHAR(50) NOT NULL, -- email, sms, push, in_app
+    
+    -- Données contextuelles
+    lien_action TEXT,
+    donnees_json JSONB,
+    
+    -- Statut
+    statut VARCHAR(50) DEFAULT 'en_attente', -- en_attente, envoye, lu, erreur
+    date_envoi TIMESTAMPTZ,
+    date_lecture TIMESTAMPTZ,
+    
+    erreur_message TEXT,
+    
+    date_creation TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_org ON notifications(organisation_id);
+CREATE INDEX idx_notifications_destinataire ON notifications(destinataire_id);
+CREATE INDEX idx_notifications_statut ON notifications(statut) WHERE statut = 'en_attente';
+CREATE INDEX idx_notifications_date ON notifications(date_creation DESC);
+
+-- Préférences notifications par utilisateur
+CREATE TABLE preferences_notifications_utilisateur (
+    utilisateur_id UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    type_notification_id UUID NOT NULL REFERENCES types_notifications(id) ON DELETE CASCADE,
+    
+    email_actif BOOLEAN DEFAULT TRUE,
+    sms_actif BOOLEAN DEFAULT FALSE,
+    push_actif BOOLEAN DEFAULT TRUE,
+    in_app_actif BOOLEAN DEFAULT TRUE,
+    
+    PRIMARY KEY(utilisateur_id, type_notification_id)
+);
+
+-- Journal d'activité (audit trail complet)
+CREATE TABLE journal_activites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organisation_id UUID REFERENCES organisations(id) ON DELETE CASCADE,
+    
+    utilisateur_id UUID REFERENCES utilisateurs(id),
+    employe_id UUID REFERENCES employes(id),
+    
+    -- Action
+    action VARCHAR(100) NOT NULL, -- create, update, delete, view, export, etc.
+    entite VARCHAR(100) NOT NULL, -- facture, produit, client, etc.
+    entite_id UUID,
+    
+    description TEXT NOT NULL,
+    
+    -- Détails techniques
+    donnees_avant JSONB,
+    donnees_apres JSONB,
+    
+    -- Contexte
+    ip_address INET,
+    user_agent TEXT,
+    
+    date_action TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_activites_org ON journal_activites(organisation_id);
+CREATE INDEX idx_activites_utilisateur ON journal_activites(utilisateur_id);
+CREATE INDEX idx_activites_entite ON journal_activites(entite, entite_id);
+CREATE INDEX idx_activites_date ON journal_activites(date_action DESC);
+CREATE INDEX idx_activites_action ON journal_activites(action);
+
+-- ============================================================================
+-- SECTION 15: RAPPORTS ET STATISTIQUES (VUES MATÉRIALISÉES)
+-- ============================================================================
+
+-- Vue: Statistiques ventes par jour
+CREATE MATERIALIZED VIEW IF NOT EXISTS stats_ventes_quotidiennes AS
+SELECT 
+    f.organisation_id,
+    DATE(f.date_facture) as date_vente,
+    COUNT(DISTINCT f.id) as nombre_factures,
+    COUNT(DISTINCT f.client_id) as nombre_clients,
+    SUM(f.montant_ht) as total_ht,
+    SUM(f.montant_tva) as total_tva,
+    SUM(f.montant_ttc) as total_ttc,
+    SUM(f.montant_paye) as total_encaisse,
+    AVG(f.montant_ttc) as ticket_moyen
+FROM factures f
+WHERE f.date_suppression IS NULL
+    AND f.statut NOT IN ('annulee', 'brouillon')
+GROUP BY f.organisation_id, DATE(f.date_facture);
+
+CREATE UNIQUE INDEX idx_stats_ventes_quotidiennes ON stats_ventes_quotidiennes(organisation_id, date_vente);
+
+-- Vue: Top produits vendus
+CREATE MATERIALIZED VIEW IF NOT EXISTS stats_top_produits AS
+SELECT 
+    lf.produit_id,
+    p.organisation_id,
+    p.nom as nom_produit,
+    p.code_produit,
+    COUNT(DISTINCT f.id) as nombre_ventes,
+    SUM(lf.quantite) as quantite_totale_vendue,
+    SUM(lf.montant_ttc) as chiffre_affaires,
+    AVG(lf.prix_unitaire_ht) as prix_moyen
+FROM lignes_factures lf
+INNER JOIN factures f ON lf.facture_id = f.id
+INNER JOIN produits p ON lf.produit_id = p.id
+WHERE f.date_suppression IS NULL
+    AND f.statut NOT IN ('annulee', 'brouillon')
+    AND p.date_suppression IS NULL
+GROUP BY lf.produit_id, p.organisation_id, p.nom, p.code_produit;
+
+CREATE UNIQUE INDEX idx_stats_top_produits ON stats_top_produits(organisation_id, produit_id);
+
+-- Vue: Statistiques clients
+CREATE MATERIALIZED VIEW IF NOT EXISTS stats_clients AS
+SELECT 
+    c.id as client_id,
+    c.organisation_id,
+    c.nom_complet,
+    c.raison_sociale,
+    COUNT(DISTINCT f.id) as nombre_factures,
+    COUNT(DISTINCT cmd.id) as nombre_commandes,
+    SUM(f.montant_ttc) as montant_total_factures,
+    SUM(f.montant_paye) as montant_total_paye,
+    SUM(f.montant_restant) as montant_credit_restant,
+    MAX(f.date_facture) as derniere_facture_date,
+    AVG(f.montant_ttc) as panier_moyen,
+    CASE 
+        WHEN MAX(f.date_facture) >= CURRENT_DATE - INTERVAL '30 days' THEN 'actif'
+        WHEN MAX(f.date_facture) >= CURRENT_DATE - INTERVAL '90 days' THEN 'risque'
+        ELSE 'inactif'
+    END as statut_activite
+FROM clients c
+LEFT JOIN factures f ON c.id = f.client_id AND f.date_suppression IS NULL AND f.statut != 'annulee'
+LEFT JOIN commandes cmd ON c.id = cmd.client_id AND cmd.date_suppression IS NULL
+WHERE c.date_suppression IS NULL
+GROUP BY c.id, c.organisation_id, c.nom_complet, c.raison_sociale;
+
+CREATE UNIQUE INDEX idx_stats_clients ON stats_clients(organisation_id, client_id);
+
+-- Vue: État des stocks critique
+CREATE MATERIALIZED VIEW IF NOT EXISTS stats_stocks_critiques AS
+SELECT 
+    s.organisation_id,
+    s.entrepot_id,
+    e.nom as nom_entrepot,
+    s.produit_id,
+    p.nom as nom_produit,
+    p.code_produit,
+    s.variante_id,
+    s.quantite_disponible,
+    s.quantite_reservee,
+    s.quantite_totale,
+    p.stock_alerte,
+    p.stock_minimum,
+    CASE 
+        WHEN s.quantite_disponible = 0 THEN 'rupture'
+        WHEN s.quantite_disponible <= p.stock_minimum THEN 'critique'
+        WHEN s.quantite_disponible <= p.stock_alerte THEN 'faible'
+        ELSE 'ok'
+    END as etat_stock,
+    s.valeur_stock_achat,
+    s.valeur_stock_vente
+FROM stocks s
+INNER JOIN produits p ON s.produit_id = p.id
+INNER JOIN entrepots e ON s.entrepot_id = e.id
+WHERE p.date_suppression IS NULL
+    AND p.actif = TRUE
+    AND p.gere_stock = TRUE;
+
+CREATE UNIQUE INDEX idx_stats_stocks_critiques ON stats_stocks_critiques(organisation_id, entrepot_id, produit_id, COALESCE(variante_id, '00000000-0000-0000-0000-000000000000'::uuid));
+CREATE INDEX idx_stats_stocks_etat ON stats_stocks_critiques(organisation_id, etat_stock);
+
+-- Vue: Performance des caisses
+CREATE MATERIALIZED VIEW IF NOT EXISTS stats_performance_caisses AS
+SELECT 
+    sc.organisation_id,
+    sc.caisse_id,
+    c.nom as nom_caisse,
+    sc.caissier_id,
+    e.nom_complet as nom_caissier,
+    DATE(sc.date_ouverture) as date_session,
+    COUNT(sc.id) as nombre_sessions,
+    SUM(sc.nombre_ventes) as total_ventes,
+    SUM(sc.total_ventes) as chiffre_affaires,
+    AVG(sc.ticket_moyen) as ticket_moyen,
+    SUM(sc.ecart_especes) as total_ecarts
+FROM sessions_caisse sc
+INNER JOIN caisses c ON sc.caisse_id = c.id
+INNER JOIN employes e ON sc.caissier_id = e.id
+WHERE sc.statut != 'annulee'
+GROUP BY sc.organisation_id, sc.caisse_id, c.nom, sc.caissier_id, e.nom_complet, DATE(sc.date_ouverture);
+
+CREATE UNIQUE INDEX idx_stats_performance_caisses ON stats_performance_caisses(organisation_id, caisse_id, caissier_id, date_session);
+
+-- Vue: Tableau de bord général
+CREATE MATERIALIZED VIEW IF NOT EXISTS dashboard_general AS
+SELECT 
+    o.id as organisation_id,
+    o.nom_commercial,
+    
+    -- Ventes du jour
+    COALESCE(v_jour.total_ttc, 0) as ventes_jour,
+    COALESCE(v_jour.nombre_factures, 0) as nombre_ventes_jour,
+    
+    -- Ventes du mois
+    COALESCE(v_mois.total_ttc, 0) as ventes_mois,
+    COALESCE(v_mois.nombre_factures, 0) as nombre_ventes_mois,
+    
+    -- Ventes de l'année
+    COALESCE(v_annee.total_ttc, 0) as ventes_annee,
+    
+    -- Clients
+    (SELECT COUNT(*) FROM clients WHERE organisation_id = o.id AND date_suppression IS NULL AND actif = TRUE) as nombre_clients_actifs,
+    
+    -- Produits
+    (SELECT COUNT(*) FROM produits WHERE organisation_id = o.id AND date_suppression IS NULL AND actif = TRUE) as nombre_produits_actifs,
+    
+    -- Stock critique
+    (SELECT COUNT(*) FROM stats_stocks_critiques WHERE organisation_id = o.id AND etat_stock IN ('rupture', 'critique')) as nombre_stocks_critiques,
+    
+    -- Factures impayées
+    COALESCE(f_impayees.nombre, 0) as nombre_factures_impayees,
+    COALESCE(f_impayees.montant, 0) as montant_factures_impayees,
+    
+    -- Dernière mise à jour
+    NOW() as derniere_maj
+    
+FROM organisations o
+
+-- Ventes du jour
+LEFT JOIN LATERAL (
+    SELECT SUM(montant_ttc) as total_ttc, COUNT(*) as nombre_factures
+    FROM factures
+    WHERE organisation_id = o.id
+        AND date_facture = CURRENT_DATE
+        AND statut NOT IN ('annulee', 'brouillon')
+        AND date_suppression IS NULL
+) v_jour ON TRUE
+
+-- Ventes du mois
+LEFT JOIN LATERAL (
+    SELECT SUM(montant_ttc) as total_ttc, COUNT(*) as nombre_factures
+    FROM factures
+    WHERE organisation_id = o.id
+        AND date_facture >= DATE_TRUNC('month', CURRENT_DATE)
+        AND statut NOT IN ('annulee', 'brouillon')
+        AND date_suppression IS NULL
+) v_mois ON TRUE
+
+-- Ventes de l'année
+LEFT JOIN LATERAL (
+    SELECT SUM(montant_ttc) as total_ttc
+    FROM factures
+    WHERE organisation_id = o.id
+        AND date_facture >= DATE_TRUNC('year', CURRENT_DATE)
+        AND statut NOT IN ('annulee', 'brouillon')
+        AND date_suppression IS NULL
+) v_annee ON TRUE
+
+-- Factures impayées
+LEFT JOIN LATERAL (
+    SELECT COUNT(*) as nombre, SUM(montant_restant) as montant
+    FROM factures
+    WHERE organisation_id = o.id
+        AND statut IN ('emise', 'envoyee', 'payee_partiel', 'en_retard')
+        AND montant_restant > 0
+        AND date_suppression IS NULL
+) f_impayees ON TRUE
+
+WHERE o.date_suppression IS NULL AND o.actif = TRUE;
+
+CREATE UNIQUE INDEX idx_dashboard_general ON dashboard_general(organisation_id);
+
+-- ============================================================================
+-- SECTION 16: TRIGGERS ET FONCTIONS
+-- ============================================================================
+
+-- Fonction: Mise à jour automatique de date_modification
+CREATE OR REPLACE FUNCTION update_date_modification()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.date_modification = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Application du trigger sur les tables principales
+CREATE TRIGGER trg_update_utilisateurs BEFORE UPDATE ON utilisateurs
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_organisations BEFORE UPDATE ON organisations
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_employes BEFORE UPDATE ON employes
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_clients BEFORE UPDATE ON clients
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_produits BEFORE UPDATE ON produits
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_stocks BEFORE UPDATE ON stocks
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_factures BEFORE UPDATE ON factures
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+CREATE TRIGGER trg_update_commandes BEFORE UPDATE ON commandes
+    FOR EACH ROW EXECUTE FUNCTION update_date_modification();
+
+-- Fonction: Générer code employé avec préfixe organisation
+CREATE OR REPLACE FUNCTION generer_code_employe()
+RETURNS TRIGGER AS $$
+DECLARE
+    acronyme_org TEXT;
+    dernier_numero INT;
+    nouveau_code TEXT;
+BEGIN
+    -- Récupérer l'acronyme de l'organisation
+    SELECT acronyme INTO acronyme_org
+    FROM organisations
+    WHERE id = NEW.organisation_id;
+    
+    -- Si le code n'est pas fourni, le générer
+    IF NEW.code_employe IS NULL OR NEW.code_employe = '' THEN
+        -- Trouver le dernier numéro pour cette organisation
+        SELECT COALESCE(MAX(
+            CAST(SUBSTRING(code_employe FROM '[0-9]+$') AS INT)
+        ), 0) INTO dernier_numero
+        FROM employes
+        WHERE organisation_id = NEW.organisation_id
+            AND code_employe ~ (acronyme_org || '-EMP-[0-9]+');
+        
+        -- Générer le nouveau code
+        nouveau_code := acronyme_org || '-EMP-' || LPAD((dernier_numero + 1)::TEXT, 4, '0');
+        NEW.code_employe := nouveau_code;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_generer_code_employe BEFORE INSERT ON employes
+    FOR EACH ROW EXECUTE FUNCTION generer_code_employe();
+
+-- Fonction similaire pour clients
+CREATE OR REPLACE FUNCTION generer_code_client()
+RETURNS TRIGGER AS $$
+DECLARE
+    acronyme_org TEXT;
+    dernier_numero INT;
+    nouveau_code TEXT;
+BEGIN
+    SELECT acronyme INTO acronyme_org
+    FROM organisations
+    WHERE id = NEW.organisation_id;
+    
+    IF NEW.code_client IS NULL OR NEW.code_client = '' THEN
+        SELECT COALESCE(MAX(
+            CAST(SUBSTRING(code_client FROM '[0-9]+$') AS INT)
+        ), 0) INTO dernier_numero
+        FROM clients
+        WHERE organisation_id = NEW.organisation_id
+            AND code_client ~ (acronyme_org || '-CLI-[0-9]+');
+        
+        nouveau_code := acronyme_org || '-CLI-' || LPAD((dernier_numero + 1)::TEXT, 5, '0');
+        NEW.code_client := nouveau_code;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_generer_code_client BEFORE INSERT ON clients
+    FOR EACH ROW EXECUTE FUNCTION generer_code_client();
+
+-- Fonction: Calculer montants facture
+CREATE OR REPLACE FUNCTION calculer_montants_facture()
+RETURNS TRIGGER AS $$
+DECLARE
+    total_ht NUMERIC(14,2);
+    total_tva NUMERIC(14,2);
+    total_ttc NUMERIC(14,2);
+BEGIN
+    SELECT 
+        COALESCE(SUM(montant_ht), 0),
+        COALESCE(SUM(montant_tva), 0),
+        COALESCE(SUM(montant_ttc), 0)
+    INTO total_ht, total_tva, total_ttc
+    FROM lignes_factures
+    WHERE facture_id = NEW.id;
+    
+    UPDATE factures
+    SET 
+        montant_ht = total_ht - COALESCE(remise_globale, 0),
+        montant_tva = total_tva,
+        montant_ttc = total_ttc - COALESCE(remise_globale, 0),
+        montant_restant = (total_ttc - COALESCE(remise_globale, 0)) - COALESCE(montant_paye, 0)
+    WHERE id = NEW.id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Fonction: Mettre à jour stock après vente
+CREATE OR REPLACE FUNCTION maj_stock_apres_vente()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Diminuer le stock disponible
+    UPDATE stocks
+    SET 
+        quantite_disponible = quantite_disponible - NEW.quantite,
+        date_dernier_mouvement = NOW(),
+        date_derniere_sortie = NOW()
+    WHERE produit_id = NEW.produit_id
+        AND (variante_id = NEW.variante_id OR (variante_id IS NULL AND NEW.variante_id IS NULL))
+        AND organisation_id = (SELECT organisation_id FROM commandes WHERE id = NEW.commande_id);
+    
+    -- Créer un mouvement de stock
+    INSERT INTO mouvements_stock (
+        organisation_id,
+        stock_id,
+        type_mouvement,
+        quantite,
+        document_type,
+        document_id,
+        effectue_par,
+        date_mouvement
+    )
+    SELECT 
+        c.organisation_id,
+        s.id,
+        'sortie',
+        NEW.quantite,
+        'commande',
+        NEW.commande_id,
+        c.cree_par,
+        NOW()
+    FROM commandes c
+    INNER JOIN stocks s ON s.produit_id = NEW.produit_id 
+        AND s.organisation_id = c.organisation_id
+    WHERE c.id = NEW.commande_id
+    LIMIT 1;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Fonction: Logger les activités importantes
+CREATE OR REPLACE FUNCTION logger_activite()
+RETURNS TRIGGER AS $$
+DECLARE
+    action_type TEXT;
+    description_action TEXT;
+BEGIN
+    -- Déterminer le type d'action
+    IF TG_OP = 'INSERT' THEN
+        action_type := 'create';
+        description_action := 'Création de ' || TG_TABLE_NAME;
+    ELSIF TG_OP = 'UPDATE' THEN
+        action_type := 'update';
+        description_action := 'Modification de ' || TG_TABLE_NAME;
+    ELSIF TG_OP = 'DELETE' THEN
+        action_type := 'delete';
+        description_action := 'Suppression de ' || TG_TABLE_NAME;
+    END IF;
+    
+    -- Insérer dans le journal d'activités
+    INSERT INTO journal_activites (
+        organisation_id,
+        action,
+        entite,
+        entite_id,
+        description,
+        donnees_avant,
+        donnees_apres
+    ) VALUES (
+        COALESCE(NEW.organisation_id, OLD.organisation_id),
+        action_type,
+        TG_TABLE_NAME,
+        COALESCE(NEW.id, OLD.id),
+        description_action,
+        CASE WHEN TG_OP != 'INSERT' THEN row_to_json(OLD) ELSE NULL END,
+        CASE WHEN TG_OP != 'DELETE' THEN row_to_json(NEW) ELSE NULL END
+    );
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Application sur tables sensibles
+CREATE TRIGGER trg_log_factures AFTER INSERT OR UPDATE OR DELETE ON factures
+    FOR EACH ROW EXECUTE FUNCTION logger_activite();
+
+CREATE TRIGGER trg_log_paiements AFTER INSERT OR UPDATE OR DELETE ON paiements
+    FOR EACH ROW EXECUTE FUNCTION logger_activite();
+
+CREATE TRIGGER trg_log_sessions_caisse AFTER INSERT OR UPDATE ON sessions_caisse
+    FOR EACH ROW EXECUTE FUNCTION logger_activite();
+
+-- Fonction: Rafraîchir les vues matérialisées
+CREATE OR REPLACE FUNCTION rafraichir_statistiques()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stats_ventes_quotidiennes;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stats_top_produits;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stats_clients;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stats_stocks_critiques;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stats_performance_caisses;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY dashboard_general;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- SECTION 17: POLITIQUES DE SÉCURITÉ (ROW LEVEL SECURITY)
+-- ============================================================================
+
+-- Activer RLS sur les tables principales
+ALTER TABLE organisations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE employes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE produits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE factures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commandes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions_caisse ENABLE ROW LEVEL SECURITY;
+
+-- Exemple de politique: Utilisateur ne voit que les données de ses organisations
+CREATE POLICY policy_organisations_select ON organisations
+    FOR SELECT
+    USING (
+        id IN (
+            SELECT organisation_id 
+            FROM utilisateurs_organisations 
+            WHERE utilisateur_id = current_setting('app.current_user_id')::UUID
+        )
+    );
+
+-- Politique similaire pour les autres tables
+CREATE POLICY policy_employes_select ON employes
+    FOR SELECT
+    USING (
+        organisation_id IN (
+            SELECT organisation_id 
+            FROM utilisateurs_organisations 
+            WHERE utilisateur_id = current_setting('app.current_user_id')::UUID
+        )
+    );
+
+-- ============================================================================
+-- SECTION 18: DONNÉES DE TEST ET INITIALISATION
+-- ============================================================================
+
+-- Commenter cette section en production
+
+-- Création d'un utilisateur de test
+INSERT INTO utilisateurs (email, nom_complet, telephone, actif)
+VALUES ('admin@example.com', 'Administrateur Test', '+225 0700000000', TRUE)
+RETURNING id;
+
+-- Création d'une organisation de test
+INSERT INTO organisations (
+    proprietaire_id,
+    nom_commercial,
+    raison_sociale,
+    acronyme,
+    email_contact,
+    telephone_principal,
+    pays,
+    devise,
+    plan_id
+) VALUES (
+    (SELECT id FROM utilisateurs WHERE email = 'admin@example.com'),
+    'Entreprise Test SARL',
+    'Entreprise Test Société à Responsabilité Limitée',
+    'ETEST',
+    'contact@entreprisetest.ci',
+    '+225 0712345678',
+    'Côte d''Ivoire',
+    'XOF',
+    (SELECT id FROM plans_abonnement WHERE code = 'PREMIUM')
+);
+
+-- ============================================================================
+-- SECTION 19: COMMENTAIRES ET DOCUMENTATION
+-- ============================================================================
+
+COMMENT ON DATABASE current_database() IS 'Base de données SaaS de gestion multi-entreprises - Version 1.0';
+
+COMMENT ON SCHEMA public IS 'Schéma principal contenant toutes les tables métier';
+
+-- Commentaires sur les sections
+COMMENT ON TABLE utilisateurs IS 'Utilisateurs principaux pouvant gérer plusieurs organisations';
+COMMENT ON TABLE organisations IS 'Entreprises clientes du SaaS, chacune isolée par organisation_id';
+COMMENT ON TABLE employes IS 'Employés des organisations avec codes préfixés (ex: ACME-EMP-0001)';
+COMMENT ON TABLE clients IS 'Clients des organisations (B2C et B2B)';
+COMMENT ON TABLE produits IS 'Catalogue produits avec support marketplace';
+COMMENT ON TABLE stocks IS 'Gestion du stock par entrepôt et variante';
+COMMENT ON TABLE factures IS 'Factures de vente avec numérotation automatique';
+COMMENT ON TABLE caisses IS 'Points de vente physiques ou virtuels';
+COMMENT ON TABLE sessions_caisse IS 'Sessions d''ouverture/fermeture de caisse avec rapprochement';
+COMMENT ON TABLE transactions_caisse IS 'Toutes les transactions de caisse (ventes, entrées, sorties)';
+COMMENT ON TABLE config_marketplace IS 'Configuration de la boutique en ligne par organisation';
+
+-- ============================================================================
+-- FIN DU SCRIPT SQL
+-- ============================================================================
+
+-- Pour information: Tâches cron recommandées (à implémenter côté application)
+-- 1. Rafraîchir les statistiques toutes les heures:
+--    SELECT rafraichir_statistiques();
+--
+-- 2. Vérifier les factures en retard quotidiennement
+-- 3. Envoyer les relances de paiement
+-- 4. Nettoyer les notifications anciennes (> 90 jours)
+-- 5. Archiver les sessions de caisse anciennes (> 1 an)
+-- 6. Générer les rapports mensuels automatiques

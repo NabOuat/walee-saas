@@ -1,0 +1,40 @@
+{% extends "dashboard/roles/gestionnaire_stock/base_gestionnaire.html" %}
+{% load static %}
+{% block title %}Alertes Stock - Walee{% endblock %}
+{% block dashboard_content %}
+<div x-data="{alertes:[{id:1,type:'Rupture',produit:'Samsung S21',qte:0,seuilMin:8,priorite:'Critique'},{id:2,type:'Stock Faible',produit:'iPhone 13',qte:3,seuilMin:10,priorite:'Haute'},{id:3,type:'Stock Faible',produit:'AirPods Pro',qte:7,seuilMin:15,priorite:'Moyenne'}],filterPriorite:''}" x-init="lucide.createIcons()">
+<div class="flex items-center justify-between mb-6">
+<div><h1 class="text-2xl font-bold text-gray-900 dark:text-white">Alertes Stock</h1><p class="text-sm text-gray-600 dark:text-gray-400 mt-1"><span x-text="alertes.length"></span> alerte(s) active(s)</p></div>
+<button @click.prevent="alertes=[]" class="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i><span>Tout traiter</span></button>
+</div>
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-4 border border-red-200 cursor-pointer hover:shadow-lg transition" @click="filterPriorite='Critique'"><div class="flex items-center justify-between mb-2"><div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-white"></i></div></div><p class="text-2xl font-bold text-red-900 dark:text-red-100" x-text="alertes.filter(a=>a.priorite==='Critique').length"></p><p class="text-xs text-red-600 font-medium">Critiques</p></div>
+<div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4 border border-orange-200 cursor-pointer hover:shadow-lg transition" @click="filterPriorite='Haute'"><div class="flex items-center justify-between mb-2"><div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center"><i data-lucide="alert-circle" class="w-5 h-5 text-white"></i></div></div><p class="text-2xl font-bold text-orange-900 dark:text-orange-100" x-text="alertes.filter(a=>a.priorite==='Haute').length"></p><p class="text-xs text-orange-600 font-medium">Hautes</p></div>
+<div class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg p-4 border border-yellow-200 cursor-pointer hover:shadow-lg transition" @click="filterPriorite='Moyenne'"><div class="flex items-center justify-between mb-2"><div class="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center"><i data-lucide="info" class="w-5 h-5 text-white"></i></div></div><p class="text-2xl font-bold text-yellow-900 dark:text-yellow-100" x-text="alertes.filter(a=>a.priorite==='Moyenne').length"></p><p class="text-xs text-yellow-600 font-medium">Moyennes</p></div>
+</div>
+<div class="space-y-3">
+<template x-for="alerte in alertes.filter(a=>!filterPriorite||a.priorite===filterPriorite)" :key="alerte.id">
+<div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-l-4 hover:shadow-md transition" :class="alerte.priorite==='Critique'?'border-red-500':alerte.priorite==='Haute'?'border-orange-500':'border-yellow-500'">
+<div class="flex items-start justify-between">
+<div class="flex-1"><div class="flex items-center gap-3 mb-2"><div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="alerte.priorite==='Critique'?'bg-red-100 dark:bg-red-900/30':alerte.priorite==='Haute'?'bg-orange-100 dark:bg-orange-900/30':'bg-yellow-100 dark:bg-yellow-900/30'"><i data-lucide="package-x" class="w-5 h-5" :class="alerte.priorite==='Critique'?'text-red-600':alerte.priorite==='Haute'?'text-orange-600':'text-yellow-600'"></i></div><div><h3 class="font-bold text-gray-900 dark:text-white" x-text="alerte.produit"></h3><p class="text-xs text-gray-500" x-text="alerte.type"></p></div></div><div class="flex items-center gap-4 text-sm"><div><span class="text-gray-600 dark:text-gray-400">Stock actuel:</span> <span class="font-bold text-red-600" x-text="alerte.qte"></span></div><div><span class="text-gray-600 dark:text-gray-400">Seuil min:</span> <span class="font-bold text-gray-900 dark:text-white" x-text="alerte.seuilMin"></span></div></div></div>
+<div class="flex flex-col gap-2"><span class="px-3 py-1 rounded-full text-xs font-semibold" :class="alerte.priorite==='Critique'?'bg-red-100 text-red-700':alerte.priorite==='Haute'?'bg-orange-100 text-orange-700':'bg-yellow-100 text-yellow-700'" x-text="alerte.priorite"></span><button @click.prevent="commanderProduit(alerte)" class="px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition">Commander</button></div>
+</div>
+</div>
+</template>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function commanderProduit(alerte) {
+    showToast(`Commande pour ${alerte.produit} ajoutée`, 'success', 'Commande');
+    setTimeout(() => {
+        showLoading('Redirection vers fournisseurs...');
+        setTimeout(() => {
+            window.location.href = '/dashboard/gestionnaire-stock/fournisseurs/';
+        }, 500);
+    }, 1000);
+}
+</script>
+{% endblock %}
