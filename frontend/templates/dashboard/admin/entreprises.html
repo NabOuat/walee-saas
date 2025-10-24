@@ -564,59 +564,141 @@ function entreprisesData() {
         },
         
         processFile(file) {
-            // Vérifier la taille (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Le fichier est trop volumineux. Maximum 5MB.');
+            // Vérifier le type de fichier
+            if (!file.type.startsWith('image/')) {
+                showToast('Veuvez sélectionner un fichier image valide (JPG, PNG, etc.)', 'error', 'Format non supporté');
                 return;
             }
+            
+            // Vérifier la taille (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Le fichier est trop volumineux. La taille maximale est de 5 Mo.', 'error', 'Fichier trop volumineux');
+                return;
+            }
+            
+            // Afficher un indicateur de chargement
+            showLoading('Traitement de l\'image...');
             
             // Créer preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 this.logoPreview = e.target.result;
                 this.formData.logo = file;
+                hideLoading();
+                showToast('Image chargée avec succès', 'success', null, 3000);
             };
+            
+            reader.onerror = () => {
+                hideLoading();
+                showToast('Erreur lors du chargement de l\'image', 'error');
+            };
+            
             reader.readAsDataURL(file);
         },
         
-        selectEntreprise(entreprise) {
-            // Rediriger vers la vue détaillée de l'entreprise
-            window.location.href = `/dashboard/entreprises/${entreprise.id}/`;
+        async selectEntreprise(entreprise) {
+            showLoading('Chargement de l\'entreprise...');
+            
+            try {
+                // Simuler un délai de chargement
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // Rediriger vers la vue détaillée de l'entreprise
+                window.location.href = `/dashboard/entreprises/${entreprise.id}/`;
+                
+            } catch (error) {
+                showToast(
+                    'Impossible de charger l\'entreprise sélectionnée',
+                    'error',
+                    'Erreur de chargement',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
-        editEntreprise(entreprise) {
-            // Ouvrir modal d'édition
-            alert(`⚙️ Modification de "${entreprise.nom}"\n\nFonctionnalité à venir :\n- Modifier les informations\n- Changer le logo\n- Gérer les paramètres\n- Supprimer l'entreprise`);
+        async editEntreprise(entreprise) {
+            // Afficher un toast informatif
+            showToast(
+                `Fonctionnalité à venir :<br>` +
+                `• Modifier les informations<br>` +
+                `• Changer le logo<br>` +
+                `• Gérer les paramètres<br>` +
+                `• Supprimer l'entreprise`,
+                'info',
+                `Modification de "${entreprise.nom}"`,
+                5000
+            );
             
             // TODO: Implémenter modal d'édition
             // this.showEditModal = true;
             // this.editingEntreprise = entreprise;
         },
         
-        handleSubmit() {
-            console.log('Création entreprise:', this.formData);
+        async handleSubmit() {
+            // Validation des champs obligatoires
+            if (!this.formData.nom) {
+                showToast('Veuillez saisir le nom de l\'entreprise', 'warning', 'Champ requis');
+                return;
+            }
             
-            // Créer nouvelle entreprise
-            const nouvelleEntreprise = {
-                id: this.entreprises.length + 1,
-                nom: this.formData.nom,
-                initiales: this.getInitiales(this.formData.nom),
-                type: this.formData.type === 'autre' ? this.formData.autreActivite : this.formData.type,
-                ville: this.formData.ville,
-                pays: this.getPaysNom(this.formData.pays),
-                employes: 0,
-                produits: 0,
-                active: false,
-                logo: this.logoPreview,
-                gradient: this.getRandomGradient()
-            };
+            if (!this.formData.type) {
+                showToast('Veuillez sélectionner un type d\'entreprise', 'warning', 'Champ requis');
+                return;
+            }
             
-            this.entreprises.push(nouvelleEntreprise);
+            if (this.formData.type === 'autre' && !this.formData.autreActivite) {
+                showToast('Veuillez préciser le type d\'activité', 'warning', 'Champ requis');
+                return;
+            }
             
-            // Reset et fermer
-            this.showCreateModal = false;
-            this.currentStep = 1;
-            this.resetForm();
+            showLoading('Création de l\'entreprise...');
+            
+            try {
+                // Simuler un délai réseau
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Créer nouvelle entreprise
+                const nouvelleEntreprise = {
+                    id: this.entreprises.length + 1,
+                    nom: this.formData.nom,
+                    initiales: this.getInitiales(this.formData.nom),
+                    type: this.formData.type === 'autre' ? this.formData.autreActivite : this.formData.type,
+                    ville: this.formData.ville,
+                    pays: this.getPaysNom(this.formData.pays),
+                    employes: 0,
+                    produits: 0,
+                    active: false,
+                    logo: this.logoPreview,
+                    gradient: this.getRandomGradient()
+                };
+                
+                this.entreprises.push(nouvelleEntreprise);
+                
+                // Afficher un message de succès
+                showToast(
+                    `L'entreprise a été créée avec succès.`,
+                    'success',
+                    'Entreprise créée',
+                    5000
+                );
+                
+                // Reset et fermer
+                this.showCreateModal = false;
+                this.currentStep = 1;
+                this.resetForm();
+                
+            } catch (error) {
+                showToast(
+                    'Une erreur est survenue lors de la création de l\'entreprise',
+                    'error',
+                    'Erreur',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
         getPaysNom(code) {
