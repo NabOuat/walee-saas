@@ -5,6 +5,4 @@ whitenoise==6.6.0
 django-cors-headers==4.3.1
 python-dotenv==1.0.0
 
-# Database (optionnel si pas de DB externe)
-dj-database-url==2.1.0
-psycopg2-binary==2.9.9
+
