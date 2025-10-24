@@ -489,8 +489,22 @@ function stockApp() {
             });
         },
         
-        loadStock() {
-            console.log('Chargement stock pour entreprise:', this.selectedEntreprise);
+        async loadStock() {
+            showLoading('Chargement du stock...');
+            try {
+                // Simuler un délai de chargement
+                await new Promise(resolve => setTimeout(resolve, 800));
+                console.log('Chargement stock pour entreprise:', this.selectedEntreprise);
+            } catch (error) {
+                showToast(
+                    'Impossible de charger le stock. Veuillez réessayer.',
+                    'error',
+                    'Erreur de chargement',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
         formatMoney(amount) {
@@ -521,35 +535,112 @@ function stockApp() {
             return 'Stock OK';
         },
         
-        adjustStock(produit, action) {
-            const quantite = prompt(`${action === 'add' ? '➕ Ajouter' : '➖ Retirer'} du stock\n\nProduit: ${produit.nom}\nStock actuel: ${produit.quantite}\n\nQuantité:`, '1');
+        async adjustStock(produit, action) {
+            const result = await showPrompt(
+                `${action === 'add' ? 'Ajouter' : 'Retirer'} du stock`,
+                `Produit: <strong>${produit.nom}</strong><br>Stock actuel: <strong>${produit.quantite}</strong>`,
+                'number',
+                '1',
+                'Valider',
+                'Annuler',
+                'Quantité',
+                action === 'add' ? 'Ajouter au stock' : 'Retirer du stock'
+            );
             
-            if (quantite && !isNaN(quantite)) {
-                const qty = parseInt(quantite);
-                if (action === 'add') {
-                    produit.quantite += qty;
-                    alert(`✅ ${qty} unités ajoutées\nNouveau stock: ${produit.quantite}`);
-                } else {
-                    if (produit.quantite >= qty) {
-                        produit.quantite -= qty;
-                        alert(`✅ ${qty} unités retirées\nNouveau stock: ${produit.quantite}`);
-                    } else {
-                        alert(`❌ Stock insuffisant\nStock actuel: ${produit.quantite}`);
+            if (result !== null) {
+                const quantite = parseInt(result);
+                if (!isNaN(quantite) && quantite > 0) {
+                    showLoading('Traitement en cours...');
+                    
+                    try {
+                        // Simuler un délai réseau
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                        
+                        if (action === 'add') {
+                            produit.quantite += quantite;
+                            showToast(
+                                `Nouveau stock: <strong>${produit.quantite}</strong> unités`,
+                                'success',
+                                `${quantite} unités ajoutées`,
+                                4000
+                            );
+                        } else {
+                            if (produit.quantite >= quantite) {
+                                produit.quantite -= quantite;
+                                showToast(
+                                    `Nouveau stock: <strong>${produit.quantite}</strong> unités`,
+                                    'success',
+                                    `${quantite} unités retirées`,
+                                    4000
+                                );
+                            } else {
+                                showToast(
+                                    `Stock actuel insuffisant: <strong>${produit.quantite}</strong> unités`,
+                                    'error',
+                                    'Stock insuffisant',
+                                    5000
+                                );
+                            }
+                        }
+                    } catch (error) {
+                        showToast(
+                            'Une erreur est survenue lors de la mise à jour du stock',
+                            'error',
+                            'Erreur',
+                            5000
+                        );
+                    } finally {
+                        hideLoading();
                     }
+                } else if (result !== '') {  // Ne pas afficher d'erreur si l'utilisateur a annulé
+                    showToast('Veuillez entrer une quantité valide', 'warning', 'Quantité invalide');
                 }
             }
         },
         
         editProduit(produit) {
-            alert(`✏️ Modification de "${produit.nom}"\n\nFonctionnalité à venir`);
+            showToast(
+                'La modification des produits sera bientôt disponible',
+                'info',
+                'Fonctionnalité à venir',
+                3000
+            );
         },
         
-        deleteProduit(produit) {
-            if (confirm(`⚠️ Supprimer "${produit.nom}" ?\n\nCette action est irréversible.`)) {
-                const index = this.produits.findIndex(p => p.id === produit.id);
-                if (index > -1) {
-                    this.produits.splice(index, 1);
-                    alert(`✅ Produit supprimé.`);
+        async deleteProduit(produit) {
+            const confirmed = await showConfirm(
+                'Confirmer la suppression',
+                `Êtes-vous sûr de vouloir supprimer le produit <strong>${produit.nom}</strong> ?<br><span class='text-sm text-red-600 dark:text-red-400'>Cette action est irréversible.</span>`,
+                'Annuler',
+                'Oui, supprimer'
+            );
+            
+            if (confirmed) {
+                showLoading('Suppression en cours...');
+                
+                try {
+                    // Simuler un délai réseau
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    
+                    const index = this.produits.findIndex(p => p.id === produit.id);
+                    if (index > -1) {
+                        this.produits.splice(index, 1);
+                        showToast(
+                            `Le produit a été supprimé avec succès`,
+                            'success',
+                            'Produit supprimé',
+                            4000
+                        );
+                    }
+                } catch (error) {
+                    showToast(
+                        'Une erreur est survenue lors de la suppression du produit',
+                        'error',
+                        'Erreur',
+                        5000
+                    );
+                } finally {
+                    hideLoading();
                 }
             }
         },
@@ -563,43 +654,76 @@ function stockApp() {
             return 0;
         },
         
-        handleAddProduct() {
+        async handleAddProduct() {
+            // Validation des champs obligatoires
+            if (!this.productForm.entrepriseId) {
+                showToast('Veuillez sélectionner une entreprise', 'warning', 'Champ requis');
+                return;
+            }
+            
+            if (!this.productForm.nom) {
+                showToast('Veuillez saisir le nom du produit', 'warning', 'Champ requis');
+                return;
+            }
+            
             // Générer référence si vide
             if (!this.productForm.reference) {
                 this.productForm.reference = `PRD-${String(this.produits.length + 1).padStart(3, '0')}`;
             }
             
-            // Créer le nouveau produit
-            const newProduct = {
-                id: this.produits.length + 1,
-                nom: this.productForm.nom,
-                reference: this.productForm.reference,
-                entreprise: this.getEntrepriseName(this.productForm.entrepriseId),
-                entrepriseId: parseInt(this.productForm.entrepriseId),
-                categorie: this.productForm.categorie,
-                prix: parseInt(this.productForm.prix),
-                quantite: parseInt(this.productForm.quantite),
-                seuilMin: parseInt(this.productForm.seuilMin)
-            };
+            showLoading('Création du produit...');
             
-            this.produits.push(newProduct);
-            
-            alert(`✅ Produit "${newProduct.nom}" ajouté avec succès !\n\nRéférence: ${newProduct.reference}\nStock initial: ${newProduct.quantite} unités`);
-            
-            // Réinitialiser le formulaire
-            this.productForm = {
-                entrepriseId: '',
-                nom: '',
-                reference: '',
-                categorie: '',
-                codeBarres: '',
-                prixAchat: 0,
-                prix: 0,
-                quantite: 0,
-                seuilMin: 10,
-                description: ''
-            };
-            this.showAddProductModal = false;
+            try {
+                // Simuler un délai réseau
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                
+                // Créer le nouveau produit
+                const newProduct = {
+                    id: this.produits.length + 1,
+                    nom: this.productForm.nom,
+                    reference: this.productForm.reference,
+                    entreprise: this.getEntrepriseName(this.productForm.entrepriseId),
+                    entrepriseId: parseInt(this.productForm.entrepriseId),
+                    categorie: this.productForm.categorie || 'Non catégorisé',
+                    prix: parseInt(this.productForm.prix) || 0,
+                    quantite: parseInt(this.productForm.quantite) || 0,
+                    seuilMin: parseInt(this.productForm.seuilMin) || 10
+                };
+                
+                this.produits.push(newProduct);
+                
+                showToast(
+                    `Référence: <strong>${newProduct.reference}</strong><br>Stock initial: <strong>${newProduct.quantite}</strong> unités`,
+                    'success',
+                    `Produit "${newProduct.nom}" ajouté`,
+                    5000
+                );
+                
+                // Réinitialiser le formulaire
+                this.productForm = {
+                    entrepriseId: '',
+                    nom: '',
+                    reference: '',
+                    categorie: '',
+                    codeBarres: '',
+                    prixAchat: 0,
+                    prix: 0,
+                    quantite: 0,
+                    seuilMin: 10,
+                    description: ''
+                };
+                this.showAddProductModal = false;
+                
+            } catch (error) {
+                showToast(
+                    'Une erreur est survenue lors de la création du produit',
+                    'error',
+                    'Erreur',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
         getEntrepriseName(id) {

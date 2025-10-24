@@ -2,7 +2,6 @@
 Django settings for walee project.
 """
 import os
-import dj_database_url
 from pathlib import Path
 
 # Load environment variables from .env file

@@ -888,36 +888,119 @@ function entrepriseDetailData() {
             return icons[this.entreprise.secteur] || 'package';
         },
         
-        editEntreprise() {
-            alert('✏️ Modification de l\'entreprise\n\nFonctionnalité à venir');
+        async editEntreprise() {
+            showToast(
+                'Fonctionnalité à venir :<br>' +
+                '• Modifier les informations de l\'entreprise<br>' +
+                '• Changer le logo<br>' +
+                '• Mettre à jour les paramètres',
+                'info',
+                '✏️ Modification de l\'entreprise',
+                5000
+            );
         },
         
-        viewVente(vente) {
-            alert(`📋 Détails de la vente ${vente.numero}\n\nClient: ${vente.client}\nMontant: ${this.formatMoney(vente.montant)}`);
+        async viewVente(vente) {
+            showLoading('Chargement des détails...');
+            
+            try {
+                // Simuler un délai de chargement
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                showToast(
+                    `Client: <strong>${vente.client}</strong><br>` +
+                    `Montant: <strong>${this.formatMoney(vente.montant)}</strong><br>` +
+                    `Vendeur: <strong>${vente.vendeur}</strong><br>` +
+                    `Statut: <span class="${vente.statut === 'Payée' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}">${vente.statut}</span>`,
+                    'info',
+                    `📋 Vente ${vente.numero}`,
+                    6000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
-        viewProduit(produit) {
-            alert(`📦 Détails du produit\n\n${produit.nom}\nPrix: ${this.formatMoney(produit.prix)}\nStock: ${produit.stock}`);
+        async viewProduit(produit) {
+            const stockClass = produit.stock <= produit.seuilMin ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+            
+            showToast(
+                `Prix: <strong>${this.formatMoney(produit.prix)}</strong><br>` +
+                `Stock: <span class="${stockClass}"><strong>${produit.stock}</strong> unités</span><br>` +
+                `Seuil minimum: <strong>${produit.seuilMin}</strong> unités`,
+                'info',
+                `📦 ${produit.nom}`,
+                5000
+            );
         },
         
-        viewClient(client) {
-            alert(`👤 Détails du client\n\n${client.nom}\nTotal achats: ${this.formatMoney(client.totalAchats)}\nNombre d'achats: ${client.nombreAchats}`);
+        async viewClient(client) {
+            showLoading('Chargement des détails...');
+            
+            try {
+                // Simuler un délai de chargement
+                await new Promise(resolve => setTimeout(resolve, 600));
+                
+                showToast(
+                    `Téléphone: <strong>${client.telephone}</strong><br>` +
+                    `Total des achats: <strong>${this.formatMoney(client.totalAchats)}</strong><br>` +
+                    `Nombre d'achats: <strong>${client.nombreAchats}</strong>`,
+                    'info',
+                    `👤 ${client.nom}`,
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
-        viewEmploye(employe) {
-            alert(`👨‍💼 Détails de l'employé\n\n${employe.nom}\nRôle: ${employe.role}\nStatut: ${employe.actif ? 'Actif' : 'Inactif'}`);
+        async viewEmploye(employe) {
+            const statusClass = employe.actif ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400';
+            
+            showToast(
+                `Rôle: <strong>${employe.role}</strong><br>` +
+                `Téléphone: <strong>${employe.telephone}</strong><br>` +
+                `Statut: <span class="${statusClass}"><strong>${employe.actif ? 'Actif' : 'Inactif'}</strong></span>`,
+                'info',
+                `👨‍💼 ${employe.nom}`,
+                5000
+            );
         },
         
         addProduit() {
-            alert(`➕ Ajouter ${this.getSecteurLabel('produits')}\n\nFonctionnalité à venir`);
+            showToast(
+                `Fonctionnalité à venir :<br>` +
+                `• Ajouter un nouveau ${this.getSecteurLabel('produits').toLowerCase()}<br>` +
+                `• Définir le prix et le stock<br>` +
+                `• Ajouter une description et des images`,
+                'info',
+                `➕ Ajouter ${this.getSecteurLabel('produits')}`,
+                5000
+            );
         },
         
         addClient() {
-            alert('➕ Ajouter un client\n\nFonctionnalité à venir');
+            showToast(
+                'Fonctionnalité à venir :<br>' +
+                '• Ajouter un nouveau client<br>' +
+                '• Enregistrer ses coordonnées<br>' +
+                '• Définir ses préférences',
+                'info',
+                '➕ Ajouter un client',
+                5000
+            );
         },
         
         addEmploye() {
-            alert('➕ Ajouter un employé\n\nFonctionnalité à venir');
+            showToast(
+                'Fonctionnalité à venir :<br>' +
+                '• Ajouter un nouvel employé<br>' +
+                '• Définir son rôle et ses permissions<br>' +
+                '• Configurer ses identifiants',
+                'info',
+                '➕ Ajouter un employé',
+                5000
+            );
         },
         
         formatMoney(amount) {
