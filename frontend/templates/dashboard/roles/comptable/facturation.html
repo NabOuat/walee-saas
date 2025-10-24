@@ -1,0 +1,649 @@
+{% extends "dashboard/roles/comptable/base_comptable.html" %}
+{% load static %}
+
+{% block title %}Facturation - Comptable - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="facturationData()" x-init="init()">
+    
+    <!-- Header avec actions contextuelles -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold font-poppins text-gray-900 dark:text-white">
+                Facturation
+            </h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Gestion des factures, devis et paiements</p>
+        </div>
+        
+        <button @click="openCreateModal()" 
+                class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span class="font-medium" x-text="activeTab === 'factures' ? 'Nouvelle Facture' : activeTab === 'devis' ? 'Nouveau Devis' : 'Nouveau Paiement'"></span>
+        </button>
+    </div>
+
+    <!-- Stats Cards - Version condensée et moderne -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <!-- Payées -->
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-800 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-start justify-between mb-2">
+                <div class="w-10 h-10 bg-green-500 dark:bg-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.facturesPayees"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Factures Payées</p>
+        </div>
+
+        <!-- En attente -->
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-start justify-between mb-2">
+                <div class="w-10 h-10 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center shadow-md">
+                    <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.facturesEnAttente"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">En Attente</p>
+        </div>
+
+        <!-- En retard -->
+        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl p-4 border border-red-200 dark:border-red-800 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-start justify-between mb-2">
+                <div class="w-10 h-10 bg-red-500 dark:bg-red-600 rounded-lg flex items-center justify-center shadow-md">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.facturesRetard"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">En Retard</p>
+        </div>
+
+        <!-- CA Total -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-start justify-between mb-2">
+                <div class="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1" x-text="formatMoney(stats.caTotal)"></p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">CA Total</p>
+        </div>
+    </div>
+
+    <!-- Container principal avec barre de recherche intégrée -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        
+        <!-- Header avec onglets et recherche -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                
+                <!-- Onglets -->
+                <div class="flex space-x-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-lg">
+                    <button @click="activeTab = 'factures'" 
+                            :class="activeTab === 'factures' ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm flex items-center space-x-2">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        <span>Factures</span>
+                        <span x-show="activeTab === 'factures'" class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold" x-text="factures.length"></span>
+                    </button>
+                    <button @click="activeTab = 'devis'" 
+                            :class="activeTab === 'devis' ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm flex items-center space-x-2">
+                        <i data-lucide="file-plus" class="w-4 h-4"></i>
+                        <span>Devis</span>
+                        <span x-show="activeTab === 'devis'" class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold" x-text="devisList.length"></span>
+                    </button>
+                    <button @click="activeTab = 'paiements'" 
+                            :class="activeTab === 'paiements' ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm flex items-center space-x-2">
+                        <i data-lucide="banknote" class="w-4 h-4"></i>
+                        <span>Paiements</span>
+                        <span x-show="activeTab === 'paiements'" class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold" x-text="paiements.length"></span>
+                    </button>
+                </div>
+
+                <!-- Barre de recherche et filtres -->
+                <div class="flex items-center space-x-2">
+                    <div class="relative flex-1 lg:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" 
+                               x-model="searchQuery"
+                               @input="lucide.createIcons()"
+                               placeholder="Rechercher..."
+                               class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                    </div>
+                    
+                    <select x-model="filterStatus" 
+                            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <option value="">Tous</option>
+                        <template x-if="activeTab === 'factures'">
+                            <template>
+                                <option value="Payée">Payée</option>
+                                <option value="En attente">En attente</option>
+                                <option value="En retard">En retard</option>
+                            </template>
+                        </template>
+                        <template x-if="activeTab === 'devis'">
+                            <template>
+                                <option value="En attente">En attente</option>
+                                <option value="Accepté">Accepté</option>
+                                <option value="Refusé">Refusé</option>
+                            </template>
+                        </template>
+                    </select>
+                    
+                    <button @click="exportData()" 
+                            class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-1.5 shadow-sm hover:shadow-md">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Exporter</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu des tableaux -->
+        <div class="p-4">
+            
+            <!-- ONGLET FACTURES -->
+            <div x-show="activeTab === 'factures'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="w-full min-w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">N° Facture</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Client</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Statut</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="facture in filteredFactures" :key="facture.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold text-sm text-purple-600 dark:text-purple-400" x-text="facture.numero"></span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 sm:hidden" x-text="facture.date"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="text-sm text-gray-900 dark:text-gray-100 font-medium" x-text="facture.client"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell" x-text="facture.date"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="font-bold text-sm text-gray-900 dark:text-white" x-text="formatMoney(facture.montant)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 hidden md:table-cell">
+                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                                              :class="getStatusClass(facture.statut)">
+                                            <span x-text="facture.statut"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center justify-center space-x-1">
+                                            <button @click="viewFacture(facture)" 
+                                                    class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors duration-150"
+                                                    title="Voir détails">
+                                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                            </button>
+                                            <button @click="downloadPDF(facture)" 
+                                                    class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-150"
+                                                    title="Télécharger PDF">
+                                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                            </button>
+                                            <button @click="sendEmail(facture)" 
+                                                    class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors duration-150"
+                                                    title="Envoyer par email">
+                                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="filteredFactures.length === 0">
+                                <td colspan="6" class="px-4 py-8 text-center">
+                                    <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                        <i data-lucide="inbox" class="w-12 h-12 mb-2 opacity-50"></i>
+                                        <p class="text-sm font-medium">Aucune facture trouvée</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ONGLET DEVIS -->
+            <div x-show="activeTab === 'devis'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="w-full min-w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">N° Devis</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Client</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Statut</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="devis in filteredDevis" :key="devis.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold text-sm text-blue-600 dark:text-blue-400" x-text="devis.numero"></span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 sm:hidden" x-text="devis.date"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="text-sm text-gray-900 dark:text-gray-100 font-medium" x-text="devis.client"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell" x-text="devis.date"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="font-bold text-sm text-gray-900 dark:text-white" x-text="formatMoney(devis.montant)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 hidden md:table-cell">
+                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                                              :class="getDevisStatusClass(devis.statut)">
+                                            <span x-text="devis.statut"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center justify-center space-x-1">
+                                            <button @click="convertToFacture(devis)" 
+                                                    x-show="devis.statut === 'Accepté'"
+                                                    class="px-2.5 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors duration-150 font-medium">
+                                                Convertir
+                                            </button>
+                                            <button @click="downloadPDF(devis)" 
+                                                    class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-150"
+                                                    title="Télécharger PDF">
+                                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="filteredDevis.length === 0">
+                                <td colspan="6" class="px-4 py-8 text-center">
+                                    <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                        <i data-lucide="inbox" class="w-12 h-12 mb-2 opacity-50"></i>
+                                        <p class="text-sm font-medium">Aucun devis trouvé</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ONGLET PAIEMENTS -->
+            <div x-show="activeTab === 'paiements'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="w-full min-w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Facture</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Client</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Montant</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Mode</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Reçu</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="paiement in filteredPaiements" :key="paiement.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400" x-text="paiement.date"></td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold text-sm text-purple-600 dark:text-purple-400" x-text="paiement.facture"></span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 md:hidden" x-text="paiement.client"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium hidden md:table-cell" x-text="paiement.client"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="font-bold text-sm text-green-600 dark:text-green-400" x-text="formatMoney(paiement.montant)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 hidden sm:table-cell">
+                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                                            <span x-text="paiement.mode"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button @click="downloadReceipt(paiement)" 
+                                                class="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
+                                                title="Télécharger le reçu">
+                                            <i data-lucide="download" class="w-4 h-4"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="filteredPaiements.length === 0">
+                                <td colspan="6" class="px-4 py-8 text-center">
+                                    <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                        <i data-lucide="inbox" class="w-12 h-12 mb-2 opacity-50"></i>
+                                        <p class="text-sm font-medium">Aucun paiement trouvé</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Détails Facture/Devis -->
+    <div x-show="showDetailModal" 
+         x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showDetailModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+             @click.stop
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedFacture ? selectedFacture.numero : ''"></h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Détails du document</p>
+                        </div>
+                    </div>
+                    <button @click="showDetailModal = false" class="p-2 hover:bg-white/50 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6" x-show="selectedFacture">
+                <!-- Informations Client -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i data-lucide="user" class="w-5 h-5 mr-2 text-purple-600"></i>
+                        Client
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Nom</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.client"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.date"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Document -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                        <p class="text-sm text-purple-600 dark:text-purple-400 mb-1">Statut</p>
+                        <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold"
+                              :class="getStatusClass(selectedFacture?.statut)"
+                              x-text="selectedFacture?.statut"></span>
+                    </div>
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+                        <p class="text-sm text-green-600 dark:text-green-400 mb-1">Montant Total</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(selectedFacture?.montant)"></p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button @click="downloadPDF(selectedFacture)" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Télécharger PDF</span>
+                    </button>
+                    <button @click="sendEmail(selectedFacture)" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2">
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                        <span>Envoyer Email</span>
+                    </button>
+                    <button @click="showDetailModal = false" 
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Créer Nouveau (Facture/Devis/Paiement) -->
+    <div x-show="showCreateModal" 
+         x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showCreateModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+             @click.stop>
+            <div class="sticky top-0 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="activeTab === 'factures' ? 'Nouvelle Facture' : activeTab === 'devis' ? 'Nouveau Devis' : 'Nouveau Paiement'"></h3>
+                    <button @click="showCreateModal = false" class="p-2 hover:bg-white/50 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form @submit.prevent="createItem()" class="p-6 space-y-6">
+                <!-- Client -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client *</label>
+                    <select required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="">Sélectionner un client...</option>
+                        <option>Entreprise A</option>
+                        <option>Entreprise B</option>
+                        <option>Entreprise C</option>
+                    </select>
+                </div>
+                
+                <!-- Numéro et Date -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Numéro *</label>
+                        <input type="text" required placeholder="FAC-2024-XXX" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
+                        <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    </div>
+                </div>
+                
+                <!-- Montant et Statut -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Montant *</label>
+                        <input type="number" required placeholder="0" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statut</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option>En attente</option>
+                            <option>Payée</option>
+                            <option>En retard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="showCreateModal = false" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold transition flex items-center space-x-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Créer</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function facturationData() {
+    return {
+        activeTab: 'factures',
+        searchQuery: '',
+        filterStatus: '',
+        showCreateModal: false,
+        showDetailModal: false,
+        selectedFacture: null,
+        
+        stats: {
+            facturesPayees: 45,
+            facturesEnAttente: 12,
+            facturesRetard: 3,
+            caTotal: 12500000
+        },
+        
+        factures: [
+            { id: 1, numero: 'FAC-001', client: 'Entreprise A', date: '15/10/2025', montant: 500000, statut: 'Payée' },
+            { id: 2, numero: 'FAC-002', client: 'Entreprise B', date: '14/10/2025', montant: 250000, statut: 'En attente' },
+            { id: 3, numero: 'FAC-003', client: 'Entreprise C', date: '10/10/2025', montant: 180000, statut: 'En retard' },
+            { id: 4, numero: 'FAC-004', client: 'Entreprise D', date: '12/10/2025', montant: 320000, statut: 'Payée' },
+            { id: 5, numero: 'FAC-005', client: 'Entreprise E', date: '11/10/2025', montant: 420000, statut: 'En attente' }
+        ],
+        
+        devisList: [
+            { id: 1, numero: 'DEV-001', client: 'Prospect A', date: '18/10/2025', montant: 450000, statut: 'En attente' },
+            { id: 2, numero: 'DEV-002', client: 'Prospect B', date: '17/10/2025', montant: 280000, statut: 'Accepté' },
+            { id: 3, numero: 'DEV-003', client: 'Prospect C', date: '16/10/2025', montant: 150000, statut: 'Refusé' }
+        ],
+        
+        paiements: [
+            { id: 1, date: '15/10/2025', facture: 'FAC-001', client: 'Entreprise A', montant: 500000, mode: 'Virement' },
+            { id: 2, date: '14/10/2025', facture: 'FAC-004', client: 'Entreprise D', montant: 320000, mode: 'Chèque' },
+            { id: 3, date: '13/10/2025', facture: 'FAC-005', client: 'Entreprise E', montant: 180000, mode: 'Espèces' }
+        ],
+        
+        get filteredFactures() {
+            return this.filterData(this.factures);
+        },
+        
+        get filteredDevis() {
+            return this.filterData(this.devisList);
+        },
+        
+        get filteredPaiements() {
+            return this.filterData(this.paiements);
+        },
+        
+        filterData(data) {
+            let filtered = data;
+            
+            // Filtre par recherche
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(item => 
+                    (item.numero && item.numero.toLowerCase().includes(query)) ||
+                    (item.client && item.client.toLowerCase().includes(query)) ||
+                    (item.facture && item.facture.toLowerCase().includes(query))
+                );
+            }
+            
+            // Filtre par statut
+            if (this.filterStatus) {
+                filtered = filtered.filter(item => item.statut === this.filterStatus);
+            }
+            
+            return filtered;
+        },
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        getStatusClass(statut) {
+            const classes = {
+                'Payée': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+                'En attente': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+                'En retard': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+            };
+            return classes[statut] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        },
+        
+        getDevisStatusClass(statut) {
+            const classes = {
+                'En attente': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+                'Accepté': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+                'Refusé': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+            };
+            return classes[statut] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        },
+        
+        openCreateModal() {
+            this.showCreateModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async createItem() {
+            const typeDoc = this.activeTab === 'factures' ? 'Facture' : this.activeTab === 'devis' ? 'Devis' : 'Paiement';
+            
+            showLoading(`Création ${typeDoc.toLowerCase()}...`);
+            
+            try {
+                // Simulation API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                hideLoading();
+                showToast(`${typeDoc} créé${this.activeTab === 'paiements' ? '' : 'e'} avec succès`, 'success', typeDoc);
+                this.showCreateModal = false;
+                
+            } catch (error) {
+                hideLoading();
+                showToast('Erreur lors de la création', 'error');
+            }
+        },
+        
+        viewFacture(facture) {
+            this.selectedFacture = facture;
+            this.showDetailModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        downloadPDF(doc) {
+            window.open('/api/factures/' + doc.id + '/pdf', '_blank');
+        },
+        
+        sendEmail(facture) {
+            if (confirm('📧 Envoyer ' + facture.numero + ' par email ?')) {
+                // Envoi email
+            }
+        },
+        
+        convertToFacture(devis) {
+            if (confirm('🔄 Convertir ' + devis.numero + ' en facture ?')) {
+                // Conversion
+            }
+        },
+        
+        downloadReceipt(paiement) {
+            window.open('/api/paiements/' + paiement.id + '/recu', '_blank');
+        },
+        
+        exportData() {
+            window.open('/api/export/facturation', '_blank');
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

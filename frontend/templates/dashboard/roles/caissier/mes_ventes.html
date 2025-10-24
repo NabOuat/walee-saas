@@ -1,0 +1,217 @@
+{% extends "dashboard/roles/caissier/base_caissier.html" %}
+{% load static %}
+
+{% block title %}Mes Ventes - Caissier - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="mesVentesData()" x-init="init()">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold font-poppins text-gray-900 dark:text-white mb-2">
+                Mes Ventes
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">Historique de mes transactions</p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <select x-model="selectedPeriod" @change="filterVentes()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+            </select>
+            <button @click="exportVentes()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats du jour -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">CA Réalisé</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.caTotal)"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">Nombre de Ventes</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.nombreVentes"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">Panier Moyen</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.panierMoyen)"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="award" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">Meilleure Vente</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.meilleureVente)"></p>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex items-center space-x-4">
+            <div class="flex-1">
+                <input type="text" 
+                       x-model="searchQuery"
+                       @input="filterVentes()"
+                       placeholder="Rechercher par numéro de vente..."
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+            </div>
+            <select x-model="selectedPaymentMethod" @change="filterVentes()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                <option value="">Tous les paiements</option>
+                <option value="especes">Espèces</option>
+                <option value="carte">Carte</option>
+                <option value="mobile">Mobile Money</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Liste des ventes -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Vente</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Heure</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Articles</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Paiement</th>
+                    <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <template x-for="vente in filteredVentes" :key="vente.id">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-blue-600 dark:text-blue-400" x-text="vente.numero"></span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="vente.heure"></td>
+                        <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="vente.articles + ' article(s)'"></td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="font-bold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"
+                                  :class="getPaymentClass(vente.paiement)">
+                                <span x-text="vente.paiement"></span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button @click="viewVente(vente)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="printVente(vente)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                    <i data-lucide="printer" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function mesVentesData() {
+    return {
+        selectedPeriod: 'today',
+        searchQuery: '',
+        selectedPaymentMethod: '',
+        
+        stats: {
+            caTotal: 2500000,
+            nombreVentes: 45,
+            panierMoyen: 55555,
+            meilleureVente: 250000
+        },
+        
+        ventes: [
+            { id: 1, numero: 'VNT-001', heure: '14:30', articles: 3, montant: 125000, paiement: 'Espèces' },
+            { id: 2, numero: 'VNT-002', heure: '14:25', articles: 2, montant: 85000, paiement: 'Carte' },
+            { id: 3, numero: 'VNT-003', heure: '14:15', articles: 1, montant: 45000, paiement: 'Mobile Money' },
+            { id: 4, numero: 'VNT-004', heure: '14:00', articles: 5, montant: 150000, paiement: 'Espèces' },
+            { id: 5, numero: 'VNT-005', heure: '13:45', articles: 2, montant: 95000, paiement: 'Carte' },
+            { id: 6, numero: 'VNT-006', heure: '13:30', articles: 4, montant: 180000, paiement: 'Espèces' },
+            { id: 7, numero: 'VNT-007', heure: '13:15', articles: 1, montant: 35000, paiement: 'Mobile Money' },
+            { id: 8, numero: 'VNT-008', heure: '13:00', articles: 3, montant: 120000, paiement: 'Carte' }
+        ],
+        
+        get filteredVentes() {
+            let result = this.ventes;
+            
+            if (this.searchQuery) {
+                result = result.filter(v => v.numero.toLowerCase().includes(this.searchQuery.toLowerCase()));
+            }
+            
+            if (this.selectedPaymentMethod) {
+                result = result.filter(v => v.paiement.toLowerCase().includes(this.selectedPaymentMethod));
+            }
+            
+            return result;
+        },
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        filterVentes() {
+            // Filtrage géré par computed property
+        },
+        
+        getPaymentClass(paiement) {
+            const classes = {
+                'Espèces': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Carte': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'Mobile Money': 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
+            };
+            return classes[paiement] || 'bg-gray-100 text-gray-700';
+        },
+        
+        viewVente(vente) {
+            alert('📄 Détails de la vente ' + vente.numero + '\n\nMontant: ' + this.formatMoney(vente.montant) + '\nArticles: ' + vente.articles);
+        },
+        
+        printVente(vente) {
+            alert('🖨️ Impression du ticket ' + vente.numero);
+        },
+        
+        exportVentes() {
+            alert('📥 Export des ventes en cours...');
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

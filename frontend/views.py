@@ -3,6 +3,7 @@ Views for frontend pages (authentication and landing page)
 """
 from django.shortcuts import render
 from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # Error handlers
@@ -27,13 +28,13 @@ class LoginView(TemplateView):
 
 
 class RegisterView(TemplateView):
-    """Registration page view"""
-    template_name = 'auth/register.html'
+    """Registration page view with OTP"""
+    template_name = 'auth/register_otp.html'
 
 
 class ForgotPasswordView(TemplateView):
-    """Forgot password page view"""
-    template_name = 'auth/forgot_password.html'
+    """Forgot password page view with OTP"""
+    template_name = 'auth/forgot_password_otp.html'
 
 
 class LoadingView(TemplateView):
@@ -66,6 +67,11 @@ class EmployeesView(TemplateView):
     template_name = 'dashboard/admin/employees.html'
 
 
+class CaisseView(TemplateView):
+    """Point of Sale (POS) view"""
+    template_name = 'dashboard/admin/caisse.html'
+
+
 class VentesView(TemplateView):
     """Sales management view"""
     template_name = 'dashboard/admin/ventes.html'
@@ -74,6 +80,12 @@ class VentesView(TemplateView):
 class StockView(TemplateView):
     """Stock management view"""
     template_name = 'dashboard/admin/stock.html'
+
+
+class IntegrationsView(LoginRequiredMixin, TemplateView):
+    """Integrations management view"""
+    template_name = 'integrations/index.html'
+    login_url = '/login/'
 
 
 class FacturesView(TemplateView):
@@ -103,28 +115,183 @@ class IntelligenceView(TemplateView):
 
 # Vues par Rôle
 class CaissierView(TemplateView):
-    """Cashier POS view"""
-    template_name = 'dashboard/roles/caissier.html'
+    """Cashier view"""
+    template_name = 'dashboard/roles/caissier/dashboard.html'
+
+
+class CaissierMesVentesView(TemplateView):
+    """Cashier sales history view"""
+    template_name = 'dashboard/roles/caissier/mes_ventes.html'
+
+
+class CaissierSessionView(TemplateView):
+    """Cashier session management view"""
+    template_name = 'dashboard/roles/caissier/ma_session.html'
+
+
+class CaissierClientsView(TemplateView):
+    """Cashier clients management view"""
+    template_name = 'dashboard/roles/caissier/clients.html'
+
+
+class CaissierAideView(TemplateView):
+    """Cashier help and support view"""
+    template_name = 'dashboard/roles/caissier/aide.html'
 
 
 class GestionnaireStockView(TemplateView):
-    """Stock Manager view"""
-    template_name = 'dashboard/roles/gestionnaire_stock.html'
+    """Stock manager view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/dashboard.html'
+
+
+class StockInventaireView(TemplateView):
+    """Stock inventory view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/inventaire.html'
+
+
+class StockMouvementsView(TemplateView):
+    """Stock movements view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/mouvements.html'
+
+
+class StockAlertesView(TemplateView):
+    """Stock alerts view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/alertes.html'
+
+
+class StockFournisseursView(TemplateView):
+    """Stock suppliers view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/fournisseurs.html'
+
+
+class StockStatsView(TemplateView):
+    """Stock statistics view"""
+    template_name = 'dashboard/roles/gestionnaire_stock/stats.html'
 
 
 class ComptableView(TemplateView):
     """Accountant view"""
-    template_name = 'dashboard/roles/comptable.html'
+    template_name = 'dashboard/roles/comptable/dashboard.html'
 
 
-class GerantView(TemplateView):
-    """Manager operational dashboard view"""
-    template_name = 'dashboard/roles/gerant.html'
+class ComptableFacturationView(TemplateView):
+    """Accountant invoicing view"""
+    template_name = 'dashboard/roles/comptable/facturation.html'
+
+
+class ComptableDepensesTresorerieView(TemplateView):
+    """Accountant expenses and treasury view"""
+    template_name = 'dashboard/roles/comptable/depenses_tresorerie.html'
+
+
+class ComptableComptabiliteView(TemplateView):
+    """Accountant accounting entries view"""
+    template_name = 'dashboard/roles/comptable/comptabilite.html'
+
+
+class ComptableRapportsView(TemplateView):
+    """Accountant financial reports view"""
+    template_name = 'dashboard/roles/comptable/rapports.html'
+
+
+class ComptableExportsView(TemplateView):
+    """Accountant exports and archives view"""
+    template_name = 'dashboard/roles/comptable/exports.html'
 
 
 class VendeurView(TemplateView):
-    """Salesperson interface view"""
-    template_name = 'dashboard/roles/vendeur.html'
+    """Salesperson view"""
+    template_name = 'dashboard/roles/vendeur/dashboard.html'
+
+
+class VendeurMesVentesView(TemplateView):
+    """Salesperson sales view"""
+    template_name = 'dashboard/roles/vendeur/mes_ventes.html'
+
+
+class VendeurDevisView(TemplateView):
+    """Salesperson quotes view"""
+    template_name = 'dashboard/roles/vendeur/mes_devis.html'
+
+
+class VendeurCommandesView(TemplateView):
+    """Salesperson orders view"""
+    template_name = 'dashboard/roles/vendeur/commandes.html'
+
+
+class VendeurClientsView(TemplateView):
+    """Salesperson clients view"""
+    template_name = 'dashboard/roles/vendeur/clients.html'
+
+
+class VendeurObjectifsView(TemplateView):
+    """Salesperson objectives view"""
+    template_name = 'dashboard/roles/vendeur/objectifs.html'
+
+
+class VendeurStatsView(TemplateView):
+    """Salesperson statistics view"""
+    template_name = 'dashboard/roles/vendeur/stats.html'
+
+
+class VendeurVenteView(TemplateView):
+    """Salesperson new sale view"""
+    template_name = 'dashboard/roles/vendeur/vente.html'
+
+
+class CaissierCaisseView(TemplateView):
+    """Cashier register view"""
+    template_name = 'dashboard/roles/caissier/caisse.html'
+
+
+class CaissierProduitsView(TemplateView):
+    """Cashier products view"""
+    template_name = 'dashboard/roles/caissier/produits.html'
+
+
+class CaissierClientsView(TemplateView):
+    """Cashier clients view"""
+    template_name = 'dashboard/roles/caissier/clients.html'
+
+
+class RHView(TemplateView):
+    """HR view"""
+    template_name = 'dashboard/roles/rh/dashboard.html'
+
+
+class RHEmployeesView(TemplateView):
+    """HR employees management view"""
+    template_name = 'dashboard/roles/rh/employees.html'
+
+
+class RHRecrutementView(TemplateView):
+    """HR recruitment view"""
+    template_name = 'dashboard/roles/rh/recrutement.html'
+
+
+class RHCongesView(TemplateView):
+    """HR leave management view"""
+    template_name = 'dashboard/roles/rh/conges.html'
+
+
+class RHAbsencesView(TemplateView):
+    """HR absences view"""
+    template_name = 'dashboard/roles/rh/absences.html'
+
+
+class RHPaieView(TemplateView):
+    """HR payroll view"""
+    template_name = 'dashboard/roles/rh/paie.html'
+
+
+class RHFormationsView(TemplateView):
+    """HR training view"""
+    template_name = 'dashboard/roles/rh/formations.html'
+
+
+class RHEvaluationsView(TemplateView):
+    """HR evaluations view"""
+    template_name = 'dashboard/roles/rh/evaluations.html'
 
 
 # Function-based views (alternative)

@@ -1,0 +1,1793 @@
+{% extends "dashboard/roles/comptable/base_comptable.html" %}
+{% load static %}
+
+{% block title %}Comptabilité - Walee{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(-20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .slide-in {
+        animation: slideIn 0.3s ease-out;
+    }
+    .tab-active {
+        border-bottom: 3px solid #2563eb;
+        color: #2563eb;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="comptabiliteSystem()" x-init="init()">
+    
+    <!-- Header avec Période -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold font-poppins text-gray-900 dark:text-white mb-2">
+                Comptabilité & Finances
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">Gestion complète de la comptabilité</p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-xl px-4 py-2 shadow-sm">
+                <i data-lucide="calendar" class="w-5 h-5 text-gray-500"></i>
+                <select x-model="selectedPeriod" 
+                        @change="loadData()"
+                        class="bg-transparent border-0 focus:ring-0 font-semibold text-gray-900 dark:text-white">
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="quarter">Ce trimestre</option>
+                    <option value="year">Cette année</option>
+                    <option value="custom">Période personnalisée</option>
+                </select>
+            </div>
+            
+            <button @click="showExportModal = true" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Exporter</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Période Personnalisée -->
+    <div x-show="selectedPeriod === 'custom'" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Du:</label>
+                <input type="date" x-model="customPeriod.start" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Au:</label>
+                <input type="date" x-model="customPeriod.end" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+            </div>
+            <button @click="applyCustomPeriod()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Appliquer
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- CA -->
+        <div class="stat-card bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-7 h-7"></i>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center space-x-1 text-sm bg-white/20 px-3 py-1 rounded-full">
+                        <i data-lucide="arrow-up" class="w-3 h-3"></i>
+                        <span x-text="stats.caVariation"></span>
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Chiffre d'Affaires</h3>
+            <p class="text-3xl font-bold font-poppins mb-1" x-text="formatMoney(stats.ca)"></p>
+            <p class="text-xs opacity-75" x-text="'Objectif: ' + formatMoney(stats.caObjectif)"></p>
+        </div>
+
+        <!-- Dépenses -->
+        <div class="stat-card bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="arrow-down-circle" class="w-7 h-7"></i>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center space-x-1 text-sm bg-white/20 px-3 py-1 rounded-full">
+                        <i data-lucide="arrow-up" class="w-3 h-3"></i>
+                        <span x-text="stats.depensesVariation"></span>
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Dépenses Totales</h3>
+            <p class="text-3xl font-bold font-poppins mb-1" x-text="formatMoney(stats.depenses)"></p>
+            <p class="text-xs opacity-75" x-text="'Budget: ' + formatMoney(stats.depensesBudget)"></p>
+        </div>
+
+        <!-- Bénéfice -->
+        <div class="stat-card bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="wallet" class="w-7 h-7"></i>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center space-x-1 text-sm bg-white/20 px-3 py-1 rounded-full">
+                        <i data-lucide="arrow-up" class="w-3 h-3"></i>
+                        <span x-text="stats.beneficeVariation"></span>
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Bénéfice Net</h3>
+            <p class="text-3xl font-bold font-poppins mb-1" x-text="formatMoney(stats.benefice)"></p>
+            <p class="text-xs opacity-75" x-text="'Marge: ' + stats.marge + '%'"></p>
+        </div>
+
+        <!-- Factures Impayées -->
+        <div class="stat-card bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="alert-circle" class="w-7 h-7"></i>
+                </div>
+                <div class="text-right">
+                    <span class="text-2xl font-bold" x-text="stats.facturesEnRetard"></span>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Créances Impayées</h3>
+            <p class="text-3xl font-bold font-poppins mb-1" x-text="formatMoney(stats.facturesImpayees)"></p>
+            <p class="text-xs opacity-75">À recouvrer</p>
+        </div>
+    </div>
+
+    <!-- Actions Rapides -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+        <button @click="openFactureModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="file-plus" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Nouvelle Facture</p>
+        </button>
+
+        <button @click="openDepenseModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="credit-card" class="w-6 h-6 text-red-600 dark:text-red-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Enregistrer Dépense</p>
+        </button>
+
+        <button @click="openPaiementModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="banknote" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Encaisser Paiement</p>
+        </button>
+
+        <button @click="openDevisModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="file-text" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Créer Devis</p>
+        </button>
+
+        <button @click="openRapprochementModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="refresh-cw" class="w-6 h-6 text-yellow-600 dark:text-yellow-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Rapprochement</p>
+        </button>
+
+        <button @click="generateReport()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="bar-chart-3" class="w-6 h-6 text-indigo-600 dark:text-indigo-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Rapport Financier</p>
+        </button>
+    </div>
+
+    <!-- Onglets Navigation -->
+    <div class="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border-b border-gray-200 dark:border-gray-700 mb-0">
+        <div class="flex space-x-1 px-4">
+            <button @click="activeTab = 'factures'" 
+                    :class="activeTab === 'factures' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition relative">
+                <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>
+                Factures
+                <span x-show="stats.facturesEnRetard > 0" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <button @click="activeTab = 'depenses'" 
+                    :class="activeTab === 'depenses' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition">
+                <i data-lucide="credit-card" class="w-4 h-4 inline mr-2"></i>
+                Dépenses
+            </button>
+            <button @click="activeTab = 'tresorerie'" 
+                    :class="activeTab === 'tresorerie' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition">
+                <i data-lucide="wallet" class="w-4 h-4 inline mr-2"></i>
+                Trésorerie
+            </button>
+            <button @click="activeTab = 'ecritures'" 
+                    :class="activeTab === 'ecritures' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition">
+                <i data-lucide="book-open" class="w-4 h-4 inline mr-2"></i>
+                Écritures
+            </button>
+            <button @click="activeTab = 'bilan'" 
+                    :class="activeTab === 'bilan' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition">
+                <i data-lucide="pie-chart" class="w-4 h-4 inline mr-2"></i>
+                Bilan
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenu des Onglets -->
+    <div class="bg-white dark:bg-gray-800 rounded-b-xl shadow-sm p-6">
+        
+        <!-- Onglet Factures -->
+        <div x-show="activeTab === 'factures'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="text" 
+                           x-model="factureSearch"
+                           placeholder="Rechercher une facture..."
+                           class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-80">
+                    <select x-model="factureFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Toutes les factures</option>
+                        <option value="brouillon">Brouillons</option>
+                        <option value="envoyee">Envoyées</option>
+                        <option value="payee">Payées</option>
+                        <option value="partielle">Paiement partiel</option>
+                        <option value="retard">En retard</option>
+                        <option value="annulee">Annulées</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button @click="openFactureModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                        Nouvelle Facture
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste Factures -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Facture</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Client</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Montant TTC</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Échéance</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="facture in filteredFactures" :key="facture.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-4 py-4">
+                                    <div class="font-semibold text-blue-600 dark:text-blue-400" x-text="facture.numero"></div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="font-medium text-gray-900 dark:text-white" x-text="facture.client.nom"></div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400" x-text="facture.client.email"></div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="facture.dateEmission"></td>
+                                <td class="px-4 py-4 text-right">
+                                    <div class="font-bold text-gray-900 dark:text-white" x-text="formatMoney(facture.montantTTC)"></div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400" x-text="'Payé: ' + formatMoney(facture.montantPaye)"></div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="text-sm" x-text="facture.echeance"></div>
+                                    <div class="text-xs" :class="isOverdue(facture.echeance) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-500 dark:text-gray-400'" x-text="getDaysRemaining(facture.echeance)"></div>
+                                </td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="getFactureStatusClass(facture.statut)">
+                                        <span x-text="facture.statut"></span>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <button @click="viewFacture(facture)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Voir">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="editFacture(facture)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" title="Modifier">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="sendFacture(facture)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Envoyer">
+                                            <i data-lucide="send" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="downloadFacture(facture)" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Télécharger">
+                                            <i data-lucide="download" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="deleteFacture(facture)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Supprimer">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-6 flex items-center justify-between">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    Affichage <span class="font-semibold" x-text="filteredFactures.length"></span> factures
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Précédent
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg">1</button>
+                    <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">2</button>
+                    <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">3</button>
+                    <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Suivant
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Dépenses -->
+        <div x-show="activeTab === 'depenses'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="text" 
+                           x-model="depenseSearch"
+                           placeholder="Rechercher une dépense..."
+                           class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-80">
+                    <select x-model="depenseFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Toutes catégories</option>
+                        <option value="achat">Achats de marchandises</option>
+                        <option value="salaire">Salaires & Charges</option>
+                        <option value="loyer">Loyer & Charges locatives</option>
+                        <option value="fourniture">Fournitures</option>
+                        <option value="transport">Transport</option>
+                        <option value="marketing">Marketing & Publicité</option>
+                        <option value="entretien">Entretien & Maintenance</option>
+                        <option value="assurance">Assurances</option>
+                        <option value="impot">Impôts & Taxes</option>
+                        <option value="autre">Autres</option>
+                    </select>
+                </div>
+                <button @click="openDepenseModal()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Nouvelle Dépense
+                </button>
+            </div>
+
+            <!-- Graphique Répartition Dépenses -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="lg:col-span-2 bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-4">Évolution des Dépenses</h4>
+                    <div class="chart-container">
+                        <div class="text-center text-gray-500 py-20">
+                            [Graphique en ligne - À intégrer avec Chart.js]
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-4">Répartition par Catégorie</h4>
+                    <div class="space-y-3">
+                        <template x-for="cat in depensesParCategorie" :key="cat.nom">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300" x-text="cat.nom"></span>
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white" x-text="cat.pourcentage + '%'"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full transition-all" :style="'width: ' + cat.pourcentage + '%'"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste Dépenses -->
+            <div class="space-y-3">
+                <template x-for="depense in filteredDepenses" :key="depense.id">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl hover:shadow-md transition border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                                 :class="getDepenseIconClass(depense.categorie)">
+                                <i :data-lucide="getDepenseIcon(depense.categorie)" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="depense.libelle"></p>
+                                <div class="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span x-text="depense.categorie"></span>
+                                    <span>•</span>
+                                    <span x-text="depense.date"></span>
+                                    <span x-show="depense.fournisseur">•</span>
+                                    <span x-show="depense.fournisseur" x-text="depense.fournisseur"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <p class="text-xl font-bold text-red-600 dark:text-red-400" x-text="formatMoney(depense.montant)"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="depense.modePaiement"></p>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button @click="editDepense(depense)" class="p-2 text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="viewDepense(depense)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="deleteDepense(depense)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Onglet Trésorerie -->
+        <div x-show="activeTab === 'tresorerie'" class="slide-in">
+            <!-- Comptes -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center justify-center">
+                            <i data-lucide="building-2" class="w-7 h-7 text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 p-2 rounded-lg transition">
+                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-sm text-gray-600 dark:text-gray-400 mb-2">Compte Bancaire Principal</h3>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mb-2" x-text="formatMoney(tresorerie.banque)"></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">BANK OF AFRICA - ***1234</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-6 border-2 border-green-200 dark:border-green-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center justify-center">
+                            <i data-lucide="wallet" class="w-7 h-7 text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <button class="text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800/50 p-2 rounded-lg transition">
+                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-sm text-gray-600 dark:text-gray-400 mb-2">Caisse Physique</h3>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mb-2" x-text="formatMoney(tresorerie.caisse)"></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Caisse boutique</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-6 border-2 border-purple-200 dark:border-purple-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center justify-center">
+                            <i data-lucide="landmark" class="w-7 h-7 text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <button class="text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50 p-2 rounded-lg transition">
+                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Disponible</h3>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mb-2" x-text="formatMoney(tresorerie.total)"></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Liquidités totales</p>
+                </div>
+            </div>
+
+            <!-- Flux de Trésorerie -->
+            <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-6">
+                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Flux de Trésorerie (30 derniers jours)</h4>
+                <div class="chart-container">
+                    <div class="text-center text-gray-500 py-20">
+                        [Graphique flux de trésorerie - À intégrer avec Chart.js]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dernières Opérations -->
+            <div>
+                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Dernières Opérations</h4>
+                <div class="space-y-2">
+                    <template x-for="op in dernieresOperations" :key="op.id">
+                        <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                     :class="op.type === 'credit' ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'">
+                                    <i :data-lucide="op.type === 'credit' ? 'arrow-down-left' : 'arrow-up-right'" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900 dark:text-white" x-text="op.libelle"></p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="op.date + ' - ' + op.compte"></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-lg font-bold" 
+                                   :class="op.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                                   x-text="(op.type === 'credit' ? '+' : '-') + formatMoney(op.montant)"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Écritures Comptables -->
+        <div x-show="activeTab === 'ecritures'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="text" 
+                           x-model="ecritureSearch"
+                           placeholder="Rechercher une écriture..."
+                           class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-80">
+                    <select x-model="journalFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les journaux</option>
+                        <option value="VE">Ventes</option>
+                        <option value="AC">Achats</option>
+                        <option value="BQ">Banque</option>
+                        <option value="CA">Caisse</option>
+                        <option value="OD">Opérations Diverses</option>
+                    </select>
+                </div>
+                <button @click="openEcritureModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Nouvelle Écriture
+                </button>
+            </div>
+
+            <!-- Journal -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Journal</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N° Pièce</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Compte</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Libellé</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Débit</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Crédit</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="ecriture in filteredEcritures" :key="ecriture.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="ecriture.date"></td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs font-semibold" x-text="ecriture.journal"></span>
+                                </td>
+                                <td class="px-4 py-3 text-sm font-mono text-gray-700 dark:text-gray-300" x-text="ecriture.piece"></td>
+                                <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white" x-text="ecriture.compte"></td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="ecriture.libelle"></td>
+                                <td class="px-4 py-3 text-sm text-right font-semibold text-red-600 dark:text-red-400" x-text="ecriture.debit ? formatMoney(ecriture.debit) : '-'"></td>
+                                <td class="px-4 py-3 text-sm text-right font-semibold text-green-600 dark:text-green-400" x-text="ecriture.credit ? formatMoney(ecriture.credit) : '-'"></td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <button class="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                        <button class="p-1 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tfoot class="bg-gray-100 dark:bg-gray-700 font-bold">
+                        <tr>
+                            <td colspan="5" class="px-4 py-3 text-right text-gray-900 dark:text-white">TOTAUX:</td>
+                            <td class="px-4 py-3 text-right text-red-600 dark:text-red-400" x-text="formatMoney(getTotalDebit())"></td>
+                            <td class="px-4 py-3 text-right text-green-600 dark:text-green-400" x-text="formatMoney(getTotalCredit())"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Onglet Bilan -->
+        <div x-show="activeTab === 'bilan'" class="slide-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Actif -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        ACTIF
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Actif Immobilisé</h4>
+                            <div class="space-y-2 pl-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Immobilisations corporelles</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.actif.immobilisations)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Immobilisations financières</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.actif.immobilisationsFinancieres)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-300 dark:border-gray-600 pt-4">
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Actif Circulant</h4>
+                            <div class="space-y-2 pl-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Stocks et en-cours</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.actif.stocks)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Créances clients</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.actif.creances)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Disponibilités</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.actif.disponibilites)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t-2 border-blue-600 pt-4">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span class="text-gray-900 dark:text-white">TOTAL ACTIF</span>
+                                <span class="text-blue-600 dark:text-blue-400" x-text="formatMoney(getTotalActif())"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Passif -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="trending-down" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                        </div>
+                        PASSIF
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Capitaux Propres</h4>
+                            <div class="space-y-2 pl-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Capital social</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.capital)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Réserves</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.reserves)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Résultat de l'exercice</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.resultat)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-300 dark:border-gray-600 pt-4">
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Dettes</h4>
+                            <div class="space-y-2 pl-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Emprunts</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.emprunts)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Dettes fournisseurs</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.dettesFournisseurs)"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Dettes fiscales et sociales</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bilan.passif.dettesFiscales)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t-2 border-green-600 pt-4">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span class="text-gray-900 dark:text-white">TOTAL PASSIF</span>
+                                <span class="text-green-600 dark:text-green-400" x-text="formatMoney(getTotalPassif())"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ratios Financiers -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Ratio de Liquidité</p>
+                    <p class="text-2xl font-bold text-blue-600" x-text="ratios.liquidite.toFixed(2)"></p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Ratio d'Endettement</p>
+                    <p class="text-2xl font-bold text-orange-600" x-text="ratios.endettement.toFixed(2) + '%'"></p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fonds de Roulement</p>
+                    <p class="text-2xl font-bold text-green-600" x-text="formatMoney(ratios.fondsRoulement)"></p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">BFR</p>
+                    <p class="text-2xl font-bold text-purple-600" x-text="formatMoney(ratios.bfr)"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Facture -->
+    <div x-show="showFactureModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showFactureModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+             @click.stop>
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Nouvelle Facture</h3>
+                <button @click="showFactureModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form @submit.prevent="createFacture()" class="p-6 space-y-6">
+                <!-- Informations Client -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i data-lucide="user" class="w-5 h-5 mr-2 text-blue-600"></i>
+                        Informations Client
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client *</label>
+                            <select required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Sélectionner un client...</option>
+                                <option>Entreprise A</option>
+                                <option>Entreprise B</option>
+                                <option>Entreprise C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Numéro Facture *</label>
+                            <input type="text" required placeholder="FAC-2024-XXX" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date d'émission *</label>
+                        <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date d'échéance *</label>
+                        <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Montant et Statut -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Montant HT *</label>
+                        <input type="number" required placeholder="0" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statut</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option>Brouillon</option>
+                            <option>En attente</option>
+                            <option>Envoyée</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+                    <textarea rows="3" placeholder="Notes additionnelles..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="showFactureModal = false" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition flex items-center space-x-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Créer la Facture</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Dépense -->
+    <div x-show="showDepenseModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showDepenseModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full"
+             @click.stop>
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Enregistrer une Dépense</h3>
+                <button @click="showDepenseModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form @submit.prevent="createDepense()" class="p-6 space-y-6">
+                <!-- Informations Principales -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Libellé *</label>
+                        <input type="text" required placeholder="Description de la dépense" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Catégorie *</label>
+                            <select required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                                <option value="">Sélectionner...</option>
+                                <option>Achats & Approvisionnements</option>
+                                <option>Salaires & Charges</option>
+                                <option>Loyer & Charges locatives</option>
+                                <option>Marketing & Publicité</option>
+                                <option>Entretien & Maintenance</option>
+                                <option>Assurances</option>
+                                <option>Impôts & Taxes</option>
+                                <option>Autres</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Montant *</label>
+                            <input type="number" required placeholder="0" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
+                            <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mode de paiement</label>
+                            <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                                <option>Virement</option>
+                                <option>Chèque</option>
+                                <option>Espèces</option>
+                                <option>Carte bancaire</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fournisseur</label>
+                        <input type="text" placeholder="Nom du fournisseur" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-red-500">
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="showDepenseModal = false" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold transition flex items-center space-x-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Enregistrer</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Export -->
+    <div x-show="showExportModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showExportModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full"
+             @click.stop>
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Exporter les données</h3>
+                <button @click="showExportModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-3">
+                <button @click="exportExcel()" class="w-full p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="file-spreadsheet" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Export Excel</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Fichier .xlsx avec tous les onglets</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportPDF()" class="w-full p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Export PDF</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Rapport financier complet</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportComptable()" class="w-full p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="database" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Format Comptable (FEC)</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Fichier des Écritures Comptables</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportCSV()" class="w-full p-4 bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="file-down" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Export CSV</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Données brutes séparées par virgules</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Détails Facture -->
+    <div x-show="showFactureDetailModal" 
+         x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showFactureDetailModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+             @click.stop
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedFacture ? selectedFacture.numero : ''"></h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Détails de la facture</p>
+                        </div>
+                    </div>
+                    <button @click="showFactureDetailModal = false" class="p-2 hover:bg-white/50 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6" x-show="selectedFacture">
+                <!-- Informations Client -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i data-lucide="user" class="w-5 h-5 mr-2 text-blue-600"></i>
+                        Informations Client
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Nom</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.client?.nom"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.client?.email"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Téléphone</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.client?.telephone"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Adresse</p>
+                            <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedFacture?.client?.adresse"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Facture -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                        <p class="text-sm text-blue-600 dark:text-blue-400 mb-1">Date d'émission</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white" x-text="selectedFacture?.date"></p>
+                    </div>
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+                        <p class="text-sm text-green-600 dark:text-green-400 mb-1">Date d'échéance</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white" x-text="selectedFacture?.echeance"></p>
+                    </div>
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                        <p class="text-sm text-purple-600 dark:text-purple-400 mb-1">Statut</p>
+                        <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold"
+                              :class="getFactureStatusClass(selectedFacture?.statut)"
+                              x-text="selectedFacture?.statut"></span>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4">
+                        <p class="text-sm text-orange-600 dark:text-orange-400 mb-1">Montant Total</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(selectedFacture?.montant)"></p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button @click="downloadFacture(selectedFacture)" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Télécharger PDF</span>
+                    </button>
+                    <button @click="sendFacture(selectedFacture)" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2">
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                        <span>Envoyer par Email</span>
+                    </button>
+                    <button @click="showFactureDetailModal = false" 
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Détails Dépense -->
+    <div x-show="showDepenseDetailModal" 
+         x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showDepenseDetailModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+             @click.stop
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center">
+                            <i data-lucide="receipt" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Détails de la Dépense</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="selectedDepense?.reference || 'Sans référence'"></p>
+                        </div>
+                    </div>
+                    <button @click="showDepenseDetailModal = false" class="p-2 hover:bg-white/50 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6" x-show="selectedDepense">
+                <!-- Informations Principales -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i data-lucide="info" class="w-5 h-5 mr-2 text-red-600"></i>
+                        Informations
+                    </h4>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Libellé</p>
+                            <p class="font-semibold text-gray-900 dark:text-white text-lg" x-text="selectedDepense?.libelle"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Catégorie</p>
+                                <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold"
+                                      :class="getDepenseCategoryClass(selectedDepense?.categorie)"
+                                      x-text="selectedDepense?.categorie"></span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedDepense?.date"></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4" x-show="selectedDepense?.fournisseur">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Fournisseur</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedDepense?.fournisseur"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Mode de paiement</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="selectedDepense?.modePaiement"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Montants -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
+                        <p class="text-sm text-red-600 dark:text-red-400 mb-1">Montant HT</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(selectedDepense?.montant)"></p>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4" x-show="selectedDepense?.tva > 0">
+                        <p class="text-sm text-orange-600 dark:text-orange-400 mb-1">TVA</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(selectedDepense?.tva)"></p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button @click="editDepense(selectedDepense)" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2">
+                        <i data-lucide="edit" class="w-4 h-4"></i>
+                        <span>Modifier</span>
+                    </button>
+                    <button @click="deleteDepense(selectedDepense); showDepenseDetailModal = false" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center space-x-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Supprimer</span>
+                    </button>
+                    <button @click="showDepenseDetailModal = false" 
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function comptabiliteSystem() {
+    return {
+        // État général
+        selectedPeriod: 'month',
+        customPeriod: { start: '', end: '' },
+        activeTab: 'factures',
+        
+        // Filtres et recherche
+        factureSearch: '',
+        factureFilter: '',
+        depenseSearch: '',
+        depenseFilter: '',
+        ecritureSearch: '',
+        journalFilter: '',
+        
+        // Modals
+        showFactureModal: false,
+        showDepenseModal: false,
+        showPaiementModal: false,
+        showDevisModal: false,
+        showFactureDetailModal: false,
+        showDepenseDetailModal: false,
+        selectedFacture: null,
+        selectedDepense: null,
+        showRapprochementModal: false,
+        showExportModal: false,
+        
+        // Statistiques
+        stats: {
+            ca: 12500000,
+            caObjectif: 15000000,
+            caVariation: '+15.2%',
+            depenses: 8200000,
+            depensesBudget: 9000000,
+            depensesVariation: '+8.3%',
+            benefice: 4300000,
+            beneficeVariation: '+23.1%',
+            marge: 34.4,
+            facturesImpayees: 2100000,
+            facturesEnRetard: 3
+        },
+        
+        // Trésorerie
+        tresorerie: {
+            banque: 15600000,
+            caisse: 2400000,
+            total: 18000000
+        },
+        
+        // Données
+        factures: [
+            { 
+                id: 1, 
+                numero: 'FAC-2024-001', 
+                client: { nom: 'ACME Corporation', email: 'contact@acme.com', tel: '+225 07 00 00 00' },
+                dateEmission: '05/01/2024',
+                echeance: '05/02/2024',
+                montantHT: 720339,
+                montantTVA: 129661,
+                montantTTC: 850000,
+                montantPaye: 850000,
+                statut: 'Payée',
+                modePaiement: 'Virement',
+                reference: 'CMD-001'
+            },
+            { 
+                id: 2, 
+                numero: 'FAC-2024-002', 
+                client: { nom: 'Tech Boutique SARL', email: 'info@techboutique.ci', tel: '+225 27 20 00 00' },
+                dateEmission: '10/01/2024',
+                echeance: '20/01/2024',
+                montantHT: 550847,
+                montantTVA: 99153,
+                montantTTC: 650000,
+                montantPaye: 0,
+                statut: 'En attente',
+                modePaiement: null,
+                reference: 'CMD-002'
+            },
+            { 
+                id: 3, 
+                numero: 'FAC-2024-003', 
+                client: { nom: 'Restaurant Les Saveurs', email: 'gestion@saveurs.ci', tel: '+225 05 45 00 00' },
+                dateEmission: '28/12/2023',
+                echeance: '10/01/2024',
+                montantHT: 381356,
+                montantTVA: 68644,
+                montantTTC: 450000,
+                montantPaye: 0,
+                statut: 'En retard',
+                modePaiement: null,
+                reference: 'CMD-003'
+            },
+            { 
+                id: 4, 
+                numero: 'FAC-2024-004', 
+                client: { nom: 'Marie KOUASSI', email: 'marie.k@email.com', tel: '+225 07 88 00 00' },
+                dateEmission: '12/01/2024',
+                echeance: '18/01/2024',
+                montantHT: 105932,
+                montantTVA: 19068,
+                montantTTC: 125000,
+                montantPaye: 125000,
+                statut: 'Payée',
+                modePaiement: 'Espèces',
+                reference: null
+            },
+            { 
+                id: 5, 
+                numero: 'FAC-2024-005', 
+                client: { nom: 'Groupe Industriel CI', email: 'compta@groupeci.com', tel: '+225 27 22 00 00' },
+                dateEmission: '15/01/2024',
+                echeance: '15/02/2024',
+                montantHT: 1694915,
+                montantTVA: 305085,
+                montantTTC: 2000000,
+                montantPaye: 500000,
+                statut: 'Paiement partiel',
+                modePaiement: 'Virement',
+                reference: 'CMD-005'
+            },
+            { 
+                id: 6, 
+                numero: 'FAC-2024-006', 
+                client: { nom: 'Startup Innovation Hub', email: 'admin@innohub.ci', tel: '+225 05 60 00 00' },
+                dateEmission: '16/01/2024',
+                echeance: '31/01/2024',
+                montantHT: 338983,
+                montantTVA: 61017,
+                montantTTC: 400000,
+                montantPaye: 0,
+                statut: 'Envoyée',
+                modePaiement: null,
+                reference: 'CMD-006'
+            }
+        ],
+        
+        depenses: [
+            { 
+                id: 1, 
+                libelle: 'Achat stock électronique Samsung', 
+                categorie: 'Achats de marchandises',
+                montant: 2500000, 
+                date: '16/01/2024',
+                fournisseur: 'Samsung CI',
+                modePaiement: 'Virement',
+                reference: 'ACH-001',
+                tva: 450000
+            },
+            { 
+                id: 2, 
+                libelle: 'Salaires et charges sociales Janvier', 
+                categorie: 'Salaires & Charges',
+                montant: 1800000, 
+                date: '15/01/2024',
+                fournisseur: null,
+                modePaiement: 'Virement',
+                reference: 'SAL-001',
+                tva: 0
+            },
+            { 
+                id: 3, 
+                libelle: 'Loyer boutique Avenue Chardy', 
+                categorie: 'Loyer & Charges locatives',
+                montant: 500000, 
+                date: '14/01/2024',
+                fournisseur: 'SCI Immo Plus',
+                modePaiement: 'Chèque',
+                reference: 'LOY-001',
+                tva: 0
+            },
+            { 
+                id: 4, 
+                libelle: 'Électricité CIE Décembre 2023', 
+                categorie: 'Autres',
+                montant: 150000, 
+                date: '13/01/2024',
+                fournisseur: 'CIE',
+                modePaiement: 'Espèces',
+                reference: null,
+                tva: 0
+            },
+            { 
+                id: 5, 
+                libelle: 'Campagne publicitaire Facebook', 
+                categorie: 'Marketing & Publicité',
+                montant: 350000, 
+                date: '12/01/2024',
+                fournisseur: 'Meta Platforms',
+                modePaiement: 'Carte bancaire',
+                reference: 'MKT-001',
+                tva: 63000
+            },
+            { 
+                id: 6, 
+                libelle: 'Maintenance climatisation', 
+                categorie: 'Entretien & Maintenance',
+                montant: 75000, 
+                date: '11/01/2024',
+                fournisseur: 'Clim Service CI',
+                modePaiement: 'Espèces',
+                reference: null,
+                tva: 13500
+            },
+            { 
+                id: 7, 
+                libelle: 'Assurance multirisque pro', 
+                categorie: 'Assurances',
+                montant: 420000, 
+                date: '10/01/2024',
+                fournisseur: 'NSIA Assurances',
+                modePaiement: 'Virement',
+                reference: 'ASS-001',
+                tva: 0
+            },
+            { 
+                id: 8, 
+                libelle: 'Fournitures de bureau', 
+                categorie: 'Fournitures',
+                montant: 85000, 
+                date: '09/01/2024',
+                fournisseur: 'Papeterie Moderne',
+                modePaiement: 'Espèces',
+                reference: null,
+                tva: 15300
+            }
+        ],
+        
+        depensesParCategorie: [
+            { nom: 'Achats', pourcentage: 35, montant: 2500000 },
+            { nom: 'Salaires', pourcentage: 25, montant: 1800000 },
+            { nom: 'Loyer', pourcentage: 15, montant: 500000 },
+            { nom: 'Marketing', pourcentage: 12, montant: 350000 },
+            { nom: 'Assurances', pourcentage: 8, montant: 420000 },
+            { nom: 'Autres', pourcentage: 5, montant: 355000 }
+        ],
+        
+        dernieresOperations: [
+            { id: 1, libelle: 'Virement client ACME', type: 'credit', montant: 850000, date: '15/01/2024', compte: 'Banque BOA' },
+            { id: 2, libelle: 'Paiement fournisseur Samsung', type: 'debit', montant: 2500000, date: '14/01/2024', compte: 'Banque BOA' },
+            { id: 3, libelle: 'Encaissement ventes magasin', type: 'credit', montant: 450000, date: '14/01/2024', compte: 'Caisse' },
+            { id: 4, libelle: 'Virement salaires', type: 'debit', montant: 1800000, date: '13/01/2024', compte: 'Banque BOA' },
+            { id: 5, libelle: 'Paiement loyer', type: 'debit', montant: 500000, date: '12/01/2024', compte: 'Banque BOA' },
+            { id: 6, libelle: 'Vente client Marie K.', type: 'credit', montant: 125000, date: '12/01/2024', compte: 'Caisse' }
+        ],
+        
+        ecritures: [
+            { id: 1, date: '15/01/2024', journal: 'VE', piece: 'FAC-2024-001', compte: '411001', libelle: 'Facture ACME Corp', debit: 850000, credit: 0 },
+            { id: 2, date: '15/01/2024', journal: 'VE', piece: 'FAC-2024-001', compte: '707000', libelle: 'Vente marchandises', debit: 0, credit: 720339 },
+            { id: 3, date: '15/01/2024', journal: 'VE', piece: 'FAC-2024-001', compte: '445700', libelle: 'TVA collectée', debit: 0, credit: 129661 },
+            { id: 4, date: '14/01/2024', journal: 'AC', piece: 'ACH-001', compte: '401001', libelle: 'Facture Samsung CI', debit: 0, credit: 2500000 },
+            { id: 5, date: '14/01/2024', journal: 'AC', piece: 'ACH-001', compte: '607000', libelle: 'Achat marchandises', debit: 2500000, credit: 0 },
+            { id: 6, date: '13/01/2024', journal: 'BQ', piece: 'VIR-001', compte: '512000', libelle: 'Virement BOA', debit: 850000, credit: 0 },
+            { id: 7, date: '13/01/2024', journal: 'BQ', piece: 'VIR-001', compte: '411001', libelle: 'Règlement client ACME', debit: 0, credit: 850000 },
+            { id: 8, date: '12/01/2024', journal: 'CA', piece: 'ESP-001', compte: '571000', libelle: 'Encaissement caisse', debit: 125000, credit: 0 },
+            { id: 9, date: '12/01/2024', journal: 'CA', piece: 'ESP-001', compte: '411005', libelle: 'Client Marie K.', debit: 0, credit: 125000 }
+        ],
+        
+        bilan: {
+            actif: {
+                immobilisations: 5000000,
+                immobilisationsFinancieres: 1000000,
+                stocks: 8500000,
+                creances: 2100000,
+                disponibilites: 18000000
+            },
+            passif: {
+                capital: 10000000,
+                reserves: 8000000,
+                resultat: 4300000,
+                emprunts: 6000000,
+                dettesFournisseurs: 3800000,
+                dettesFiscales: 2500000
+            }
+        },
+        
+        ratios: {
+            liquidite: 0,
+            endettement: 0,
+            fondsRoulement: 0,
+            bfr: 0
+        },
+        
+        // Computed
+        get filteredFactures() {
+            let result = this.factures;
+            
+            if (this.factureSearch) {
+                const search = this.factureSearch.toLowerCase();
+                result = result.filter(f => 
+                    f.numero.toLowerCase().includes(search) ||
+                    f.client.nom.toLowerCase().includes(search) ||
+                    f.client.email.toLowerCase().includes(search)
+                );
+            }
+            
+            if (this.factureFilter) {
+                result = result.filter(f => {
+                    const statut = f.statut.toLowerCase().replace(/\s+/g, '');
+                    const filter = this.factureFilter.toLowerCase().replace(/\s+/g, '');
+                    
+                    if (filter === 'payee') return statut === 'payée';
+                    if (filter === 'envoyee') return statut === 'envoyée';
+                    if (filter === 'attente') return statut === 'enattente';
+                    if (filter === 'retard') return statut === 'enretard';
+                    if (filter === 'partielle') return statut === 'paiementpartiel';
+                    if (filter === 'brouillon') return statut === 'brouillon';
+                    if (filter === 'annulee') return statut === 'annulée';
+                    
+                    return true;
+                });
+            }
+            
+            return result;
+        },
+        
+        get filteredDepenses() {
+            let result = this.depenses;
+            
+            if (this.depenseSearch) {
+                const search = this.depenseSearch.toLowerCase();
+                result = result.filter(d => 
+                    d.libelle.toLowerCase().includes(search) ||
+                    (d.fournisseur && d.fournisseur.toLowerCase().includes(search))
+                );
+            }
+            
+            if (this.depenseFilter) {
+                result = result.filter(d => d.categorie.toLowerCase().includes(this.depenseFilter.toLowerCase()));
+            }
+            
+            return result;
+        },
+        
+        get filteredEcritures() {
+            let result = this.ecritures;
+            
+            if (this.ecritureSearch) {
+                const search = this.ecritureSearch.toLowerCase();
+                result = result.filter(e => 
+                    e.libelle.toLowerCase().includes(search) ||
+                    e.piece.toLowerCase().includes(search) ||
+                    e.compte.includes(search)
+                );
+            }
+            
+            if (this.journalFilter) {
+                result = result.filter(e => e.journal === this.journalFilter);
+            }
+            
+            return result;
+        },
+        
+        // Méthodes
+        init() {
+            this.calculateRatios();
+            lucide.createIcons();
+        },
+        
+        loadData() {
+            console.log('Chargement des données pour la période:', this.selectedPeriod);
+            // À implémenter avec API backend
+        },
+        
+        applyCustomPeriod() {
+            console.log('Période personnalisée:', this.customPeriod);
+            this.loadData();
+        },
+        
+        calculateRatios() {
+            const actifCirculant = this.bilan.actif.stocks + this.bilan.actif.creances + this.bilan.actif.disponibilites;
+            const dettesCourtTerme = this.bilan.passif.dettesFournisseurs + this.bilan.passif.dettesFiscales;
+            
+            this.ratios.liquidite = actifCirculant / dettesCourtTerme;
+            
+            const totalDettes = this.bilan.passif.emprunts + dettesCourtTerme;
+            const totalActif = this.getTotalActif();
+            this.ratios.endettement = (totalDettes / totalActif) * 100;
+            
+            const capitalPermanent = this.bilan.passif.capital + this.bilan.passif.reserves + this.bilan.passif.resultat + this.bilan.passif.emprunts;
+            const actifImmobilise = this.bilan.actif.immobilisations + this.bilan.actif.immobilisationsFinancieres;
+            this.ratios.fondsRoulement = capitalPermanent - actifImmobilise;
+            
+            const actifCirculantExploitation = this.bilan.actif.stocks + this.bilan.actif.creances;
+            this.ratios.bfr = actifCirculantExploitation - dettesCourtTerme;
+        },
+        
+        getTotalActif() {
+            return Object.values(this.bilan.actif).reduce((sum, val) => sum + val, 0);
+        },
+        
+        getTotalPassif() {
+            return Object.values(this.bilan.passif).reduce((sum, val) => sum + val, 0);
+        },
+        
+        getTotalDebit() {
+            return this.filteredEcritures.reduce((sum, e) => sum + (e.debit || 0), 0);
+        },
+        
+        getTotalCredit() {
+            return this.filteredEcritures.reduce((sum, e) => sum + (e.credit || 0), 0);
+        },
+        
+        isOverdue(dateStr) {
+            const parts = dateStr.split('/');
+            const date = new Date(parts[2], parts[1] - 1, parts[0]);
+            return date < new Date();
+        },
+        
+        getDaysRemaining(dateStr) {
+            const parts = dateStr.split('/');
+            const echeance = new Date(parts[2], parts[1] - 1, parts[0]);
+            const today = new Date();
+            const diff = Math.ceil((echeance - today) / (1000 * 60 * 60 * 24));
+            
+            if (diff < 0) return `En retard de ${Math.abs(diff)} jours`;
+            if (diff === 0) return "Aujourd'hui";
+            if (diff === 1) return "Demain";
+            return `Dans ${diff} jours`;
+        },
+        
+        getFactureStatusClass(statut) {
+            const classes = {
+                'Payée': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'En attente': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
+                'Envoyée': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'En retard': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
+                'Paiement partiel': 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+                'Brouillon': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+                'Annulée': 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getDepenseIconClass(categorie) {
+            const classes = {
+                'Achats de marchandises': 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400',
+                'Salaires & Charges': 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400',
+                'Loyer & Charges locatives': 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400',
+                'Marketing & Publicité': 'bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400',
+                'Fournitures': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400',
+                'Transport': 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400',
+                'Entretien & Maintenance': 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400',
+                'Assurances': 'bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-400',
+                'Impôts & Taxes': 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400',
+                'Autres': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+            };
+            return classes[categorie] || 'bg-gray-100 text-gray-600';
+        },
+        
+        getDepenseIcon(categorie) {
+            const icons = {
+                'Achats de marchandises': 'shopping-cart',
+                'Salaires & Charges': 'users',
+                'Loyer & Charges locatives': 'home',
+                'Marketing & Publicité': 'megaphone',
+                'Fournitures': 'package',
+                'Transport': 'truck',
+                'Entretien & Maintenance': 'wrench',
+                'Assurances': 'shield',
+                'Impôts & Taxes': 'receipt',
+                'Autres': 'file-text'
+            };
+            return icons[categorie] || 'circle';
+        },
+        
+        // Actions Factures
+        openFactureModal() {
+            this.showFactureModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async createFacture() {
+            showLoading('Création de la facture...');
+            
+            try {
+                // Simulation API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                hideLoading();
+                showToast('Facture créée avec succès', 'success', 'Facture');
+                this.showFactureModal = false;
+                
+            } catch (error) {
+                hideLoading();
+                showToast('Erreur lors de la création', 'error');
+            }
+        },
+        
+        viewFacture(facture) {
+            this.selectedFacture = facture;
+            this.showFactureDetailModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        editFacture(facture) {
+            this.selectedFacture = facture;
+            this.showFactureModal = true;
+        },
+        
+        sendFacture(facture) {
+            if (confirm('📧 Envoyer la facture ' + facture.numero + ' par email à ' + facture.client.email + ' ?')) {
+                // Envoi email
+            }
+        },
+        
+        downloadFacture(facture) {
+            window.open('/api/factures/' + facture.id + '/pdf', '_blank');
+        },
+        
+        deleteFacture(facture) {
+            if (confirm('🗑️ Supprimer la facture ' + facture.numero + ' ?\n\nCette action est irréversible.')) {
+                const index = this.factures.findIndex(f => f.id === facture.id);
+                if (index > -1) {
+                    this.factures.splice(index, 1);
+                    // Facture supprimée
+                }
+            }
+        },
+        
+        // Actions Dépenses
+        openDepenseModal() {
+            this.showDepenseModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async createDepense() {
+            showLoading('Enregistrement de la dépense...');
+            
+            try {
+                // Simulation API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                hideLoading();
+                showToast('Dépense enregistrée avec succès', 'success', 'Dépense');
+                this.showDepenseModal = false;
+                
+            } catch (error) {
+                hideLoading();
+                showToast('Erreur lors de l\'enregistrement', 'error');
+            }
+        },
+        
+        viewDepense(depense) {
+            this.selectedDepense = depense;
+            this.showDepenseDetailModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        editDepense(depense) {
+            this.selectedDepense = depense;
+            this.showDepenseModal = true;
+        },
+        
+        deleteDepense(depense) {
+            if (confirm('🗑️ Supprimer cette dépense ?\n\n' + depense.libelle)) {
+                const index = this.depenses.findIndex(d => d.id === depense.id);
+                if (index > -1) {
+                    this.depenses.splice(index, 1);
+                    // Dépense supprimée
+                }
+            }
+        },
+        
+        // Autres actions
+        openPaiementModal() {
+            window.location.href = '/dashboard/comptable/facturation/';
+        },
+        
+        openDevisModal() {
+            window.location.href = '/dashboard/comptable/facturation/';
+        },
+        
+        openRapprochementModal() {
+            window.location.href = '/dashboard/comptable/comptabilite/';
+        },
+        
+        openEcritureModal() {
+            window.location.href = '/dashboard/comptable/comptabilite/';
+        },
+        
+        generateReport() {
+            window.location.href = '/dashboard/comptable/rapports/';
+        },
+        
+        // Exports
+        exportExcel() {
+            window.open('/api/export/comptabilite/excel', '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportPDF() {
+            window.open('/api/export/comptabilite/pdf', '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportComptable() {
+            window.open('/api/export/comptabilite/fec', '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportCSV() {
+            window.open('/api/export/comptabilite/csv', '_blank');
+            this.showExportModal = false;
+        },
+        
+        formatMoney(amount) {
+            if (amount >= 1000000) {
+                return new Intl.NumberFormat('fr-FR', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                }).format(amount / 1000000) + 'M FCFA';
+            }
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

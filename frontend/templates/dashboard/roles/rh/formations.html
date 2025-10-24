@@ -1,0 +1,386 @@
+{% extends "dashboard/roles/rh/base_rh.html" %}
+{% load static %}
+{% block title %}Formations - RH - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="formationsData()" x-init="init()">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Formations</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1"><span x-text="formations.length"></span> formation(s) planifiée(s)</p>
+        </div>
+        <button @click.prevent="openModal('nouvelle')" 
+                class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Nouvelle Formation</span>
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-blue-900 dark:text-blue-100" x-text="formations.length"></p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Formations</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="users" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-green-900 dark:text-green-100">28</p>
+            <p class="text-xs text-green-600 dark:text-green-400 font-medium">Participants</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-purple-900 dark:text-purple-100">120h</p>
+            <p class="text-xs text-purple-600 dark:text-purple-400 font-medium">Heures Totales</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+            <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mb-2">
+                <i data-lucide="check-circle" class="w-5 h-5 text-white"></i>
+            </div>
+            <p class="text-2xl font-bold text-orange-900 dark:text-orange-100">85%</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 font-medium">Taux Réussite</p>
+        </div>
+    </div>
+
+    <!-- Formations Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="formation in formations" :key="formation.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-700 transition">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-xl flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-6 h-6 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold" 
+                          :class="{
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': formation.statut === 'En cours',
+                              'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400': formation.statut === 'Planifiée',
+                              'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': formation.statut === 'Terminée'
+                          }" 
+                          x-text="formation.statut"></span>
+                </div>
+
+                <h3 class="font-bold text-gray-900 dark:text-white mb-2" x-text="formation.titre"></h3>
+
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span x-text="formation.formateur"></span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span x-text="formation.date"></span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span><span x-text="formation.participants"></span> participant(s)</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <span x-text="formation.duree"></span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button @click.prevent="viewFormation(formation)" 
+                            class="flex-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-sm font-medium">
+                        Détails
+                    </button>
+                    <button @click.prevent="viewParticipants(formation)" 
+                            class="flex-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-sm font-medium">
+                        Participants
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Modal Détails Formation -->
+    <div x-show="modalOpen === 'details'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+                <template x-if="selectedFormation">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="book-open" class="w-8 h-8 text-indigo-600 dark:text-indigo-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedFormation.titre"></h3>
+                                    <span class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="{
+                                              'bg-blue-100 text-blue-700': selectedFormation.statut === 'En cours',
+                                              'bg-orange-100 text-orange-700': selectedFormation.statut === 'Planifiée',
+                                              'bg-green-100 text-green-700': selectedFormation.statut === 'Terminée'
+                                          }"
+                                          x-text="selectedFormation.statut"></span>
+                                </div>
+                            </div>
+                            <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Info Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="user" class="w-3 h-3"></i>
+                                    Formateur
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedFormation.formateur"></p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    Date
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedFormation.date"></p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3"></i>
+                                    Durée
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedFormation.duree"></p>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <i data-lucide="users" class="w-3 h-3"></i>
+                                    Participants
+                                </p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="selectedFormation.participants"></p>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+                            <p class="text-xs text-blue-600 dark:text-blue-400 mb-2 font-semibold flex items-center gap-1">
+                                <i data-lucide="file-text" class="w-3 h-3"></i>
+                                Description
+                            </p>
+                            <p class="text-sm text-blue-900 dark:text-blue-100">
+                                Formation complète sur les techniques modernes de leadership et de management d'équipe. Inclut des ateliers pratiques et des études de cas.
+                            </p>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button @click.prevent="viewParticipants(selectedFormation)"
+                                    class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                                <span>Voir Participants</span>
+                            </button>
+                            <button @click="closeModal()"
+                                    class="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Participants -->
+    <div x-show="modalOpen === 'participants'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+                <template x-if="selectedFormation">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Participants</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="selectedFormation.titre"></p>
+                            </div>
+                            <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Participants List -->
+                        <div class="space-y-3 mb-6">
+                            <template x-for="(participant, i) in ['Jean Kouassi', 'Marie Diabaté', 'Paul Traoré', 'Sophie Koné']" :key="i">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white font-bold text-sm">
+                                            <span x-text="participant.split(' ').map(n=>n[0]).join('')"></span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white" x-text="participant"></p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Employé</p>
+                                        </div>
+                                    </div>
+                                    <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-semibold">
+                                        Inscrit
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button @click.prevent="ajouterParticipant()"
+                                    class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                <span>Ajouter Participant</span>
+                            </button>
+                            <button @click="closeModal()"
+                                    class="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Formation -->
+    <div x-show="modalOpen === 'nouvelle'" 
+         x-transition 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Nouvelle Formation</h3>
+                    <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveFormation()" class="space-y-4">
+                    <input type="text" placeholder="Titre de la formation" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" placeholder="Formateur" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <input type="date" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="number" placeholder="Durée (heures)" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <input type="number" placeholder="Nombre de participants" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                    </div>
+
+                    <textarea placeholder="Description..." rows="4" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg"></textarea>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" @click="closeModal()" class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                            Annuler
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            Créer Formation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-transition 
+         class="fixed top-4 right-4 z-50 max-w-md" 
+         style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+            <div :class="{
+                'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400': toast.type === 'success',
+                'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400': toast.type === 'info'
+            }" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                <i :data-lucide="toast.type === 'success' ? 'check-circle' : 'info'" class="w-5 h-5"></i>
+            </div>
+            <p class="flex-1 text-sm font-medium text-gray-900 dark:text-white" x-text="toast.message"></p>
+            <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function formationsData() {
+    return {
+        modalOpen: null,
+        selectedFormation: null,
+        toast: { show: false, message: '', type: 'success' },
+        
+        formations: [
+            { id: 1, titre: 'Leadership & Management', formateur: 'Dr. Kouamé', date: '25/10/2025', duree: '16h', participants: 12, statut: 'Planifiée' },
+            { id: 2, titre: 'Excel Avancé', formateur: 'Marie Bamba', date: '15/10/2025', duree: '8h', participants: 8, statut: 'En cours' },
+            { id: 3, titre: 'Communication Efficace', formateur: 'Paul Diarra', date: '01/10/2025', duree: '12h', participants: 15, statut: 'Terminée' }
+        ],
+
+        init() {
+            lucide.createIcons();
+        },
+
+        openModal(type) {
+            this.modalOpen = type;
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        closeModal() {
+            this.modalOpen = null;
+            this.selectedFormation = null;
+        },
+
+        viewFormation(formation) {
+            this.selectedFormation = formation;
+            this.openModal('details');
+        },
+
+        viewParticipants(formation) {
+            this.selectedFormation = formation;
+            this.openModal('participants');
+        },
+
+        ajouterParticipant() {
+            this.showToast('✅ Participant ajouté avec succès !', 'success');
+        },
+
+        saveFormation() {
+            this.showToast('✅ Formation créée et planifiée avec succès !', 'success');
+            this.closeModal();
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 3000);
+            this.$nextTick(() => lucide.createIcons());
+        }
+    }
+}
+</script>
+{% endblock %}

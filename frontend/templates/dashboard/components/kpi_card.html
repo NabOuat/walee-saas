@@ -1,0 +1,27 @@
+<!-- Composant Réutilisable : Card KPI -->
+<!-- Usage: {% include "dashboard/components/kpi_card.html" with title="Total" value="45" icon="users" color="blue" %} -->
+
+<div class="bg-gradient-to-br from-{{ color|default:'blue' }}-50 to-{{ color|default:'blue' }}-100 dark:from-{{ color|default:'blue' }}-900/20 dark:to-{{ color|default:'blue' }}-800/20 rounded-xl p-5 border border-{{ color|default:'blue' }}-200 dark:border-{{ color|default:'blue' }}-800 hover:shadow-lg transition-shadow cursor-pointer">
+    <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 bg-{{ color|default:'blue' }}-500 rounded-lg flex items-center justify-center shadow-sm">
+            <i data-lucide="{{ icon|default:'activity' }}" class="w-6 h-6 text-white"></i>
+        </div>
+        {% if badge %}
+        <span class="px-2 py-1 bg-{{ badge_color|default:'green' }}-100 text-{{ badge_color|default:'green' }}-700 text-xs font-semibold rounded-full">
+            {{ badge }}
+        </span>
+        {% endif %}
+    </div>
+    <p class="text-3xl font-bold text-{{ color|default:'blue' }}-900 dark:text-{{ color|default:'blue' }}-100 mb-1">
+        {{ value|default:"0" }}
+    </p>
+    <p class="text-xs text-{{ color|default:'blue' }}-600 dark:text-{{ color|default:'blue' }}-400 font-medium">
+        {{ title|default:"Titre" }}
+    </p>
+    {% if trend %}
+    <div class="flex items-center mt-2 text-xs {{ trend_class|default:'text-green-600' }}">
+        <i data-lucide="{{ trend_icon|default:'trending-up' }}" class="w-3 h-3 mr-1"></i>
+        <span>{{ trend }}</span>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inscription - Walee{% endblock %}
+
+{% block extra_head %}
+<!-- Flag Icons CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-walee-green via-emerald-600 to-teal-700 py-12">
+    
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 right-10 w-72 h-72 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 left-10 w-96 h-96 bg-walee-blue opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+    </div>
+    
+    <!-- Register Container -->
+    <div class="relative z-10 w-full max-w-2xl mx-4 animate-fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
+            
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center space-x-3 mb-4">
+                    <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-12 h-12">
+                    <h2 class="text-4xl font-bold font-poppins text-walee-dark">Walee</h2>
+                </div>
+                <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Créer votre compte</h3>
+                <p class="text-gray-500">Commencez votre essai gratuit dès aujourd'hui</p>
+            </div>
+            
+            <!-- Progress Steps -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center space-x-4" x-data="{step: 1}">
+                    <div class="flex items-center">
+                        <div :class="step >= 1 ? 'bg-walee-green text-white' : 'bg-gray-200 text-gray-500'" 
+                             class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
+                            1
+                        </div>
+                        <span class="ml-2 text-sm font-medium" :class="step >= 1 ? 'text-walee-green' : 'text-gray-500'">
+                            Informations
+                        </span>
+                    </div>
+                    <div class="w-16 h-1" :class="step >= 2 ? 'bg-walee-green' : 'bg-gray-200'"></div>
+                    <div class="flex items-center">
+                        <div :class="step >= 2 ? 'bg-walee-green text-white' : 'bg-gray-200 text-gray-500'" 
+                             class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
+                            2
+                        </div>
+                        <span class="ml-2 text-sm font-medium" :class="step >= 2 ? 'text-walee-green' : 'text-gray-500'">
+                            Vérification
+                        </span>
+                    </div>
+                    <div class="w-16 h-1" :class="step >= 3 ? 'bg-walee-green' : 'bg-gray-200'"></div>
+                    <div class="flex items-center">
+                        <div :class="step >= 3 ? 'bg-walee-green text-white' : 'bg-gray-200 text-gray-500'" 
+                             class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
+                            3
+                        </div>
+                        <span class="ml-2 text-sm font-medium" :class="step >= 3 ? 'text-walee-green' : 'text-gray-500'">
+                            Terminé
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Registration Form -->
+            <form class="space-y-6" x-data="registerForm()" @submit.prevent="handleSubmit">
+                
+                <!-- ÉTAPE 1: Informations -->
+                <div x-show="step === 1" x-transition>
+                    
+                    <!-- Login Method -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Méthode de connexion
+                        </label>
+                        <div class="flex items-center space-x-4 bg-gray-100 rounded-xl p-1">
+                            <button 
+                                type="button"
+                                @click="loginMethod = 'email'"
+                                :class="loginMethod === 'email' ? 'bg-white shadow-sm' : 'bg-transparent'"
+                                class="flex-1 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                            >
+                                <i data-lucide="mail" class="w-4 h-4" :class="loginMethod === 'email' ? 'text-walee-green' : 'text-gray-500'"></i>
+                                <span class="text-sm font-medium">Email</span>
+                            </button>
+                            <button 
+                                type="button"
+                                @click="loginMethod = 'phone'"
+                                :class="loginMethod === 'phone' ? 'bg-white shadow-sm' : 'bg-transparent'"
+                                class="flex-1 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                            >
+                                <i data-lucide="smartphone" class="w-4 h-4" :class="loginMethod === 'phone' ? 'text-walee-green' : 'text-gray-500'"></i>
+                                <span class="text-sm font-medium">Téléphone</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Nom complet -->
+                    <div class="mb-6">
+                        <label for="nom_complet" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nom complet *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nom_complet" 
+                            x-model="nom_complet"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                            placeholder="Jean Dupont"
+                            required
+                        >
+                    </div>
+                    
+                    <!-- Email -->
+                    <div x-show="loginMethod === 'email'" x-transition class="mb-6">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Adresse email *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                x-model="email"
+                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="vous@exemple.com"
+                                :required="loginMethod === 'email'"
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Téléphone avec sélecteur de pays -->
+                    <div x-show="loginMethod === 'phone'" x-transition class="mb-6">
+                        <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
+                            Numéro de téléphone *
+                        </label>
+                        <div class="flex space-x-2">
+                            <!-- Sélecteur de pays -->
+                            <div class="relative" style="width: 140px;">
+                                <button 
+                                    type="button"
+                                    @click="showCountryDropdown = !showCountryDropdown"
+                                    class="w-full px-3 py-3 border border-gray-300 rounded-xl bg-white hover:border-walee-green focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none flex items-center justify-between"
+                                >
+                                    <div class="flex items-center space-x-2">
+                                        <span :class="'fi fi-' + selectedCountry.flagCode" class="text-xl"></span>
+                                        <span x-text="selectedCountry.code" class="text-sm font-medium"></span>
+                                    </div>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                                </button>
+                                
+                                <!-- Dropdown pays -->
+                                <div 
+                                    x-show="showCountryDropdown"
+                                    @click.away="showCountryDropdown = false"
+                                    x-transition
+                                    style="display: none;"
+                                    class="absolute z-50 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto"
+                                >
+                                    <template x-for="(country, index) in countries" :key="index">
+                                        <button
+                                            type="button"
+                                            @click="selectCountry(country); showCountryDropdown = false"
+                                            class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 transition"
+                                        >
+                                            <span :class="'fi fi-' + country.flagCode" class="text-xl"></span>
+                                            <div class="flex-1">
+                                                <div class="text-sm font-medium" x-text="country.name"></div>
+                                            </div>
+                                            <span x-text="country.code" class="text-sm text-gray-500"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Input téléphone -->
+                            <div class="flex-1 relative">
+                                <input 
+                                    type="tel" 
+                                    id="telephone" 
+                                    x-model="telephone"
+                                    @input="formatPhoneNumber()"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                    :placeholder="selectedCountry.placeholder"
+                                    :required="loginMethod === 'phone'"
+                                >
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                            <span x-text="'Format: ' + selectedCountry.format"></span>
+                        </p>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button 
+                        type="button"
+                        @click="envoyerOTP()"
+                        :disabled="loading"
+                        class="w-full bg-walee-green text-white font-semibold py-3 px-6 rounded-xl hover:bg-emerald-600 hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span x-show="!loading">Continuer</span>
+                        <span x-show="loading">Envoi en cours...</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5" x-show="!loading"></i>
+                    </button>
+                </div>
+                
+                <!-- ÉTAPE 2: Vérification OTP -->
+                <div x-show="step === 2" x-transition>
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-walee-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="mail-check" class="w-8 h-8 text-walee-green"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-walee-dark mb-2">Vérifiez votre code</h4>
+                        <p class="text-gray-600">
+                            Un code à 6 chiffres a été envoyé à<br>
+                            <span class="font-semibold" x-text="loginMethod === 'email' ? email : telephone"></span>
+                        </p>
+                    </div>
+                    
+                    <!-- OTP Input -->
+                    <div class="mb-6">
+                        <label for="code_otp" class="block text-sm font-medium text-gray-700 mb-2 text-center">
+                            Code de vérification
+                        </label>
+                        <input 
+                            type="text" 
+                            id="code_otp" 
+                            x-model="code"
+                            maxlength="6"
+                            class="w-full text-center text-3xl font-bold tracking-widest px-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-walee-green transition duration-200 outline-none"
+                            placeholder="000000"
+                            required
+                            @input="code = code.replace(/[^0-9]/g, '')"
+                        >
+                        <p class="mt-2 text-xs text-gray-500 text-center">
+                            Le code expire dans <span class="font-semibold text-walee-green" x-text="countdown"></span>
+                        </p>
+                    </div>
+                    
+                    <!-- Mot de passe -->
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Créer un mot de passe *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                :type="showPassword ? 'text' : 'password'" 
+                                id="password" 
+                                x-model="password"
+                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="Min. 8 caractères"
+                                required
+                                minlength="8"
+                            >
+                            <button 
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                            Minimum 8 caractères
+                        </p>
+                    </div>
+                    
+                    <!-- Confirmer mot de passe -->
+                    <div class="mb-6">
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confirmer le mot de passe *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                :type="showConfirmPassword ? 'text' : 'password'" 
+                                id="confirmPassword" 
+                                x-model="confirmPassword"
+                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                :class="confirmPassword && password !== confirmPassword ? 'border-red-500' : ''"
+                                placeholder="Confirmer le mot de passe"
+                                required
+                                minlength="8"
+                            >
+                            <button 
+                                type="button"
+                                @click="showConfirmPassword = !showConfirmPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i :data-lucide="showConfirmPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-xs" :class="confirmPassword && password !== confirmPassword ? 'text-red-500' : 'text-gray-500'">
+                            <i :data-lucide="confirmPassword && password !== confirmPassword ? 'x-circle' : 'info'" class="w-3 h-3 inline"></i>
+                            <span x-show="!confirmPassword || password === confirmPassword">Les mots de passe doivent correspondre</span>
+                            <span x-show="confirmPassword && password !== confirmPassword">Les mots de passe ne correspondent pas</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Verify Button -->
+                    <button 
+                        type="button"
+                        @click="verifierOTP()"
+                        :disabled="loading || code.length !== 6"
+                        class="w-full bg-walee-green text-white font-semibold py-3 px-6 rounded-xl hover:bg-emerald-600 hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    >
+                        <span x-show="!loading">Vérifier le code</span>
+                        <span x-show="loading">Vérification...</span>
+                        <i data-lucide="check-circle" class="w-5 h-5" x-show="!loading"></i>
+                    </button>
+                    
+                    <!-- Resend Code -->
+                    <div class="text-center">
+                        <button 
+                            type="button"
+                            @click="renvoyerCode()"
+                            :disabled="loading || countdown > 0"
+                            class="text-sm text-walee-green hover:text-emerald-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                            Renvoyer le code
+                        </button>
+                    </div>
+                    
+                    <!-- Back Button -->
+                    <div class="mt-4 text-center">
+                        <button 
+                            type="button"
+                            @click="step = 1; code = ''"
+                            class="text-sm text-gray-600 hover:text-gray-800"
+                        >
+                            <i data-lucide="arrow-left" class="w-4 h-4 inline"></i>
+                            Modifier mes informations
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- ÉTAPE 3: Succès -->
+                <div x-show="step === 3" x-transition>
+                    <div class="text-center py-8">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                            <i data-lucide="check-circle" class="w-12 h-12 text-green-600"></i>
+                        </div>
+                        <h4 class="text-2xl font-bold text-walee-dark mb-3">Compte créé avec succès !</h4>
+                        <p class="text-gray-600 mb-6">
+                            Bienvenue sur Walee, <span class="font-semibold" x-text="nom_complet"></span> 🎉
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            Redirection vers votre dashboard...
+                        </p>
+                    </div>
+                </div>
+                
+            </form>
+            
+            <!-- Sign In Link -->
+            <div class="mt-8 text-center">
+                <p class="text-gray-600">
+                    Vous avez déjà un compte ? 
+                    <a href="{% url 'login' %}" class="text-walee-green hover:text-emerald-600 font-semibold transition">
+                        Se connecter
+                    </a>
+                </p>
+            </div>
+            
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth-api.js' %}"></script>
+<script>
+function registerForm() {
+    return {
+        step: 1,
+        loginMethod: 'email',
+        nom_complet: '',
+        email: '',
+        telephone: '',
+        code: '',
+        password: '',
+        confirmPassword: '',
+        showPassword: false,
+        showConfirmPassword: false,
+        loading: false,
+        countdown: 0,
+        countdownInterval: null,
+        showCountryDropdown: false,
+        selectedCountry: {
+            name: 'Côte d\'Ivoire',
+            code: '+225',
+            flagCode: 'ci',
+            format: '+225 XX XX XX XX XX',
+            placeholder: '07 12 34 56 78'
+        },
+        countries: [
+            { name: 'Côte d\'Ivoire', code: '+225', flagCode: 'ci', format: '+225 XX XX XX XX XX', placeholder: '07 12 34 56 78' },
+            { name: 'France', code: '+33', flagCode: 'fr', format: '+33 X XX XX XX XX', placeholder: '6 12 34 56 78' },
+            { name: 'Sénégal', code: '+221', flagCode: 'sn', format: '+221 XX XXX XX XX', placeholder: '77 123 45 67' },
+            { name: 'Mali', code: '+223', flagCode: 'ml', format: '+223 XX XX XX XX', placeholder: '70 12 34 56' },
+            { name: 'Burkina Faso', code: '+226', flagCode: 'bf', format: '+226 XX XX XX XX', placeholder: '70 12 34 56' },
+            { name: 'Bénin', code: '+229', flagCode: 'bj', format: '+229 XX XX XX XX', placeholder: '97 12 34 56' },
+            { name: 'Togo', code: '+228', flagCode: 'tg', format: '+228 XX XX XX XX', placeholder: '90 12 34 56' },
+            { name: 'Niger', code: '+227', flagCode: 'ne', format: '+227 XX XX XX XX', placeholder: '90 12 34 56' },
+            { name: 'Guinée', code: '+224', flagCode: 'gn', format: '+224 XXX XX XX XX', placeholder: '620 12 34 56' },
+            { name: 'Cameroun', code: '+237', flagCode: 'cm', format: '+237 X XX XX XX XX', placeholder: '6 12 34 56 78' },
+            { name: 'Gabon', code: '+241', flagCode: 'ga', format: '+241 X XX XX XX', placeholder: '6 12 34 56' },
+            { name: 'Congo', code: '+242', flagCode: 'cg', format: '+242 XX XXX XX XX', placeholder: '06 123 45 67' },
+            { name: 'RD Congo', code: '+243', flagCode: 'cd', format: '+243 XXX XXX XXX', placeholder: '812 345 678' },
+            { name: 'Belgique', code: '+32', flagCode: 'be', format: '+32 XXX XX XX XX', placeholder: '470 12 34 56' },
+            { name: 'Suisse', code: '+41', flagCode: 'ch', format: '+41 XX XXX XX XX', placeholder: '78 123 45 67' },
+            { name: 'Canada', code: '+1', flagCode: 'ca', format: '+1 XXX XXX XXXX', placeholder: '514 123 4567' },
+            { name: 'États-Unis', code: '+1', flagCode: 'us', format: '+1 XXX XXX XXXX', placeholder: '202 123 4567' }
+        ],
+        
+        async envoyerOTP() {
+            // Validation
+            if (!this.nom_complet) {
+                afficherToast('Veuillez entrer votre nom complet', 'error');
+                return;
+            }
+            
+            if (this.loginMethod === 'email' && !this.email) {
+                afficherToast('Veuillez entrer votre email', 'error');
+                return;
+            }
+            
+            if (this.loginMethod === 'phone' && !this.telephone) {
+                afficherToast('Veuillez entrer votre téléphone', 'error');
+                return;
+            }
+            
+            this.loading = true;
+            
+            try {
+                // Formater le téléphone avec l'indicatif pays
+                const fullPhone = this.loginMethod === 'phone' ? 
+                    (this.telephone.startsWith('+') ? this.telephone : this.selectedCountry.code + ' ' + this.telephone) : 
+                    null;
+                
+                const result = await inscription(
+                    this.loginMethod === 'email' ? this.email : null,
+                    this.nom_complet,
+                    fullPhone
+                );
+                
+                if (result.success) {
+                    this.step = 2;
+                    this.startCountdown();
+                    
+                    // En mode DEV, afficher le code
+                    if (result.data.code_otp) {
+                        afficherToast(`Code OTP: ${result.data.code_otp}`, 'info');
+                    } else {
+                        afficherToast('Code OTP envoyé avec succès', 'success');
+                    }
+                } else {
+                    const errorMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+                    afficherToast(errorMsg, 'error');
+                }
+            } catch (error) {
+                afficherToast('Erreur de connexion au serveur', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async verifierOTP() {
+            if (this.code.length !== 6) {
+                afficherToast('Le code doit contenir 6 chiffres', 'error');
+                return;
+            }
+            
+            if (!this.password || this.password.length < 8) {
+                afficherToast('Le mot de passe doit contenir au moins 8 caractères', 'error');
+                return;
+            }
+            
+            if (this.password !== this.confirmPassword) {
+                afficherToast('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
+            
+            this.loading = true;
+            
+            try {
+                // Appel API modifié pour inclure le mot de passe
+                const response = await fetch('http://localhost:8000/api/auth/verify-otp/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: this.loginMethod === 'email' ? this.email : null,
+                        telephone: this.loginMethod === 'phone' ? this.telephone : null,
+                        code: this.code,
+                        password: this.password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Stocker les tokens
+                    localStorage.setItem('access_token', result.data.access_token);
+                    localStorage.setItem('refresh_token', result.data.refresh_token);
+                    localStorage.setItem('user', JSON.stringify(result.data.utilisateur));
+                    
+                    this.step = 3;
+                    this.stopCountdown();
+                    afficherToast('Compte créé avec succès !', 'success');
+                    
+                    // Redirection après 2 secondes
+                    setTimeout(() => {
+                        window.location.href = '/loading/';
+                    }, 2000);
+                } else {
+                    const errorMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+                    afficherToast(errorMsg, 'error');
+                }
+            } catch (error) {
+                afficherToast('Erreur de connexion au serveur', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async renvoyerCode() {
+            this.loading = true;
+            
+            try {
+                const result = await renvoyerOTP(
+                    this.loginMethod === 'email' ? this.email : null,
+                    'inscription',
+                    this.loginMethod === 'phone' ? this.telephone : null
+                );
+                
+                if (result.success) {
+                    this.code = '';
+                    this.startCountdown();
+                    
+                    // En mode DEV, afficher le code
+                    if (result.data.code_otp) {
+                        afficherToast(`Nouveau code: ${result.data.code_otp}`, 'info');
+                    } else {
+                        afficherToast('Nouveau code envoyé', 'success');
+                    }
+                } else {
+                    afficherToast(result.message, 'error');
+                }
+            } catch (error) {
+                afficherToast('Erreur de connexion au serveur', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        startCountdown() {
+            this.countdown = 600; // 10 minutes
+            this.countdownInterval = setInterval(() => {
+                this.countdown--;
+                if (this.countdown <= 0) {
+                    this.stopCountdown();
+                }
+            }, 1000);
+        },
+        
+        stopCountdown() {
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+            }
+        },
+        
+        selectCountry(country) {
+            this.selectedCountry = country;
+        },
+        
+        formatPhoneNumber() {
+            // Supprimer tous les caractères non numériques
+            this.telephone = this.telephone.replace(/[^0-9]/g, '');
+        },
+        
+        handleSubmit() {
+            // Prevent default form submission
+        }
+    }
+}
+
+// Réinitialiser les icônes
+document.addEventListener('alpine:init', () => {
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }, 100);
+});
+
+// Réinitialiser les icônes lors des changements
+document.addEventListener('click', () => {
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }, 50);
+});
+</script>
+{% endblock %}

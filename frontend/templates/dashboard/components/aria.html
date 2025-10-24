@@ -1,0 +1,898 @@
+<!-- ============================================
+     SYSTÈME D'ACCESSIBILITÉ PROFESSIONNEL - WALEE
+     WCAG 2.1 AA Compliant
+     ============================================ -->
+
+<script>
+// ============================================
+// FOCUS MANAGEMENT
+// ============================================
+
+/**
+ * Créer un piège de focus pour les modals et dialogues
+ * Empêche la navigation au clavier de sortir du modal
+ */
+function createFocusTrap(element) {
+    if (!element) {
+        console.warn('createFocusTrap: element is null');
+        return () => {};
+    }
+    
+    const focusableSelectors = [
+        'a[href]:not([disabled])',
+        'button:not([disabled])',
+        'textarea:not([disabled])',
+        'input:not([disabled]):not([type="hidden"])',
+        'select:not([disabled])',
+        '[tabindex]:not([tabindex="-1"]):not([disabled])',
+        '[contenteditable]:not([disabled])'
+    ].join(', ');
+    
+    const focusableElements = element.querySelectorAll(focusableSelectors);
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    // Sauvegarder l'élément actuellement focusé
+    const previouslyFocusedElement = document.activeElement;
+    
+    function handleTabKey(e) {
+        if (e.key !== 'Tab') return;
+        
+        if (focusableElements.length === 0) {
+            e.preventDefault();
+            return;
+        }
+        
+        if (focusableElements.length === 1) {
+            e.preventDefault();
+            firstElement.focus();
+            return;
+        }
+        
+        if (e.shiftKey) {
+            // Navigation arrière (Shift + Tab)
+            if (document.activeElement === firstElement || !element.contains(document.activeElement)) {
+                e.preventDefault();
+                lastElement.focus();
+            }
+        } else {
+            // Navigation avant (Tab)
+            if (document.activeElement === lastElement || !element.contains(document.activeElement)) {
+                e.preventDefault();
+                firstElement.focus();
+            }
+        }
+    }
+    
+    // Activer le piège de focus
+    element.addEventListener('keydown', handleTabKey);
+    
+    // Focuser le premier élément
+    setTimeout(() => {
+        if (firstElement) {
+            firstElement.focus();
+        } else {
+            element.setAttribute('tabindex', '-1');
+            element.focus();
+        }
+    }, 100);
+    
+    // Fonction de nettoyage
+    return () => {
+        element.removeEventListener('keydown', handleTabKey);
+        // Restaurer le focus précédent
+        if (previouslyFocusedElement && previouslyFocusedElement.focus) {
+            previouslyFocusedElement.focus();
+        }
+    };
+}
+
+/**
+ * Gérer le focus sur un élément spécifique
+ */
+function focusElement(selector, delay = 100) {
+    setTimeout(() => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.focus();
+        }
+    }, delay);
+}
+
+/**
+ * Sauvegarder et restaurer le focus
+ */
+const FocusManager = {
+    savedElement: null,
+    
+    save() {
+        this.savedElement = document.activeElement;
+    },
+    
+    restore() {
+        if (this.savedElement && this.savedElement.focus) {
+            this.savedElement.focus();
+            this.savedElement = null;
+        }
+    }
+};
+
+// ============================================
+// SCREEN READER ANNOUNCEMENTS
+// ============================================
+
+/**
+ * Annoncer un message aux lecteurs d'écran
+ * @param {string} message - Message à annoncer
+ * @param {string} priority - 'polite', 'assertive', ou 'off'
+ * @param {number} delay - Délai avant suppression (ms)
+ */
+function announceToScreenReader(message, priority = 'polite', delay = 1000) {
+    if (!message) return;
+    
+    const announcement = document.createElement('div');
+    announcement.setAttribute('role', 'status');
+    announcement.setAttribute('aria-live', priority);
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.className = 'sr-only';
+    announcement.textContent = message;
+    
+    document.body.appendChild(announcement);
+    
+    setTimeout(() => {
+        if (document.body.contains(announcement)) {
+            document.body.removeChild(announcement);
+        }
+    }, delay);
+}
+
+/**
+ * Annoncer un message d'erreur (priorité haute)
+ */
+function announceError(message) {
+    announceToScreenReader(message, 'assertive', 3000);
+}
+
+/**
+ * Annoncer un succès
+ */
+function announceSuccess(message) {
+    announceToScreenReader(message, 'polite', 2000);
+}
+
+/**
+ * Annoncer un changement de page/route
+ */
+function announcePageChange(pageName) {
+    announceToScreenReader(`Page ${pageName} chargée`, 'polite', 2000);
+}
+
+// ============================================
+// KEYBOARD NAVIGATION
+// ============================================
+
+/**
+ * Gestionnaire global des raccourcis clavier
+ */
+const KeyboardShortcuts = {
+    shortcuts: new Map(),
+    
+    register(key, callback, options = {}) {
+        const id = `${key}-${options.ctrl ? 'ctrl-' : ''}${options.shift ? 'shift-' : ''}${options.alt ? 'alt-' : ''}`;
+        this.shortcuts.set(id, { key, callback, ...options });
+    },
+    
+    unregister(key, options = {}) {
+        const id = `${key}-${options.ctrl ? 'ctrl-' : ''}${options.shift ? 'shift-' : ''}${options.alt ? 'alt-' : ''}`;
+        this.shortcuts.delete(id);
+    },
+    
+    handleKeyPress(event) {
+        this.shortcuts.forEach(({ key, callback, ctrl, shift, alt, description }) => {
+            const ctrlMatch = ctrl ? event.ctrlKey || event.metaKey : !event.ctrlKey && !event.metaKey;
+            const shiftMatch = shift ? event.shiftKey : !event.shiftKey;
+            const altMatch = alt ? event.altKey : !event.altKey;
+            const keyMatch = event.key.toLowerCase() === key.toLowerCase();
+            
+            if (keyMatch && ctrlMatch && shiftMatch && altMatch) {
+                event.preventDefault();
+                callback(event);
+            }
+        });
+    },
+    
+    init() {
+        document.addEventListener('keydown', this.handleKeyPress.bind(this));
+    }
+};
+
+// Initialiser les raccourcis clavier
+KeyboardShortcuts.init();
+
+// Raccourcis globaux
+document.addEventListener('DOMContentLoaded', () => {
+    // ESC pour fermer les modals
+    KeyboardShortcuts.register('Escape', () => {
+        const event = new CustomEvent('close-all-modals');
+        window.dispatchEvent(event);
+        announceToScreenReader('Modal fermé');
+    });
+    
+    // Ctrl+K pour ouvrir la recherche
+    KeyboardShortcuts.register('k', () => {
+        const searchInput = document.querySelector('[data-search-input]');
+        if (searchInput) {
+            searchInput.focus();
+            announceToScreenReader('Recherche activée');
+        }
+    }, { ctrl: true });
+    
+    // ? pour afficher l'aide des raccourcis
+    KeyboardShortcuts.register('?', () => {
+        showKeyboardShortcutsHelp();
+    }, { shift: true });
+});
+
+/**
+ * Afficher l'aide des raccourcis clavier
+ */
+function showKeyboardShortcutsHelp() {
+    const shortcuts = [
+        { keys: 'Échap', description: 'Fermer les modals' },
+        { keys: 'Ctrl + K', description: 'Ouvrir la recherche' },
+        { keys: 'Shift + ?', description: 'Afficher cette aide' },
+        { keys: 'Tab', description: 'Navigation entre éléments' },
+        { keys: 'Shift + Tab', description: 'Navigation inverse' },
+        { keys: 'Entrée/Espace', description: 'Activer un bouton' }
+    ];
+    
+    let helpText = 'Raccourcis clavier disponibles:\n\n';
+    shortcuts.forEach(({ keys, description }) => {
+        helpText += `${keys}: ${description}\n`;
+    });
+    
+    console.log(helpText);
+    announceToScreenReader('Aide des raccourcis clavier affichée');
+}
+
+// ============================================
+// ARIA HELPERS
+// ============================================
+
+/**
+ * Mettre à jour les attributs ARIA dynamiquement
+ */
+const AriaHelper = {
+    /**
+     * Marquer un élément comme chargement
+     */
+    setLoading(element, isLoading, message = 'Chargement en cours...') {
+        if (!element) return;
+        
+        element.setAttribute('aria-busy', isLoading.toString());
+        
+        if (isLoading) {
+            element.setAttribute('aria-label', message);
+            announceToScreenReader(message);
+        } else {
+            element.removeAttribute('aria-label');
+            announceToScreenReader('Chargement terminé');
+        }
+    },
+    
+    /**
+     * Marquer un champ comme invalide
+     */
+    setInvalid(element, isInvalid, errorMessage = '') {
+        if (!element) return;
+        
+        element.setAttribute('aria-invalid', isInvalid.toString());
+        
+        if (isInvalid && errorMessage) {
+            const errorId = `${element.id || 'field'}-error`;
+            element.setAttribute('aria-describedby', errorId);
+            
+            // Créer ou mettre à jour le message d'erreur
+            let errorElement = document.getElementById(errorId);
+            if (!errorElement) {
+                errorElement = document.createElement('span');
+                errorElement.id = errorId;
+                errorElement.className = 'error-message';
+                errorElement.setAttribute('role', 'alert');
+                element.parentNode.appendChild(errorElement);
+            }
+            errorElement.textContent = errorMessage;
+            announceError(errorMessage);
+        } else {
+            const errorId = element.getAttribute('aria-describedby');
+            if (errorId) {
+                const errorElement = document.getElementById(errorId);
+                if (errorElement) {
+                    errorElement.remove();
+                }
+                element.removeAttribute('aria-describedby');
+            }
+        }
+    },
+    
+    /**
+     * Gérer les états expanded/collapsed
+     */
+    toggleExpanded(element, isExpanded) {
+        if (!element) return;
+        
+        element.setAttribute('aria-expanded', isExpanded.toString());
+        const message = isExpanded ? 'Développé' : 'Réduit';
+        announceToScreenReader(message);
+    },
+    
+    /**
+     * Gérer l'état sélectionné d'un onglet
+     */
+    selectTab(tabElement, panelElement) {
+        if (!tabElement || !panelElement) return;
+        
+        // Désélectionner tous les onglets du même groupe
+        const tablist = tabElement.closest('[role="tablist"]');
+        if (tablist) {
+            tablist.querySelectorAll('[role="tab"]').forEach(tab => {
+                tab.setAttribute('aria-selected', 'false');
+                tab.setAttribute('tabindex', '-1');
+            });
+            
+            tablist.querySelectorAll('[role="tabpanel"]').forEach(panel => {
+                panel.hidden = true;
+            });
+        }
+        
+        // Sélectionner l'onglet actuel
+        tabElement.setAttribute('aria-selected', 'true');
+        tabElement.setAttribute('tabindex', '0');
+        panelElement.hidden = false;
+        
+        const tabName = tabElement.textContent.trim();
+        announceToScreenReader(`Onglet ${tabName} sélectionné`);
+    },
+    
+    /**
+     * Mettre à jour un compteur (badge)
+     */
+    updateCount(element, count) {
+        if (!element) return;
+        
+        const label = element.getAttribute('data-label') || 'élément';
+        const pluralLabel = element.getAttribute('data-label-plural') || `${label}s`;
+        const announcement = count === 0 ? `Aucun ${label}` :
+                           count === 1 ? `1 ${label}` :
+                           `${count} ${pluralLabel}`;
+        
+        element.setAttribute('aria-label', announcement);
+        element.textContent = count;
+    }
+};
+
+// ============================================
+// MODAL ACCESSIBILITY HELPER
+// ============================================
+
+/**
+ * Classe pour gérer l'accessibilité des modals
+ */
+class AccessibleModal {
+    constructor(modalElement, options = {}) {
+        this.modal = modalElement;
+        this.options = {
+            closeOnEscape: true,
+            closeOnBackdrop: true,
+            trapFocus: true,
+            restoreFocus: true,
+            ...options
+        };
+        
+        this.isOpen = false;
+        this.focusTrapCleanup = null;
+        this.previouslyFocusedElement = null;
+    }
+    
+    open() {
+        if (this.isOpen) return;
+        
+        // Sauvegarder le focus actuel
+        if (this.options.restoreFocus) {
+            this.previouslyFocusedElement = document.activeElement;
+        }
+        
+        // Configurer les attributs ARIA
+        this.modal.setAttribute('role', 'dialog');
+        this.modal.setAttribute('aria-modal', 'true');
+        
+        // Bloquer le scroll du body
+        document.body.style.overflow = 'hidden';
+        
+        // Piège de focus
+        if (this.options.trapFocus) {
+            this.focusTrapCleanup = createFocusTrap(this.modal);
+        }
+        
+        // Annoncer l'ouverture
+        const title = this.modal.querySelector('[data-modal-title]')?.textContent || 'Modal';
+        announceToScreenReader(`${title} ouvert`);
+        
+        this.isOpen = true;
+    }
+    
+    close() {
+        if (!this.isOpen) return;
+        
+        // Nettoyer le piège de focus
+        if (this.focusTrapCleanup) {
+            this.focusTrapCleanup();
+            this.focusTrapCleanup = null;
+        }
+        
+        // Restaurer le scroll
+        document.body.style.overflow = '';
+        
+        // Restaurer le focus
+        if (this.options.restoreFocus && this.previouslyFocusedElement) {
+            this.previouslyFocusedElement.focus();
+            this.previouslyFocusedElement = null;
+        }
+        
+        // Annoncer la fermeture
+        announceToScreenReader('Modal fermé');
+        
+        this.isOpen = false;
+    }
+    
+    toggle() {
+        if (this.isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+}
+
+// ============================================
+// LIVE REGION MANAGER
+// ============================================
+
+/**
+ * Gestionnaire des régions live pour les notifications
+ */
+const LiveRegionManager = {
+    politeRegion: null,
+    assertiveRegion: null,
+    
+    init() {
+        // Créer les régions live si elles n'existent pas
+        if (!this.politeRegion) {
+            this.politeRegion = document.createElement('div');
+            this.politeRegion.setAttribute('aria-live', 'polite');
+            this.politeRegion.setAttribute('aria-atomic', 'true');
+            this.politeRegion.className = 'sr-only';
+            document.body.appendChild(this.politeRegion);
+        }
+        
+        if (!this.assertiveRegion) {
+            this.assertiveRegion = document.createElement('div');
+            this.assertiveRegion.setAttribute('aria-live', 'assertive');
+            this.assertiveRegion.setAttribute('aria-atomic', 'true');
+            this.assertiveRegion.className = 'sr-only';
+            document.body.appendChild(this.assertiveRegion);
+        }
+    },
+    
+    announce(message, priority = 'polite') {
+        this.init();
+        
+        const region = priority === 'assertive' ? this.assertiveRegion : this.politeRegion;
+        
+        // Clear puis set pour forcer l'annonce même si le message est identique
+        region.textContent = '';
+        setTimeout(() => {
+            region.textContent = message;
+        }, 100);
+    }
+};
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    LiveRegionManager.init();
+});
+
+// ============================================
+// UTILITIES
+// ============================================
+
+/**
+ * Vérifier si un élément est visible
+ */
+function isElementVisible(element) {
+    return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
+}
+
+/**
+ * Obtenir tous les éléments focusables dans un conteneur
+ */
+function getFocusableElements(container) {
+    const selector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(container.querySelectorAll(selector)).filter(isElementVisible);
+}
+
+// ============================================
+// EXPORT GLOBAL
+// ============================================
+
+// Rendre disponible globalement
+window.A11y = {
+    createFocusTrap,
+    focusElement,
+    FocusManager,
+    announceToScreenReader,
+    announceError,
+    announceSuccess,
+    announcePageChange,
+    KeyboardShortcuts,
+    AriaHelper,
+    AccessibleModal,
+    LiveRegionManager,
+    isElementVisible,
+    getFocusableElements
+};
+
+console.log('✅ Système d\'accessibilité Walee chargé');
+</script>
+
+<!-- ============================================
+     STYLES D'ACCESSIBILITÉ
+     ============================================ -->
+<style>
+    /* Screen reader only - visible uniquement pour les lecteurs d'écran */
+    .sr-only {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border-width: 0 !important;
+    }
+    
+    /* SR only sauf au focus (utile pour skip links) */
+    .sr-only-focusable:not(:focus):not(:focus-within) {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border-width: 0 !important;
+    }
+    
+    /* Focus visible pour navigation au clavier */
+    *:focus-visible {
+        outline: 2px solid #3b82f6 !important;
+        outline-offset: 2px !important;
+    }
+    
+    /* Focus sur éléments interactifs */
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+        @apply ring-2 ring-blue-500 ring-offset-2;
+    }
+    
+    /* Skip to main content link */
+    .skip-to-main {
+        @apply absolute top-0 left-0 z-[9999];
+        @apply px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-lg;
+        @apply transform -translate-y-full transition-transform;
+    }
+    
+    .skip-to-main:focus {
+        @apply translate-y-4 translate-x-4;
+    }
+    
+    /* Indicateur de focus haut contraste */
+    @media (prefers-contrast: high) {
+        *:focus-visible {
+            outline: 3px solid #000 !important;
+            outline-offset: 3px !important;
+        }
+        
+        .dark *:focus-visible {
+            outline-color: #fff !important;
+        }
+    }
+    
+    /* Respecter les préférences de mouvement réduit */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+    
+    /* Augmenter la zone de clic pour les petits éléments */
+    .touch-target {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    /* Contraste élevé pour le texte */
+    @media (prefers-contrast: high) {
+        body {
+            @apply text-black dark:text-white;
+        }
+    }
+</style>
+
+<!-- ============================================
+     COMPOSANT: Skip Navigation
+     À placer en haut de base.html
+     ============================================ -->
+<a href="#main-content" class="skip-to-main">
+    Aller au contenu principal
+</a>
+
+<!-- ============================================
+     EXEMPLES D'UTILISATION
+     ============================================ -->
+
+<!-- 
+EXEMPLE 1: MODAL ACCESSIBLE
+================================ -->
+<!--
+<div x-data="{
+    showModal: false,
+    modalInstance: null,
+    
+    openModal() {
+        this.showModal = true;
+        this.$nextTick(() => {
+            this.modalInstance = new AccessibleModal(this.$refs.modal);
+            this.modalInstance.open();
+        });
+    },
+    
+    closeModal() {
+        if (this.modalInstance) {
+            this.modalInstance.close();
+        }
+        this.showModal = false;
+    }
+}">
+    <button @click="openModal()" 
+            aria-haspopup="dialog">
+        Ouvrir le modal
+    </button>
+    
+    <div x-show="showModal"
+         x-ref="modal"
+         @keydown.escape="closeModal()"
+         class="fixed inset-0 z-50">
+        
+        <div class="fixed inset-0 bg-black/50" 
+             @click="closeModal()"
+             aria-hidden="true"></div>
+        
+        <div class="relative z-10 max-w-lg mx-auto mt-20 bg-white rounded-xl p-6">
+            <h2 id="modal-title" 
+                data-modal-title
+                class="text-xl font-bold mb-4">
+                Titre du modal
+            </h2>
+            
+            <p id="modal-description" class="mb-4">
+                Description du contenu
+            </p>
+            
+            <div class="flex justify-end space-x-3">
+                <button @click="closeModal()"
+                        class="px-4 py-2 border rounded-lg">
+                    Annuler
+                </button>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                    Confirmer
+                </button>
+            </div>
+            
+            <button @click="closeModal()"
+                    class="absolute top-4 right-4"
+                    aria-label="Fermer le modal">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+</div>
+-->
+
+<!-- 
+EXEMPLE 2: FORMULAIRE AVEC VALIDATION ACCESSIBLE
+================================================ -->
+<!--
+<form x-data="{ 
+    email: '',
+    hasError: false,
+    
+    validateEmail() {
+        this.hasError = !this.email.includes('@');
+        A11y.AriaHelper.setInvalid(
+            this.$refs.emailInput, 
+            this.hasError, 
+            this.hasError ? 'Adresse email invalide' : ''
+        );
+    }
+}">
+    <label for="email" class="block mb-2">
+        Adresse email
+        <span class="text-red-500" aria-label="requis">*</span>
+    </label>
+    
+    <input type="email"
+           id="email"
+           x-ref="emailInput"
+           x-model="email"
+           @blur="validateEmail()"
+           aria-required="true"
+           aria-invalid="false"
+           class="w-full px-4 py-2 border rounded-lg">
+    
+    <button type="submit" 
+            :disabled="hasError"
+            :aria-disabled="hasError ? 'true' : 'false'">
+        Soumettre
+    </button>
+</form>
+-->
+
+<!-- 
+EXEMPLE 3: TABS ACCESSIBLES
+============================ -->
+<!--
+<div x-data="{ 
+    activeTab: 'tab1',
+    
+    selectTab(tabId, panelId) {
+        this.activeTab = tabId;
+        const tab = document.getElementById(tabId);
+        const panel = document.getElementById(panelId);
+        A11y.AriaHelper.selectTab(tab, panel);
+    }
+}">
+    <div role="tablist" aria-label="Options">
+        <button role="tab"
+                id="tab1"
+                aria-selected="true"
+                aria-controls="panel1"
+                @click="selectTab('tab1', 'panel1')"
+                class="px-4 py-2">
+            Onglet 1
+        </button>
+        
+        <button role="tab"
+                id="tab2"
+                aria-selected="false"
+                aria-controls="panel2"
+                tabindex="-1"
+                @click="selectTab('tab2', 'panel2')"
+                class="px-4 py-2">
+            Onglet 2
+        </button>
+    </div>
+    
+    <div role="tabpanel"
+         id="panel1"
+         aria-labelledby="tab1">
+        Contenu de l'onglet 1
+    </div>
+    
+    <div role="tabpanel"
+         id="panel2"
+         aria-labelledby="tab2"
+         hidden>
+        Contenu de l'onglet 2
+    </div>
+</div>
+-->
+
+<!-- 
+EXEMPLE 4: NOTIFICATIONS ACCESSIBLES
+===================================== -->
+<!--
+<div x-data="{ 
+    showNotification(message, type = 'success') {
+        A11y.LiveRegionManager.announce(message, type === 'error' ? 'assertive' : 'polite');
+    }
+}">
+    <button @click="showNotification('Opération réussie', 'success')">
+        Afficher succès
+    </button>
+    
+    <button @click="showNotification('Une erreur est survenue', 'error')">
+        Afficher erreur
+    </button>
+</div>
+-->
+
+<!-- 
+EXEMPLE 5: LOADING ACCESSIBLE
+============================== -->
+<!--
+<div x-data="{ 
+    isLoading: false,
+    
+    async loadData() {
+        this.isLoading = true;
+        A11y.AriaHelper.setLoading(this.$refs.container, true);
+        
+        await fetch('/api/data');
+        
+        this.isLoading = false;
+        A11y.AriaHelper.setLoading(this.$refs.container, false);
+    }
+}">
+    <div x-ref="container">
+        <button @click="loadData()" :disabled="isLoading">
+            Charger les données
+        </button>
+        
+        <div x-show="isLoading" role="status">
+            <span class="sr-only">Chargement en cours...</span>
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+-->
+
+<!-- 
+EXEMPLE 6: NAVIGATION AU CLAVIER PERSONNALISÉE
+=============================================== -->
+<!--
+<script>
+// Enregistrer un raccourci personnalisé
+A11y.KeyboardShortcuts.register('s', () => {
+    document.querySelector('[data-save-button]').click();
+    A11y.announceSuccess('Sauvegarde effectuée');
+}, { ctrl: true });
+
+// Enregistrer un raccourci avec description
+A11y.KeyboardShortcuts.register('n', () => {
+    document.querySelector('[data-new-button]').click();
+}, { ctrl: true, description: 'Créer un nouveau document' });
+</script>
+-->
+
+<!-- 
+EXEMPLE 7: COMPTEUR ACCESSIBLE (BADGE)
+======================================= -->
+<!--
+<div x-data="{ 
+    count: 5,
+    
+    updateCount(newCount) {
+        this.count = newCount;
+        A11y.AriaHelper.updateCount(this.$refs.badge, newCount);
+    }
+}">
+    <button>
+        Notifications
+        <span x-ref="badge"
+              class="badge"
+              data-label="notification"
+              data-label-plural="notifications"
+              x-text="count"></span>
+    </button>
+</div>
+-->

@@ -1,0 +1,508 @@
+{% extends "dashboard/roles/gestionnaire_stock/base_gestionnaire.html" %}
+{% load static %}
+
+{% block title %}Inventaire - Gestionnaire Stock - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="inventaireData()" x-init="init()">
+    
+    <!-- Header Compact -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold font-poppins text-gray-900 dark:text-white">
+                Inventaire
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <span x-text="filteredProduits.length"></span> produit(s) affiché(s) sur <span x-text="produits.length"></span>
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button @click="openModal('ajustement')" 
+                    class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm font-medium shadow-sm">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Ajustement</span>
+            </button>
+            <button @click="openModal('nouveau')" 
+                    class="px-3 py-2 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-lg hover:from-orange-700 hover:to-amber-600 transition-all flex items-center gap-1.5 text-sm font-medium shadow-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Nouveau</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats KPI Compactes -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="group bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-9 h-9 bg-blue-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <i data-lucide="package" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-semibold">+5</span>
+            </div>
+            <p class="text-xl font-bold text-blue-900 dark:text-blue-100 mb-0.5" x-text="stats.totalProduits"></p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Produits</p>
+        </div>
+
+        <div class="group bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                </div>
+                <i data-lucide="arrow-up" class="w-4 h-4 text-green-600"></i>
+            </div>
+            <p class="text-xl font-bold text-green-900 dark:text-green-100 mb-0.5" x-text="formatMoney(stats.valeurStock)"></p>
+            <p class="text-xs text-green-600 dark:text-green-400 font-medium">Valeur Stock</p>
+        </div>
+
+        <div class="group bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform animate-pulse">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-xs px-2 py-0.5 bg-orange-600 text-white rounded-full font-bold">!</span>
+            </div>
+            <p class="text-xl font-bold text-orange-900 dark:text-orange-100 mb-0.5" x-text="stats.alertes"></p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 font-medium">Alertes Stock</p>
+        </div>
+
+        <div class="group bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-9 h-9 bg-purple-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+                </div>
+                <i data-lucide="grid" class="w-4 h-4 text-purple-600"></i>
+            </div>
+            <p class="text-xl font-bold text-purple-900 dark:text-purple-100 mb-0.5" x-text="stats.categories"></p>
+            <p class="text-xs text-purple-600 dark:text-purple-400 font-medium">Catégories</p>
+        </div>
+    </div>
+
+    <!-- Filtres Compacts -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 mb-4">
+        <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex-1 relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                       x-model="searchQuery"
+                       @input="filterProduits()"
+                       placeholder="Rechercher par nom, référence..."
+                       class="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+            </div>
+            <select x-model="filterCategorie" 
+                    @change="filterProduits()"
+                    class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                <option value="">Toutes catégories</option>
+                <option value="Électronique">Électronique</option>
+                <option value="Alimentaire">Alimentaire</option>
+                <option value="Vêtements">Vêtements</option>
+            </select>
+            <select x-model="filterStatut" 
+                    @change="filterProduits()"
+                    class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                <option value="">Tous statuts</option>
+                <option value="ok">✓ Stock OK</option>
+                <option value="faible">⚠ Stock Faible</option>
+                <option value="rupture">✗ Rupture</option>
+            </select>
+            <button @click="exportInventaire()" 
+                    class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 text-sm font-medium">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span class="hidden lg:inline">Exporter</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toggle View Mode -->
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button @click="viewMode = 'grid'" 
+                    :class="viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : ''"
+                    class="px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 text-sm font-medium"
+                    :class="viewMode === 'grid' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'">
+                <i data-lucide="grid" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Grille</span>
+            </button>
+            <button @click="viewMode = 'list'" 
+                    :class="viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : ''"
+                    class="px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 text-sm font-medium"
+                    :class="viewMode === 'list' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'">
+                <i data-lucide="list" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Liste</span>
+            </button>
+        </div>
+
+        <button @click="resetFilters()" 
+                x-show="searchQuery || filterCategorie || filterStatut"
+                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span>Réinitialiser</span>
+        </button>
+    </div>
+
+    <!-- Vue Grille -->
+    <div x-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <template x-for="produit in filteredProduits" :key="produit.id">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-orange-300 dark:hover:border-orange-700 transition-all overflow-hidden group">
+                <!-- Image avec statut -->
+                <div class="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                    <i data-lucide="package" class="w-12 h-12 text-gray-400 group-hover:scale-110 transition-transform"></i>
+                    <div class="absolute top-2 right-2">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
+                              :class="getStatutClass(produit.statut)">
+                            <span x-text="produit.statut"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Contenu -->
+                <div class="p-3">
+                    <div class="mb-2">
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate group-hover:text-orange-600 dark:group-hover:text-orange-400 transition" x-text="produit.nom"></h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="produit.reference"></p>
+                    </div>
+
+                    <div class="space-y-1.5 mb-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-600 dark:text-gray-400">Stock:</span>
+                            <span class="font-bold" :class="produit.quantite < produit.seuilMin ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'" x-text="produit.quantite + ' unités'"></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-600 dark:text-gray-400">Prix:</span>
+                            <span class="font-bold text-gray-900 dark:text-white" x-text="formatMoney(produit.prix)"></span>
+                        </div>
+                        <!-- Barre de progression -->
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
+                            <div class="h-1.5 rounded-full transition-all duration-300"
+                                 :class="produit.quantite < produit.seuilMin ? 'bg-red-500' : produit.quantite < produit.seuilMax * 0.5 ? 'bg-orange-500' : 'bg-green-500'"
+                                 :style="'width: ' + Math.min((produit.quantite / produit.seuilMax) * 100, 100) + '%'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <button @click="viewProduit(produit)" 
+                                class="flex-1 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-xs font-medium flex items-center justify-center gap-1">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>Voir</span>
+                        </button>
+                        <button @click="editProduit(produit)" 
+                                class="flex-1 px-2 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/30 transition text-xs font-medium flex items-center justify-center gap-1">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>Modifier</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Vue Liste -->
+    <div x-show="viewMode === 'list'" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Produit</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Référence</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hidden md:table-cell">Catégorie</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Stock</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hidden lg:table-cell">Prix</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Statut</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="produit in filteredProduits" :key="produit.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
+                                        <i data-lucide="package" class="w-4 h-4 text-gray-400"></i>
+                                    </div>
+                                    <span class="font-semibold text-sm text-gray-900 dark:text-white" x-text="produit.nom"></span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400" x-text="produit.reference"></td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell" x-text="produit.categorie"></td>
+                            <td class="px-4 py-3 text-right">
+                                <span class="font-bold text-sm" :class="produit.quantite < produit.seuilMin ? 'text-red-600' : 'text-green-600'" x-text="produit.quantite"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white hidden lg:table-cell" x-text="formatMoney(produit.prix)"></td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold"
+                                      :class="getStatutClass(produit.statut)">
+                                    <span x-text="produit.statut"></span>
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button @click="viewProduit(produit)" 
+                                            class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click="editProduit(produit)" 
+                                            class="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Message si aucun résultat -->
+    <div x-show="filteredProduits.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="inbox" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 font-medium mb-2">Aucun produit trouvé</p>
+        <button @click="resetFilters()" 
+                class="text-sm text-orange-600 hover:text-orange-700 font-medium">
+            Réinitialiser les filtres
+        </button>
+    </div>
+
+    <!-- MODAL NOUVEAU PRODUIT -->
+    <div x-show="modalOpen === 'nouveau'" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;"
+         @keydown.escape.window="closeModal()">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full p-6"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100">
+                
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                            <i data-lucide="plus" class="w-5 h-5 text-orange-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Nouveau Produit</h3>
+                    </div>
+                    <button @click="closeModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveProduit()" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom du produit *</label>
+                            <input type="text" required 
+                                   placeholder="Ex: Laptop Dell XPS 15"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Référence *</label>
+                            <input type="text" required 
+                                   placeholder="Ex: LAP-001"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Catégorie *</label>
+                            <select required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                                <option value="">Sélectionner...</option>
+                                <option>Électronique</option>
+                                <option>Alimentaire</option>
+                                <option>Vêtements</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Prix unitaire (FCFA) *</label>
+                            <input type="number" required min="0" 
+                                   placeholder="0"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Quantité initiale *</label>
+                            <input type="number" required min="0" 
+                                   placeholder="0"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Seuil minimum *</label>
+                            <input type="number" required min="0" 
+                                   placeholder="0"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Seuil maximum *</label>
+                            <input type="number" required min="0" 
+                                   placeholder="0"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="closeModal()" 
+                                class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium">
+                            Annuler
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium">
+                            Enregistrer le produit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         class="fixed bottom-4 right-4 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border-l-4 border-green-500 p-4 max-w-sm">
+        <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <i data-lucide="check" class="w-5 h-5 text-green-600"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="toastMessage"></p>
+            </div>
+            <button @click="showToast = false" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function inventaireData() {
+    return {
+        viewMode: 'grid',
+        modalOpen: null,
+        searchQuery: '',
+        filterCategorie: '',
+        filterStatut: '',
+        showToast: false,
+        toastMessage: '',
+        
+        stats: {
+            totalProduits: 234,
+            valeurStock: 45600000,
+            alertes: 15,
+            categories: 8
+        },
+        
+        produits: [
+            { id: 1, nom: 'Laptop Dell XPS 15', reference: 'LAP-001', categorie: 'Électronique', quantite: 15, seuilMin: 5, seuilMax: 50, prix: 1500000, statut: 'Stock OK' },
+            { id: 2, nom: 'iPhone 13 Pro', reference: 'PHN-002', categorie: 'Électronique', quantite: 3, seuilMin: 10, seuilMax: 40, prix: 850000, statut: 'Stock Faible' },
+            { id: 3, nom: 'Samsung Galaxy S21', reference: 'PHN-003', categorie: 'Électronique', quantite: 0, seuilMin: 8, seuilMax: 35, prix: 650000, statut: 'Rupture' },
+            { id: 4, nom: 'MacBook Pro M1', reference: 'LAP-002', categorie: 'Électronique', quantite: 25, seuilMin: 5, seuilMax: 30, prix: 2200000, statut: 'Stock OK' },
+            { id: 5, nom: 'iPad Air', reference: 'TAB-001', categorie: 'Électronique', quantite: 12, seuilMin: 6, seuilMax: 25, prix: 750000, statut: 'Stock OK' },
+            { id: 6, nom: 'AirPods Pro', reference: 'ACC-001', categorie: 'Électronique', quantite: 4, seuilMin: 15, seuilMax: 50, prix: 280000, statut: 'Stock Faible' }
+        ],
+        
+        get filteredProduits() {
+            let result = this.produits;
+            
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                result = result.filter(p => 
+                    p.nom.toLowerCase().includes(query) ||
+                    p.reference.toLowerCase().includes(query)
+                );
+            }
+            
+            if (this.filterCategorie) {
+                result = result.filter(p => p.categorie === this.filterCategorie);
+            }
+            
+            if (this.filterStatut) {
+                result = result.filter(p => {
+                    if (this.filterStatut === 'ok') return p.statut === 'Stock OK';
+                    if (this.filterStatut === 'faible') return p.statut === 'Stock Faible';
+                    if (this.filterStatut === 'rupture') return p.statut === 'Rupture';
+                    return true;
+                });
+            }
+            
+            return result;
+        },
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        filterProduits() {
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        resetFilters() {
+            this.searchQuery = '';
+            this.filterCategorie = '';
+            this.filterStatut = '';
+            this.toast('Filtres réinitialisés');
+        },
+        
+        getStatutClass(statut) {
+            const classes = {
+                'Stock OK': 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+                'Stock Faible': 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300',
+                'Rupture': 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        openModal(type) {
+            this.modalOpen = type;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        closeModal() {
+            this.modalOpen = null;
+        },
+        
+        viewProduit(produit) {
+            this.toast(`Ouverture de ${produit.nom}`);
+        },
+        
+        editProduit(produit) {
+            this.toast(`Modification de ${produit.nom}`);
+        },
+        
+        saveProduit() {
+            this.toast('Produit enregistré avec succès');
+            this.closeModal();
+        },
+        
+        exportInventaire() {
+            this.toast(`Export de ${this.filteredProduits.length} produit(s) en cours...`);
+        },
+        
+        toast(message) {
+            this.toastMessage = message;
+            this.showToast = true;
+            this.$nextTick(() => lucide.createIcons());
+            
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        },
+        
+        formatMoney(amount) {
+            if (!amount && amount !== 0) return '0 FCFA';
+            return new Intl.NumberFormat('fr-FR', { 
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0 
+            }).format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

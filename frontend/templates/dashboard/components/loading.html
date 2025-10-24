@@ -1,0 +1,85 @@
+<!-- Loading States Components -->
+
+<!-- Full Page Loading Overlay -->
+<div x-show="$store.loading.isLoading" 
+     x-cloak
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center">
+    
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center space-y-4">
+        <!-- Spinner -->
+        <div class="relative w-16 h-16">
+            <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        <!-- Message -->
+        <div class="text-center">
+            <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" 
+               x-text="$store.loading.message || 'Chargement...'"></p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Veuillez patienter</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store Alpine.js pour gérer l'état de loading global
+document.addEventListener('alpine:init', () => {
+    Alpine.store('loading', {
+        isLoading: false,
+        message: '',
+        
+        show(message = 'Chargement...') {
+            this.message = message;
+            this.isLoading = true;
+        },
+        
+        hide() {
+            this.isLoading = false;
+            this.message = '';
+        }
+    });
+});
+
+// Helpers globaux
+window.showLoading = function(message = 'Chargement...') {
+    Alpine.store('loading').show(message);
+};
+
+window.hideLoading = function() {
+    Alpine.store('loading').hide();
+};
+</script>
+
+<!-- Inline Loading Button Component (à utiliser dans les pages) -->
+<!-- 
+Usage:
+<button @click="handleSubmit()" 
+        :disabled="loading"
+        class="px-6 py-3 bg-blue-600 text-white rounded-lg">
+    <span x-show="!loading">Valider</span>
+    <span x-show="loading" class="flex items-center space-x-2">
+        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Chargement...</span>
+    </span>
+</button>
+-->
+
+<!-- Skeleton Loader (à utiliser pour le chargement de contenu) -->
+<!-- 
+Usage dans les pages:
+<div x-show="loading" class="space-y-4">
+    <div class="animate-pulse">
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+    </div>
+</div>
+-->
