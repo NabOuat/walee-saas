@@ -1,0 +1,1471 @@
+{% extends "dashboard/roles/rh/base_rh.html" %}
+{% load static %}
+
+{% block title %}Ressources Humaines - Walee{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-card {
+        transition: all 0.3s ease;
+    }
+    .employee-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    .tab-active {
+        border-bottom: 3px solid #2563eb;
+        color: #2563eb;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(-20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .slide-in {
+        animation: slideIn 0.3s ease-out;
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="rhSystem()" x-init="init()">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold font-poppins text-gray-900 dark:text-white mb-2">
+                Ressources Humaines
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">Gestion du personnel et des RH</p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button @click="openEmployeeModal()" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center space-x-2">
+                <i data-lucide="user-plus" class="w-5 h-5"></i>
+                <span>Nouvel Employé</span>
+            </button>
+            <button @click="showExportModal = true" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center space-x-2">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Exporter</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <!-- Effectif Total -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Effectif Total</h3>
+            <p class="text-3xl font-bold font-poppins" x-text="stats.effectifTotal"></p>
+            <p class="text-xs opacity-75 mt-1" x-text="stats.effectifActif + ' actifs'"></p>
+        </div>
+
+        <!-- Présents Aujourd'hui -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Présents Aujourd'hui</h3>
+            <p class="text-3xl font-bold font-poppins" x-text="stats.presentsAujourdhui"></p>
+            <p class="text-xs opacity-75 mt-1" x-text="((stats.presentsAujourdhui / stats.effectifActif) * 100).toFixed(1) + '% de présence'"></p>
+        </div>
+
+        <!-- Absences -->
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Absences du Jour</h3>
+            <p class="text-3xl font-bold font-poppins" x-text="stats.absences"></p>
+            <p class="text-xs opacity-75 mt-1" x-text="stats.congesEnCours + ' en congé'"></p>
+        </div>
+
+        <!-- Masse Salariale -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="banknote" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Masse Salariale</h3>
+            <p class="text-3xl font-bold font-poppins" x-text="formatMoney(stats.masseSalariale)"></p>
+            <p class="text-xs opacity-75 mt-1">Mensuelle</p>
+        </div>
+
+        <!-- Recrutements -->
+        <div class="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <i data-lucide="briefcase" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-sm opacity-90 mb-1 font-medium">Postes Ouverts</h3>
+            <p class="text-3xl font-bold font-poppins" x-text="stats.postesOuverts"></p>
+            <p class="text-xs opacity-75 mt-1" x-text="stats.candidatures + ' candidatures'"></p>
+        </div>
+    </div>
+
+    <!-- Actions Rapides -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+        <button @click="openPointageModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="clock" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Pointage</p>
+        </button>
+
+        <button @click="openCongeModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="calendar-days" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Demande Congé</p>
+        </button>
+
+        <button @click="openPaieModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="wallet" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Paie</p>
+        </button>
+
+        <button @click="openFormationModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="graduation-cap" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Formation</p>
+        </button>
+
+        <button @click="openEvaluationModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="star" class="w-6 h-6 text-yellow-600 dark:text-yellow-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Évaluation</p>
+        </button>
+
+        <button @click="openRecrutementModal()" class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 group">
+            <div class="w-12 h-12 bg-pink-100 dark:bg-pink-900 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                <i data-lucide="user-plus" class="w-6 h-6 text-pink-600 dark:text-pink-400"></i>
+            </div>
+            <p class="font-semibold text-sm text-gray-900 dark:text-white">Recrutement</p>
+        </button>
+    </div>
+
+    <!-- Navigation Onglets -->
+    <div class="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="flex space-x-1 px-4 overflow-x-auto">
+            <button @click="activeTab = 'employes'" 
+                    :class="activeTab === 'employes' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="users" class="w-4 h-4 inline mr-2"></i>
+                Employés
+            </button>
+            <button @click="activeTab = 'presence'" 
+                    :class="activeTab === 'presence' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="clock" class="w-4 h-4 inline mr-2"></i>
+                Présence
+            </button>
+            <button @click="activeTab = 'conges'" 
+                    :class="activeTab === 'conges' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="calendar" class="w-4 h-4 inline mr-2"></i>
+                Congés
+            </button>
+            <button @click="activeTab = 'paie'" 
+                    :class="activeTab === 'paie' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="banknote" class="w-4 h-4 inline mr-2"></i>
+                Paie
+            </button>
+            <button @click="activeTab = 'formations'" 
+                    :class="activeTab === 'formations' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="book-open" class="w-4 h-4 inline mr-2"></i>
+                Formations
+            </button>
+            <button @click="activeTab = 'recrutement'" 
+                    :class="activeTab === 'recrutement' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="briefcase" class="w-4 h-4 inline mr-2"></i>
+                Recrutement
+            </button>
+            <button @click="activeTab = 'documents'" 
+                    :class="activeTab === 'documents' ? 'tab-active' : 'text-gray-600 dark:text-gray-400'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i data-lucide="folder" class="w-4 h-4 inline mr-2"></i>
+                Documents
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenu des Onglets -->
+    <div class="bg-white dark:bg-gray-800 rounded-b-xl shadow-sm p-6">
+        
+        <!-- Onglet Employés -->
+        <div x-show="activeTab === 'employes'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="text" 
+                           x-model="employeSearch"
+                           placeholder="Rechercher un employé..."
+                           class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-80">
+                    <select x-model="departementFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les départements</option>
+                        <option value="Ventes">Ventes</option>
+                        <option value="Technique">Technique</option>
+                        <option value="RH">Ressources Humaines</option>
+                        <option value="Comptabilité">Comptabilité</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Direction">Direction</option>
+                    </select>
+                    <select x-model="statutFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les statuts</option>
+                        <option value="Actif">Actif</option>
+                        <option value="Congé">En congé</option>
+                        <option value="Suspendu">Suspendu</option>
+                        <option value="Démissionnaire">Démissionnaire</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button @click="viewMode = 'grid'" :class="viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'" class="p-2 rounded-lg transition">
+                        <i data-lucide="grid-3x3" class="w-5 h-5"></i>
+                    </button>
+                    <button @click="viewMode = 'list'" :class="viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'" class="p-2 rounded-lg transition">
+                        <i data-lucide="list" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vue Grille -->
+            <div x-show="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <template x-for="employe in filteredEmployes" :key="employe.id">
+                    <div class="employee-card bg-white dark:bg-gray-700 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-600 cursor-pointer"
+                         @click="viewEmployee(employe)">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                <span x-text="getInitials(employe.prenom, employe.nom)"></span>
+                            </div>
+                            <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold"
+                                  :class="getStatutClass(employe.statut)">
+                                <span class="status-dot" :class="getStatutDotClass(employe.statut)"></span>
+                                <span x-text="employe.statut"></span>
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-1" x-text="employe.prenom + ' ' + employe.nom"></h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2" x-text="employe.poste"></p>
+                        <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            <i data-lucide="building" class="w-3 h-3"></i>
+                            <span x-text="employe.departement"></span>
+                        </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <div class="text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">Matricule:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white ml-1" x-text="employe.matricule"></span>
+                            </div>
+                            <button @click.stop="editEmployee(employe)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Vue Liste -->
+            <div x-show="viewMode === 'list'" class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Employé</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Poste</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Département</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Téléphone</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Email</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Salaire</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="employe in filteredEmployes" :key="employe.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                            <span x-text="getInitials(employe.prenom, employe.nom)"></span>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-gray-900 dark:text-white" x-text="employe.prenom + ' ' + employe.nom"></div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400" x-text="'Mat: ' + employe.matricule"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="employe.poste"></td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="employe.departement"></td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="employe.telephone"></td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="employe.email"></td>
+                                <td class="px-4 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white" x-text="formatMoney(employe.salaire)"></td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="getStatutClass(employe.statut)">
+                                        <span class="status-dot" :class="getStatutDotClass(employe.statut)"></span>
+                                        <span x-text="employe.statut"></span>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <button @click="viewEmployee(employe)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="editEmployee(employe)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="generateFiche(employe)" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition">
+                                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="deleteEmployee(employe)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Onglet Présence -->
+        <div x-show="activeTab === 'presence'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="date" x-model="presenceDate" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                    <select x-model="presenceFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous</option>
+                        <option value="present">Présents</option>
+                        <option value="absent">Absents</option>
+                        <option value="retard">En retard</option>
+                        <option value="conge">En congé</option>
+                    </select>
+                </div>
+                <button @click="exportPresence()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                    Exporter
+                </button>
+            </div>
+
+            <!-- Résumé Présence -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Présents</p>
+                            <p class="text-2xl font-bold text-green-600" x-text="stats.presentsAujourdhui"></p>
+                        </div>
+                        <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                </div>
+                <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Absents</p>
+                            <p class="text-2xl font-bold text-red-600" x-text="stats.absences"></p>
+                        </div>
+                        <i data-lucide="x-circle" class="w-8 h-8 text-red-600"></i>
+                    </div>
+                </div>
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Retards</p>
+                            <p class="text-2xl font-bold text-orange-600" x-text="presences.filter(p => p.statut === 'Retard').length"></p>
+                        </div>
+                        <i data-lucide="clock" class="w-8 h-8 text-orange-600"></i>
+                    </div>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">En congé</p>
+                            <p class="text-2xl font-bold text-blue-600" x-text="stats.congesEnCours"></p>
+                        </div>
+                        <i data-lucide="calendar" class="w-8 h-8 text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste Pointages -->
+            <div class="space-y-2">
+                <template x-for="presence in filteredPresences" :key="presence.id">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                <span x-text="getInitials(presence.employe.prenom, presence.employe.nom)"></span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="presence.employe.prenom + ' ' + presence.employe.nom"></p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="presence.employe.poste"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-6">
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Arrivée</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="presence.heureArrivee || '-'"></p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Départ</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="presence.heureDepart || '-'"></p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Durée</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="presence.duree || '-'"></p>
+                            </div>
+                            <span class="px-4 py-2 rounded-lg text-sm font-semibold"
+                                  :class="getPresenceStatusClass(presence.statut)">
+                                <span x-text="presence.statut"></span>
+                            </span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Onglet Congés -->
+        <div x-show="activeTab === 'conges'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <select x-model="congeFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Toutes les demandes</option>
+                        <option value="En attente">En attente</option>
+                        <option value="Approuvé">Approuvées</option>
+                        <option value="Refusé">Refusées</option>
+                        <option value="En cours">En cours</option>
+                    </select>
+                    <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les types</option>
+                        <option value="Annuel">Congé annuel</option>
+                        <option value="Maladie">Congé maladie</option>
+                        <option value="Maternité">Congé maternité</option>
+                        <option value="Sans solde">Sans solde</option>
+                    </select>
+                </div>
+                <button @click="openCongeModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Nouvelle Demande
+                </button>
+            </div>
+
+            <!-- Calendrier Congés -->
+            <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-6">
+                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Calendrier des Congés</h4>
+                <div class="text-center text-gray-500 py-10">
+                    [Calendrier interactif - À intégrer]
+                </div>
+            </div>
+
+            <!-- Liste Demandes -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Employé</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date Début</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date Fin</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Durée</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Solde</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Statut</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="conge in filteredConges" :key="conge.id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                            <span x-text="getInitials(conge.employe.prenom, conge.employe.nom)"></span>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-gray-900 dark:text-white" x-text="conge.employe.prenom + ' ' + conge.employe.nom"></div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400" x-text="conge.employe.departement"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="conge.type"></td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="conge.dateDebut"></td>
+                                <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300" x-text="conge.dateFin"></td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm font-semibold" x-text="conge.duree + ' jours'"></span>
+                                </td>
+                                <td class="px-4 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white" x-text="conge.soldeRestant + ' jours'"></td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                          :class="getCongeStatusClass(conge.statut)">
+                                        <span x-text="conge.statut"></span>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <button x-show="conge.statut === 'En attente'" @click="approveConge(conge)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Approuver">
+                                            <i data-lucide="check" class="w-4 h-4"></i>
+                                        </button>
+                                        <button x-show="conge.statut === 'En attente'" @click="rejectConge(conge)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Refuser">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                        <button @click="viewConge(conge)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Voir">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Onglet Paie -->
+        <div x-show="activeTab === 'paie'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <select x-model="paieMonth" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="01">Janvier 2024</option>
+                        <option value="02" selected>Février 2024</option>
+                        <option value="03">Mars 2024</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button @click="generateBulletins()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>
+                        Générer Bulletins
+                    </button>
+                    <button @click="processPaie()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i data-lucide="send" class="w-4 h-4 inline mr-2"></i>
+                        Traiter la Paie
+                    </button>
+                </div>
+            </div>
+
+            <!-- Résumé Paie -->
+            <div class="grid grid-cols-5 gap-4 mb-6">
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Salaires Bruts</p>
+                    <p class="text-2xl font-bold text-purple-600" x-text="formatMoney(paieStats.salairesBruts)"></p>
+                </div>
+                <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Charges Sociales</p>
+                    <p class="text-2xl font-bold text-red-600" x-text="formatMoney(paieStats.chargesSociales)"></p>
+                </div>
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Retenues</p>
+                    <p class="text-2xl font-bold text-orange-600" x-text="formatMoney(paieStats.retenues)"></p>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Salaires Nets</p>
+                    <p class="text-2xl font-bold text-green-600" x-text="formatMoney(paieStats.salairesNets)"></p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Coût Total</p>
+                    <p class="text-2xl font-bold text-blue-600" x-text="formatMoney(paieStats.coutTotal)"></p>
+                </div>
+            </div>
+
+            <!-- Liste Bulletins -->
+            <div class="space-y-2">
+                <template x-for="bulletin in bulletins" :key="bulletin.id">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                <span x-text="getInitials(bulletin.employe.prenom, bulletin.employe.nom)"></span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="bulletin.employe.prenom + ' ' + bulletin.employe.nom"></p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="bulletin.employe.poste + ' - Mat: ' + bulletin.employe.matricule"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-8">
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Brut</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(bulletin.salaireBrut)"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Charges</p>
+                                <p class="font-semibold text-red-600" x-text="formatMoney(bulletin.charges)"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Net à payer</p>
+                                <p class="text-lg font-bold text-green-600" x-text="formatMoney(bulletin.salaireNet)"></p>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button @click="viewBulletin(bulletin)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Voir">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="downloadBulletin(bulletin)" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Télécharger">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="sendBulletin(bulletin)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Envoyer">
+                                    <i data-lucide="send" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Onglet Formations -->
+        <div x-show="activeTab === 'formations'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <select x-model="formationFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Toutes les formations</option>
+                        <option value="Planifiée">Planifiées</option>
+                        <option value="En cours">En cours</option>
+                        <option value="Terminée">Terminées</option>
+                        <option value="Annulée">Annulées</option>
+                    </select>
+                </div>
+                <button @click="openFormationModal()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Nouvelle Formation
+                </button>
+            </div>
+
+            <!-- Statistiques Formations -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Formations Actives</p>
+                    <p class="text-2xl font-bold text-orange-600" x-text="formations.filter(f => f.statut === 'En cours').length"></p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Formations Terminées</p>
+                    <p class="text-2xl font-bold text-green-600" x-text="formations.filter(f => f.statut === 'Terminée').length"></p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Employés Formés</p>
+                    <p class="text-2xl font-bold text-blue-600" x-text="formationStats.employesFormes"></p>
+                </div>
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Budget Formations</p>
+                    <p class="text-2xl font-bold text-purple-600" x-text="formatMoney(formationStats.budget)"></p>
+                </div>
+            </div>
+
+            <!-- Liste Formations -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <template x-for="formation in filteredFormations" :key="formation.id">
+                    <div class="bg-white dark:bg-gray-700 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-600 hover:shadow-lg transition">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2" x-text="formation.titre"></h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3" x-text="formation.description"></p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                  :class="getFormationStatusClass(formation.statut)">
+                                <span x-text="formation.statut"></span>
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Formateur</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formation.formateur"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Durée</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formation.duree"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Dates</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formation.dateDebut + ' - ' + formation.dateFin"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Participants</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="formation.participants + ' employés'"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <span class="text-lg font-bold text-blue-600" x-text="formatMoney(formation.cout)"></span>
+                            <div class="flex items-center space-x-1">
+                                <button @click="viewFormation(formation)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="editFormation(formation)" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Onglet Recrutement -->
+        <div x-show="activeTab === 'recrutement'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <select x-model="posteFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les postes</option>
+                        <option value="Ouvert">Ouverts</option>
+                        <option value="En cours">En cours</option>
+                        <option value="Fermé">Fermés</option>
+                    </select>
+                </div>
+                <button @click="openPosteModal()" class="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                    Nouveau Poste
+                </button>
+            </div>
+
+            <!-- Postes Ouverts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <template x-for="poste in postesOuverts" :key="poste.id">
+                    <div class="bg-white dark:bg-gray-700 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-600 hover:shadow-lg transition">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-1" x-text="poste.titre"></h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400" x-text="poste.departement"></p>
+                            </div>
+                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-xs font-semibold">
+                                Ouvert
+                            </span>
+                        </div>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <i data-lucide="map-pin" class="w-4 h-4 mr-2"></i>
+                                <span x-text="poste.lieu"></span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                                <span x-text="poste.type"></span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <i data-lucide="users" class="w-4 h-4 mr-2"></i>
+                                <span x-text="poste.candidatures + ' candidature(s)'"></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white" x-text="'Publié le ' + poste.datePublication"></span>
+                            <button @click="viewCandidatures(poste)" class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
+                                Voir candidatures
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Candidatures Récentes -->
+            <div class="bg-white dark:bg-gray-700 rounded-xl p-6">
+                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-4">Candidatures Récentes</h3>
+                <div class="space-y-3">
+                    <template x-for="candidature in candidaturesRecentes" :key="candidature.id">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                    <span x-text="getInitials(candidature.prenom, candidature.nom)"></span>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900 dark:text-white" x-text="candidature.prenom + ' ' + candidature.nom"></p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="candidature.poste"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Reçue le</p>
+                                    <p class="font-semibold text-gray-900 dark:text-white" x-text="candidature.dateReception"></p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                      :class="getCandidatureStatusClass(candidature.statut)">
+                                    <span x-text="candidature.statut"></span>
+                                </span>
+                                <div class="flex items-center space-x-1">
+                                    <button @click="viewCandidature(candidature)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click="downloadCV(candidature)" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Documents -->
+        <div x-show="activeTab === 'documents'" class="slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="text" 
+                           x-model="documentSearch"
+                           placeholder="Rechercher un document..."
+                           class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg w-80">
+                    <select x-model="documentFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="">Tous les types</option>
+                        <option value="Contrat">Contrats</option>
+                        <option value="Attestation">Attestations</option>
+                        <option value="Bulletin">Bulletins de paie</option>
+                        <option value="Certificat">Certificats</option>
+                        <option value="Autre">Autres</option>
+                    </select>
+                </div>
+                <button @click="uploadDocument()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i data-lucide="upload" class="w-4 h-4 inline mr-2"></i>
+                    Téléverser
+                </button>
+            </div>
+
+            <!-- Catégories Documents -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 cursor-pointer hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <i data-lucide="file-text" class="w-8 h-8 text-blue-600"></i>
+                        <span class="text-2xl font-bold text-blue-600" x-text="documents.filter(d => d.type === 'Contrat').length"></span>
+                    </div>
+                    <p class="font-semibold text-gray-900 dark:text-white">Contrats</p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <i data-lucide="file-check" class="w-8 h-8 text-green-600"></i>
+                        <span class="text-2xl font-bold text-green-600" x-text="documents.filter(d => d.type === 'Attestation').length"></span>
+                    </div>
+                    <p class="font-semibold text-gray-900 dark:text-white">Attestations</p>
+                </div>
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <i data-lucide="receipt" class="w-8 h-8 text-purple-600"></i>
+                        <span class="text-2xl font-bold text-purple-600" x-text="documents.filter(d => d.type === 'Bulletin').length"></span>
+                    </div>
+                    <p class="font-semibold text-gray-900 dark:text-white">Bulletins</p>
+                </div>
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <i data-lucide="award" class="w-8 h-8 text-orange-600"></i>
+                        <span class="text-2xl font-bold text-orange-600" x-text="documents.filter(d => d.type === 'Certificat').length"></span>
+                    </div>
+                    <p class="font-semibold text-gray-900 dark:text-white">Certificats</p>
+                </div>
+            </div>
+
+            <!-- Liste Documents -->
+            <div class="space-y-2">
+                <template x-for="document in filteredDocuments" :key="document.id">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                                 :class="getDocumentIconClass(document.type)">
+                                <i :data-lucide="getDocumentIcon(document.type)" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="document.nom"></p>
+                                <div class="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span x-text="document.type"></span>
+                                    <span>•</span>
+                                    <span x-text="document.employe"></span>
+                                    <span>•</span>
+                                    <span x-text="document.taille"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="document.dateAjout"></span>
+                            <div class="flex items-center space-x-1">
+                                <button @click="viewDocument(document)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="downloadDocument(document)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="shareDocument(document)" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition">
+                                    <i data-lucide="share-2" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="deleteDocument(document)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvel Employé -->
+    <div x-show="showEmployeeModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showEmployeeModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+             @click.stop>
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Nouvel Employé</h3>
+                <button @click="showEmployeeModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <p class="text-gray-500 dark:text-gray-400 mb-4">Formulaire d'ajout d'employé - À implémenter</p>
+                <button @click="showEmployeeModal = false" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+                    Enregistrer l'Employé
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Export -->
+    <div x-show="showExportModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showExportModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full"
+             @click.stop>
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Exporter les données RH</h3>
+                <button @click="showExportModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-3">
+                <button @click="exportEmployes()" class="w-full p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Liste des Employés</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Excel avec toutes les informations</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportPresences()" class="w-full p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="clock" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Feuille de Présence</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Pointages et absences</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportPaie()" class="w-full p-4 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="banknote" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Livre de Paie</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Récapitulatif mensuel</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button @click="exportDAS()" class="w-full p-4 bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Déclaration DAS (CNPS)</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Format officiel CNPS</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function rhSystem() {
+    return {
+        // État général
+        activeTab: 'employes',
+        viewMode: 'grid',
+        
+        // Filtres
+        employeSearch: '',
+        departementFilter: '',
+        statutFilter: '',
+        presenceDate: new Date().toISOString().split('T')[0],
+        presenceFilter: '',
+        congeFilter: '',
+        formationFilter: '',
+        posteFilter: '',
+        documentSearch: '',
+        documentFilter: '',
+        paieMonth: '02',
+        
+        // Modals
+        showEmployeeModal: false,
+        showExportModal: false,
+        
+        // Statistiques
+        stats: {
+            effectifTotal: 45,
+            effectifActif: 42,
+            presentsAujourdhui: 38,
+            absences: 4,
+            congesEnCours: 3,
+            masseSalariale: 18500000,
+            postesOuverts: 5,
+            candidatures: 23
+        },
+        
+        paieStats: {
+            salairesBruts: 18500000,
+            chargesSociales: 4625000,
+            retenues: 925000,
+            salairesNets: 12950000,
+            coutTotal: 23125000
+        },
+        
+        formationStats: {
+            employesFormes: 28,
+            budget: 5500000
+        },
+        
+        // Données
+        employes: [
+            { id: 1, matricule: 'EMP001', prenom: 'Jean', nom: 'KOUASSI', poste: 'Directeur Commercial', departement: 'Ventes', telephone: '+225 07 00 00 01', email: 'jean.kouassi@walee.ci', salaire: 850000, dateEmbauche: '01/01/2020', statut: 'Actif' },
+            { id: 2, matricule: 'EMP002', prenom: 'Marie', nom: 'YAO', poste: 'Développeuse Senior', departement: 'Technique', telephone: '+225 05 00 00 02', email: 'marie.yao@walee.ci', salaire: 750000, dateEmbauche: '15/03/2020', statut: 'Actif' },
+            { id: 3, matricule: 'EMP003', prenom: 'Ibrahim', nom: 'TOURE', poste: 'Chef Comptable', departement: 'Comptabilité', telephone: '+225 07 00 00 03', email: 'ibrahim.toure@walee.ci', salaire: 680000, dateEmbauche: '10/05/2021', statut: 'Actif' },
+            { id: 4, matricule: 'EMP004', prenom: 'Awa', nom: 'DIALLO', poste: 'Responsable RH', departement: 'RH', telephone: '+225 05 00 00 04', email: 'awa.diallo@walee.ci', salaire: 620000, dateEmbauche: '20/06/2021', statut: 'Congé' },
+            { id: 5, matricule: 'EMP005', prenom: 'Kouadio', nom: 'N\'GUESSAN', poste: 'Chef de Projet', departement: 'Technique', telephone: '+225 07 00 00 05', email: 'kouadio.nguessan@walee.ci', salaire: 700000, dateEmbauche: '01/09/2021', statut: 'Actif' },
+            { id: 6, matricule: 'EMP006', prenom: 'Fatoumata', nom: 'KONE', poste: 'Marketing Manager', departement: 'Marketing', telephone: '+225 05 00 00 06', email: 'fatoumata.kone@walee.ci', salaire: 650000, dateEmbauche: '15/11/2021', statut: 'Actif' },
+            { id: 7, matricule: 'EMP007', prenom: 'Amadou', nom: 'SANOGO', poste: 'Vendeur Senior', departement: 'Ventes', telephone: '+225 07 00 00 07', email: 'amadou.sanogo@walee.ci', salaire: 450000, dateEmbauche: '01/02/2022', statut: 'Actif' },
+            { id: 8, matricule: 'EMP008', prenom: 'Adjoua', nom: 'BAMBA', poste: 'Assistante RH', departement: 'RH', telephone: '+225 05 00 00 08', email: 'adjoua.bamba@walee.ci', salaire: 380000, dateEmbauche: '10/04/2022', statut: 'Actif' }
+        ],
+        
+        presences: [
+            { id: 1, employe: { prenom: 'Jean', nom: 'KOUASSI', poste: 'Directeur Commercial' }, heureArrivee: '08:00', heureDepart: '17:30', duree: '9h30', statut: 'Présent' },
+            { id: 2, employe: { prenom: 'Marie', nom: 'YAO', poste: 'Développeuse Senior' }, heureArrivee: '08:15', heureDepart: '17:45', duree: '9h30', statut: 'Présent' },
+            { id: 3, employe: { prenom: 'Ibrahim', nom: 'TOURE', poste: 'Chef Comptable' }, heureArrivee: '09:20', heureDepart: null, duree: null, statut: 'Retard' },
+            { id: 4, employe: { prenom: 'Awa', nom: 'DIALLO', poste: 'Responsable RH' }, heureArrivee: null, heureDepart: null, duree: null, statut: 'Congé' },
+            { id: 5, employe: { prenom: 'Kouadio', nom: 'N\'GUESSAN', poste: 'Chef de Projet' }, heureArrivee: '08:05', heureDepart: null, duree: null, statut: 'Présent' },
+            { id: 6, employe: { prenom: 'Fatoumata', nom: 'KONE', poste: 'Marketing Manager' }, heureArrivee: null, heureDepart: null, duree: null, statut: 'Absent' }
+        ],
+        
+        conges: [
+            { id: 1, employe: { prenom: 'Awa', nom: 'DIALLO', departement: 'RH' }, type: 'Congé annuel', dateDebut: '10/02/2024', dateFin: '24/02/2024', duree: 14, soldeRestant: 16, statut: 'En cours', motif: 'Vacances familiales' },
+            { id: 2, employe: { prenom: 'Amadou', nom: 'SANOGO', departement: 'Ventes' }, type: 'Congé annuel', dateDebut: '01/03/2024', dateFin: '08/03/2024', duree: 7, soldeRestant: 23, statut: 'En attente', motif: 'Voyage' },
+            { id: 3, employe: { prenom: 'Marie', nom: 'YAO', departement: 'Technique' }, type: 'Congé maladie', dateDebut: '05/02/2024', dateFin: '07/02/2024', duree: 2, soldeRestant: 28, statut: 'Approuvé', motif: 'Certificat médical' },
+            { id: 4, employe: { prenom: 'Ibrahim', nom: 'TOURE', departement: 'Comptabilité' }, type: 'Congé annuel', dateDebut: '15/04/2024', dateFin: '30/04/2024', duree: 15, soldeRestant: 15, statut: 'En attente', motif: 'Vacances annuelles' }
+        ],
+        
+        bulletins: [
+            { id: 1, employe: { prenom: 'Jean', nom: 'KOUASSI', poste: 'Directeur Commercial', matricule: 'EMP001' }, salaireBrut: 850000, charges: 212500, salaireNet: 637500 },
+            { id: 2, employe: { prenom: 'Marie', nom: 'YAO', poste: 'Développeuse Senior', matricule: 'EMP002' }, salaireBrut: 750000, charges: 187500, salaireNet: 562500 },
+            { id: 3, employe: { prenom: 'Ibrahim', nom: 'TOURE', poste: 'Chef Comptable', matricule: 'EMP003' }, salaireBrut: 680000, charges: 170000, salaireNet: 510000 },
+            { id: 4, employe: { prenom: 'Awa', nom: 'DIALLO', poste: 'Responsable RH', matricule: 'EMP004' }, salaireBrut: 620000, charges: 155000, salaireNet: 465000 }
+        ],
+        
+        formations: [
+            { id: 1, titre: 'Leadership et Management', description: 'Formation avancée en management d\'équipe', formateur: 'Cabinet AFRIQUE CONSULTING', duree: '5 jours', dateDebut: '15/03/2024', dateFin: '19/03/2024', participants: 8, cout: 1200000, statut: 'Planifiée' },
+            { id: 2, titre: 'Développement Web Moderne', description: 'React, Vue.js et frameworks modernes', formateur: 'TechSchool CI', duree: '3 semaines', dateDebut: '01/02/2024', dateFin: '22/02/2024', participants: 6, cout: 1800000, statut: 'En cours' },
+            { id: 3, titre: 'Excel Avancé et Tableaux Croisés', description: 'Maîtrise des fonctions avancées', formateur: 'Business Training Center', duree: '3 jours', dateDebut: '10/01/2024', dateFin: '12/01/2024', participants: 12, cout: 720000, statut: 'Terminée' },
+            { id: 4, titre: 'Comptabilité SYSCOHADA Révisé', description: 'Mise à jour normes comptables', formateur: 'KPMG Côte d\'Ivoire', duree: '2 jours', dateDebut: '05/02/2024', dateFin: '06/02/2024', participants: 4, cout: 960000, statut: 'Terminée' }
+        ],
+        
+        postesOuverts: [
+            { id: 1, titre: 'Développeur Full Stack', departement: 'Technique', lieu: 'Abidjan, Plateau', type: 'CDI', datePublication: '01/02/2024', candidatures: 12 },
+            { id: 2, titre: 'Commercial Terrain', departement: 'Ventes', lieu: 'Abidjan, Cocody', type: 'CDI', datePublication: '05/02/2024', candidatures: 8 },
+            { id: 3, titre: 'Assistant(e) Comptable', departement: 'Comptabilité', lieu: 'Abidjan, Plateau', type: 'CDD 6 mois', datePublication: '10/02/2024', candidatures: 15 },
+            { id: 4, titre: 'Community Manager', departement: 'Marketing', lieu: 'Abidjan, Marcory', type: 'CDI', datePublication: '12/02/2024', candidatures: 6 },
+            { id: 5, titre: 'Stagiaire RH', departement: 'RH', lieu: 'Abidjan, Plateau', type: 'Stage 6 mois', datePublication: '14/02/2024', candidatures: 20 }
+        ],
+        
+        candidaturesRecentes: [
+            { id: 1, prenom: 'Youssouf', nom: 'BAKAYOKO', poste: 'Développeur Full Stack', dateReception: '15/02/2024', statut: 'À examiner' },
+            { id: 2, prenom: 'Nathalie', nom: 'KOUAME', poste: 'Assistant(e) Comptable', dateReception: '14/02/2024', statut: 'Entretien planifié' },
+            { id: 3, prenom: 'Seydou', nom: 'COULIBALY', poste: 'Commercial Terrain', dateReception: '14/02/2024', statut: 'À examiner' },
+            { id: 4, prenom: 'Mariame', nom: 'TRAORE', poste: 'Community Manager', dateReception: '13/02/2024', statut: 'Rejetée' }
+        ],
+        
+        documents: [
+            { id: 1, nom: 'Contrat CDI - Jean KOUASSI.pdf', type: 'Contrat', employe: 'Jean KOUASSI', taille: '2.4 MB', dateAjout: '01/01/2020' },
+            { id: 2, nom: 'Attestation travail - Marie YAO.pdf', type: 'Attestation', employe: 'Marie YAO', taille: '156 KB', dateAjout: '10/01/2024' },
+            { id: 3, nom: 'Bulletin paie Janvier 2024 - Ibrahim TOURE.pdf', type: 'Bulletin', employe: 'Ibrahim TOURE', taille: '489 KB', dateAjout: '31/01/2024' },
+            { id: 4, nom: 'Certificat travail - Awa DIALLO.pdf', type: 'Certificat', employe: 'Awa DIALLO', taille: '234 KB', dateAjout: '15/12/2023' },
+            { id: 5, nom: 'Contrat CDD - Kouadio N\'GUESSAN.pdf', type: 'Contrat', employe: 'Kouadio N\'GUESSAN', taille: '1.8 MB', dateAjout: '01/09/2021' }
+        ],
+        
+        // Computed
+        get filteredEmployes() {
+            let result = this.employes;
+            
+            if (this.employeSearch) {
+                const search = this.employeSearch.toLowerCase();
+                result = result.filter(e => 
+                    e.prenom.toLowerCase().includes(search) ||
+                    e.nom.toLowerCase().includes(search) ||
+                    e.matricule.toLowerCase().includes(search) ||
+                    e.poste.toLowerCase().includes(search)
+                );
+            }
+            
+            if (this.departementFilter) {
+                result = result.filter(e => e.departement === this.departementFilter);
+            }
+            
+            if (this.statutFilter) {
+                result = result.filter(e => e.statut === this.statutFilter);
+            }
+            
+            return result;
+        },
+        
+        get filteredPresences() {
+            let result = this.presences;
+            
+            if (this.presenceFilter) {
+                result = result.filter(p => p.statut.toLowerCase() === this.presenceFilter);
+            }
+            
+            return result;
+        },
+        
+        get filteredConges() {
+            let result = this.conges;
+            
+            if (this.congeFilter) {
+                result = result.filter(c => c.statut === this.congeFilter);
+            }
+            
+            return result;
+        },
+        
+        get filteredFormations() {
+            let result = this.formations;
+            
+            if (this.formationFilter) {
+                result = result.filter(f => f.statut === this.formationFilter);
+            }
+            
+            return result;
+        },
+        
+        get filteredDocuments() {
+            let result = this.documents;
+            
+            if (this.documentSearch) {
+                const search = this.documentSearch.toLowerCase();
+                result = result.filter(d => 
+                    d.nom.toLowerCase().includes(search) ||
+                    d.employe.toLowerCase().includes(search)
+                );
+            }
+            
+            if (this.documentFilter) {
+                result = result.filter(d => d.type === this.documentFilter);
+            }
+            
+            return result;
+        },
+        
+        // Méthodes
+        init() {
+            lucide.createIcons();
+        },
+        
+        getInitials(prenom, nom) {
+            return (prenom.charAt(0) + nom.charAt(0)).toUpperCase();
+        },
+        
+        getStatutClass(statut) {
+            const classes = {
+                'Actif': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Congé': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'Suspendu': 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+                'Démissionnaire': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getStatutDotClass(statut) {
+            const classes = {
+                'Actif': 'bg-green-600',
+                'Congé': 'bg-blue-600',
+                'Suspendu': 'bg-orange-600',
+                'Démissionnaire': 'bg-red-600'
+            };
+            return classes[statut] || 'bg-gray-600';
+        },
+        
+        getPresenceStatusClass(statut) {
+            const classes = {
+                'Présent': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Absent': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
+                'Retard': 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+                'Congé': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getCongeStatusClass(statut) {
+            const classes = {
+                'En attente': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
+                'Approuvé': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Refusé': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
+                'En cours': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getFormationStatusClass(statut) {
+            const classes = {
+                'Planifiée': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'En cours': 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+                'Terminée': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Annulée': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getCandidatureStatusClass(statut) {
+            const classes = {
+                'À examiner': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'Entretien planifié': 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                'Rejetée': 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+            };
+            return classes[statut] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getDocumentIconClass(type) {
+            const classes = {
+                'Contrat': 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400',
+                'Attestation': 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400',
+                'Bulletin': 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400',
+                'Certificat': 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400',
+                'Autre': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+            };
+            return classes[type] || 'bg-gray-100 text-gray-600';
+        },
+        
+        getDocumentIcon(type) {
+            const icons = {
+                'Contrat': 'file-text',
+                'Attestation': 'file-check',
+                'Bulletin': 'receipt',
+                'Certificat': 'award',
+                'Autre': 'file'
+            };
+            return icons[type] || 'file';
+        },
+        
+        // Actions Employés
+        openEmployeeModal() {
+            this.showEmployeeModal = true;
+        },
+        
+        viewEmployee(employe) {
+            window.location.href = '/dashboard/rh/employees/';
+        },
+        
+        editEmployee(employe) {
+            window.location.href = '/dashboard/rh/employees/';
+        },
+        
+        generateFiche(employe) {
+            window.location.href = '/dashboard/rh/employees/';
+        },
+        
+        deleteEmployee(employe) {
+            if (confirm('🗑️ Supprimer l\'employé ' + employe.prenom + ' ' + employe.nom + ' ?\n\nCette action est irréversible.')) {
+                // Suppression confirmée
+                const index = this.employes.findIndex(e => e.id === employe.id);
+                if (index > -1) {
+                    this.employes.splice(index, 1);
+                }
+            }
+        },
+        
+        // Actions Modals
+        openPointageModal() {
+            this.activeTab = 'presence';
+            lucide.createIcons();
+        },
+        
+        openCongeModal() {
+            window.location.href = '/dashboard/rh/conges/';
+        },
+        
+        openPaieModal() {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        openFormationModal() {
+            window.location.href = '/dashboard/rh/formations/';
+        },
+        
+        openEvaluationModal() {
+            window.location.href = '/dashboard/rh/evaluations/';
+        },
+        
+        openRecrutementModal() {
+            window.location.href = '/dashboard/rh/recrutement/';
+        },
+        
+        openPosteModal() {
+            window.location.href = '/dashboard/rh/recrutement/';
+        },
+        
+        // Actions Congés
+        approveConge(conge) {
+            if (confirm('✅ Approuver le congé de ' + conge.employe.prenom + ' ' + conge.employe.nom + ' ?')) {
+                conge.statut = 'Approuvé';
+            }
+        },
+        
+        rejectConge(conge) {
+            if (confirm('❌ Refuser le congé de ' + conge.employe.prenom + ' ' + conge.employe.nom + ' ?')) {
+                conge.statut = 'Refusé';
+            }
+        },
+        
+        viewConge(conge) {
+            window.location.href = '/dashboard/rh/conges/';
+        },
+        
+        // Actions Paie
+        generateBulletins() {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        processPaie() {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        viewBulletin(bulletin) {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        downloadBulletin(bulletin) {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        sendBulletin(bulletin) {
+            window.location.href = '/dashboard/rh/paie/';
+        },
+        
+        // Actions Formations
+        viewFormation(formation) {
+            window.location.href = '/dashboard/rh/formations/';
+        },
+        
+        editFormation(formation) {
+            window.location.href = '/dashboard/rh/formations/';
+        },
+        
+        // Actions Recrutement
+        viewCandidatures(poste) {
+            window.location.href = '/dashboard/rh/recrutement/';
+        },
+        
+        viewCandidature(candidature) {
+            window.location.href = '/dashboard/rh/recrutement/';
+        },
+        
+        downloadCV(candidature) {
+            window.location.href = '/dashboard/rh/recrutement/';
+        },
+        
+        // Actions Documents
+        viewDocument(document) {
+            // Ouvrir le document dans un nouvel onglet
+            window.open('#', '_blank');
+        },
+        
+        downloadDocument(document) {
+            // Télécharger le document
+            window.open('#', '_blank');
+        },
+        
+        shareDocument(document) {
+            // Partager le document
+            navigator.clipboard.writeText('Lien du document: ' + document.nom);
+        },
+        
+        deleteDocument(document) {
+            if (confirm('🗑️ Supprimer ' + document.nom + ' ?')) {
+                const index = this.documents.findIndex(d => d.id === document.id);
+                if (index > -1) {
+                    this.documents.splice(index, 1);
+                }
+            }
+        },
+        
+        uploadDocument() {
+            // Ouvrir le sélecteur de fichiers
+            document.getElementById('file-upload')?.click();
+        },
+        
+        // Exports
+        exportPresence() {
+            // Export feuille de présence
+            window.open('/api/export/presence?date=' + this.presenceDate, '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportEmployes() {
+            // Export liste des employés
+            window.open('/api/export/employes', '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportPresences() {
+            // Export présences et pointages
+            window.open('/api/export/presences', '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportPaie() {
+            // Export livre de paie
+            window.open('/api/export/paie?month=' + this.paieMonth, '_blank');
+            this.showExportModal = false;
+        },
+        
+        exportDAS() {
+            // Export Déclaration DAS (CNPS)
+            window.open('/api/export/das', '_blank');
+            this.showExportModal = false;
+        },
+        
+        formatMoney(amount) {
+            if (amount >= 1000000) {
+                return new Intl.NumberFormat('fr-FR', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                }).format(amount / 1000000) + 'M';
+            }
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

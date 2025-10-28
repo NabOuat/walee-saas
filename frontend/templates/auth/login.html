@@ -74,7 +74,7 @@
                 </div>
                 
                 <!-- Login Form -->
-                <form class="space-y-6" x-data="loginFormData()" @submit.prevent="handleSubmit($event)" id="loginForm">
+                <form class="space-y-6" x-data="loginFormData()" @submit.prevent="handleSubmit($event)" id="loginForm" novalidate>
                     
                     <!-- Login Method Switcher -->
                     <div class="flex items-center justify-center space-x-2 bg-gray-100 rounded-xl p-1">
@@ -111,6 +111,7 @@
                                 type="email" 
                                 id="email" 
                                 name="email"
+                                x-model="email"
                                 class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
                                 placeholder="vous@exemple.com"
                                 :required="loginMethod === 'email'"
@@ -131,6 +132,7 @@
                                 type="tel" 
                                 id="phone" 
                                 name="phone"
+                                x-model="phone"
                                 class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
                                 placeholder="+225 07 XX XX XX XX"
                                 :required="loginMethod === 'phone'"
@@ -155,6 +157,7 @@
                                 :type="showPassword ? 'text' : 'password'" 
                                 id="password" 
                                 name="password"
+                                x-model="password"
                                 class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-blue focus:border-transparent transition duration-200 outline-none"
                                 placeholder="••••••••"
                                 required
@@ -183,10 +186,12 @@
                     <!-- Submit Button -->
                     <button 
                         type="submit"
-                        class="w-full gradient-blue text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2"
+                        :disabled="loading"
+                        class="w-full gradient-blue text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <span>Se connecter</span>
-                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        <span x-show="!loading">Se connecter</span>
+                        <span x-show="loading">Connexion...</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5" x-show="!loading"></i>
                     </button>
                     
                     <!-- Divider -->
@@ -254,57 +259,76 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/cdn-fallback.js' %}"></script>
 <script>
     function loginFormData() {
         return {
             showPassword: false,
             loginMethod: 'email',
+            email: '',
+            phone: '',
+            password: '',
+            loading: false,
             
-            handleSubmit(event) {
-                const form = event.target;
+            async handleSubmit(event) {
+                event.preventDefault();
                 
-                // Get form values
-                const email = form.querySelector('#email')?.value;
-                const phone = form.querySelector('#phone')?.value;
-                const password = form.querySelector('#password').value;
+                // MODE FRONTEND UNIQUEMENT - Connexion désactivée temporairement
+                // Validation basique
+                if (this.loginMethod === 'email' && !this.email) {
+                    afficherToast('Veuillez entrer votre email', 'error');
+                    return;
+                }
                 
-                // Validate based on login method
-                let isValid = true;
+                if (this.loginMethod === 'phone' && !this.phone) {
+                    afficherToast('Veuillez entrer votre téléphone', 'error');
+                    return;
+                }
                 
-                if (this.loginMethod === 'email') {
-                    const emailInput = form.querySelector('#email');
-                    const result = WaleeValidation.validateEmail(email);
-                    if (!result.valid) {
-                        WaleeValidation.showError(emailInput, result.message);
-                        isValid = false;
+                if (!this.password) {
+                    afficherToast('Veuillez entrer votre mot de passe', 'error');
+                    return;
+                }
+                
+                // Simuler le chargement
+                this.loading = true;
+                
+                // Simuler un délai de connexion
+                setTimeout(() => {
+                    afficherToast('Connexion réussie !', 'success');
+                    
+                    // Redirection vers le dashboard après 1 seconde
+                    setTimeout(() => {
+                        window.location.href = '/loading/';
+                    }, 1000);
+                }, 500);
+                
+                /* CODE API COMMENTÉ - À RÉACTIVER PLUS TARD
+                try {
+                    const result = await connexion(
+                        this.loginMethod === 'email' ? this.email : null,
+                        this.password,
+                        this.loginMethod === 'phone' ? this.phone : null
+                    );
+                    
+                    console.log('Résultat connexion:', result);
+                    
+                    if (result.success) {
+                        afficherToast('Connexion réussie !', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/loading/';
+                        }, 1000);
                     } else {
-                        WaleeValidation.clearError(emailInput);
+                        const errorMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+                        console.error('Erreur de connexion:', result);
+                        afficherToast(errorMsg || 'Erreur de connexion', 'error');
                     }
-                } else {
-                    const phoneInput = form.querySelector('#phone');
-                    const result = WaleeValidation.validatePhone(phone);
-                    if (!result.valid) {
-                        WaleeValidation.showError(phoneInput, result.message);
-                        isValid = false;
-                    } else {
-                        WaleeValidation.clearError(phoneInput);
-                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    afficherToast('Erreur de connexion au serveur', 'error');
+                } finally {
+                    this.loading = false;
                 }
-                
-                // Validate password
-                const passwordInput = form.querySelector('#password');
-                if (!password) {
-                    WaleeValidation.showError(passwordInput, 'Mot de passe requis');
-                    isValid = false;
-                } else {
-                    WaleeValidation.clearError(passwordInput);
-                }
-                
-                // If valid, redirect
-                if (isValid) {
-                    window.location.href = '{% url "loading" %}';
-                }
+                */
             }
         }
     }
@@ -312,25 +336,19 @@
     // Reinitialize icons after Alpine.js renders
     document.addEventListener('alpine:init', () => {
         setTimeout(() => {
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }, 100);
     });
     
     // Reinitialize icons when switching login method
     document.addEventListener('click', (e) => {
-        if (e.target.closest('[\\@click*="loginMethod"]')) {
-            setTimeout(() => {
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-            }, 50);
-        }
-    });
-    
-    // Setup real-time validation
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('loginForm');
-        if (form && typeof WaleeValidation !== 'undefined') {
-            WaleeValidation.setupRealTimeValidation(form);
-        }
+            }
+        }, 50);
     });
 </script>
 {% endblock %}

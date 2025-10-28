@@ -1,0 +1,961 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Caisse - Walee{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideIn {
+        from { transform: translateX(-10px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .cart-item-enter {
+        animation: slideIn 0.3s ease-out;
+    }
+    .beep-animation {
+        animation: pulse 0.3s ease-in-out;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    .pos-grid {
+        display: grid;
+        grid-template-columns: 1fr 480px;
+        gap: 0;
+        height: calc(100vh - 180px);
+    }
+    @media (max-width: 1024px) {
+        .pos-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+    }
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    .keypad-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="posSystem()" x-init="init()" @keydown.window="handleKeyboard($event)">
+    
+    <!-- Header Caisse -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 -mx-6 -mt-6 px-6 py-3 mb-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="font-bold text-lg text-gray-900 dark:text-white">CAISSE 01</span>
+                </div>
+                <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <div class="text-sm">
+                    <span class="text-gray-500 dark:text-gray-400">Caissier:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white ml-1" x-text="caissier.nom"></span>
+                </div>
+                <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <div class="text-sm">
+                    <span class="text-gray-500 dark:text-gray-400">Session:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white ml-1" x-text="session.debut"></span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div class="text-right mr-4">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white font-mono" x-text="currentTime"></div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400" x-text="currentDate"></div>
+                </div>
+                <button @click="showSessionModal = true" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center space-x-2">
+                    <i data-lucide="power" class="w-4 h-4"></i>
+                    <span>Clôturer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface POS -->
+    <div class="pos-grid">
+        
+        <!-- Partie Gauche: Scanner + Produits -->
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-l-2xl overflow-hidden flex flex-col">
+            
+            <!-- Scanner Code-Barre -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+                <div class="relative">
+                    <div class="absolute left-4 top-1/2 transform -translate-y-1/2">
+                        <i data-lucide="scan-barcode" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <input type="text" 
+                           x-ref="barcodeInput"
+                           x-model="barcodeInput"
+                           @keydown.enter="scanProduct()"
+                           placeholder="Scanner ou saisir le code-barre..." 
+                           class="w-full pl-14 pr-4 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl text-xl font-mono focus:ring-4 focus:ring-blue-300 outline-none"
+                           autofocus>
+                    <div class="absolute right-4 top-1/2 transform -translate-y-1/2" x-show="barcodeInput">
+                        <button @click="barcodeInput = ''; $refs.barcodeInput.focus()" class="text-gray-400 hover:text-gray-600">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-white text-sm">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                        <span>Scannez ou tapez le code puis Entrée</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <kbd class="px-2 py-1 bg-blue-800 rounded text-xs">F2</kbd>
+                        <span class="text-xs">Recherche rapide</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres et Actions Rapides -->
+            <div class="bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <button @click="showCategories = !showCategories" 
+                                :class="showCategories ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'"
+                                class="px-4 py-2 rounded-lg font-medium transition">
+                            <i data-lucide="layout-grid" class="w-4 h-4 inline mr-2"></i>
+                            Catégories
+                        </button>
+                        <button @click="showFavorites = !showFavorites"
+                                :class="showFavorites ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'"
+                                class="px-4 py-2 rounded-lg font-medium transition">
+                            <i data-lucide="star" class="w-4 h-4 inline mr-2"></i>
+                            Favoris
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" 
+                               x-model="searchQuery"
+                               @input="filterProducts()"
+                               placeholder="Rechercher..." 
+                               class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Catégories -->
+                <div x-show="showCategories" class="mt-4 flex flex-wrap gap-2">
+                    <button @click="selectedCategory = null"
+                            :class="selectedCategory === null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-4 py-2 rounded-lg font-medium transition text-sm">
+                        Tous
+                    </button>
+                    <template x-for="cat in categories" :key="cat">
+                        <button @click="selectedCategory = cat"
+                                :class="selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                class="px-4 py-2 rounded-lg font-medium transition text-sm"
+                                x-text="cat"></button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Grille Produits -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="product-grid">
+                    <template x-for="produit in displayedProducts" :key="produit.id">
+                        <button @click="addToCart(produit)"
+                                class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all transform hover:-translate-y-1 text-left group">
+                            <div class="relative">
+                                <!-- Badge Stock Faible -->
+                                <div x-show="produit.stock <= 5" class="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                    Stock bas
+                                </div>
+                                <div class="w-full h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                                    <i data-lucide="package" class="w-10 h-10 text-gray-400 group-hover:text-blue-500 transition"></i>
+                                </div>
+                                <div class="space-y-1">
+                                    <p class="font-bold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2" x-text="produit.nom"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" x-text="produit.codeBarre"></p>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <p class="text-lg font-bold text-blue-600" x-text="formatMoney(produit.prix)"></p>
+                                        <div class="flex items-center space-x-1 text-xs" :class="produit.stock <= 5 ? 'text-red-500' : 'text-gray-500'">
+                                            <i data-lucide="box" class="w-3 h-3"></i>
+                                            <span x-text="produit.stock"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+                
+                <div x-show="displayedProducts.length === 0" class="text-center py-20">
+                    <i data-lucide="search-x" class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"></i>
+                    <p class="text-gray-500 dark:text-gray-400">Aucun produit trouvé</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Partie Droite: Ticket + Paiement -->
+        <div class="bg-white dark:bg-gray-800 rounded-r-2xl shadow-2xl flex flex-col border-l-4 border-blue-600">
+            
+            <!-- En-tête Ticket -->
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 text-white px-6 py-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-2xl font-bold">TICKET DE CAISSE</h2>
+                        <p class="text-sm text-gray-300" x-text="'N° ' + ticketNumber"></p>
+                    </div>
+                    <button @click="clearCart()" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-sm font-semibold">
+                        <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>
+                        Vider
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold" x-text="cart.length"></div>
+                        <div class="text-xs text-gray-400">Articles</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold" x-text="getTotalItems()"></div>
+                        <div class="text-xs text-gray-400">Quantité</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-400" x-text="formatMoney(calculateTotal())"></div>
+                        <div class="text-xs text-gray-400">Total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste Articles -->
+            <div class="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
+                <div class="space-y-2">
+                    <template x-for="(item, index) in cart" :key="index">
+                        <div class="cart-item-enter bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-2">
+                                    <p class="font-bold text-gray-900 dark:text-white text-sm leading-tight" x-text="item.nom"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" x-text="item.codeBarre"></p>
+                                </div>
+                                <button @click="removeFromCart(index)" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded transition">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                    <button @click="decrementQuantity(index)" class="w-8 h-8 bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition flex items-center justify-center">
+                                        <i data-lucide="minus" class="w-4 h-4"></i>
+                                    </button>
+                                    <input type="number" 
+                                           x-model="item.quantite"
+                                           @change="updateQuantity(index)"
+                                           class="w-16 text-center font-bold bg-transparent border-0 focus:ring-0 text-gray-900 dark:text-white"
+                                           min="1">
+                                    <button @click="incrementQuantity(index)" class="w-8 h-8 bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition flex items-center justify-center">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400" x-text="formatMoney(item.prix) + ' x ' + item.quantite"></div>
+                                    <div class="text-lg font-bold text-blue-600" x-text="formatMoney(item.prix * item.quantite)"></div>
+                                </div>
+                            </div>
+                            <!-- Remise individuelle -->
+                            <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700" x-show="item.remise > 0 || showRemiseFor === index">
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" 
+                                           x-model="item.remise"
+                                           placeholder="Remise %"
+                                           class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded"
+                                           min="0"
+                                           max="100">
+                                    <button @click="applyItemDiscount(index)" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                        Appliquer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div x-show="cart.length === 0" class="text-center py-20">
+                    <i data-lucide="shopping-cart" class="w-20 h-20 text-gray-200 dark:text-gray-700 mx-auto mb-4"></i>
+                    <p class="text-gray-400 dark:text-gray-500 text-lg font-medium">Panier vide</p>
+                    <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Scannez un produit pour commencer</p>
+                </div>
+            </div>
+
+            <!-- Calculs et Totaux -->
+            <div class="border-t-2 border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Sous-total HT:</span>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(calculateSubtotal())"></span>
+                    </div>
+                    
+                    <!-- Remise globale -->
+                    <div class="flex justify-between items-center text-sm">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-600 dark:text-gray-400">Remise:</span>
+                            <button @click="showGlobalDiscount = !showGlobalDiscount" class="text-blue-600 hover:text-blue-700">
+                                <i data-lucide="percent" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <span class="font-semibold text-red-600" x-text="'- ' + formatMoney(calculateDiscount())"></span>
+                    </div>
+                    
+                    <div x-show="showGlobalDiscount" class="flex items-center space-x-2 py-2">
+                        <input type="number" 
+                               x-model="globalDiscount"
+                               placeholder="% remise"
+                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg"
+                               min="0"
+                               max="100">
+                        <button @click="applyGlobalDiscount()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            OK
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">TVA (18%):</span>
+                        <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(calculateTVA())"></span>
+                    </div>
+                    
+                    <div class="flex justify-between text-2xl font-bold border-t-2 border-gray-300 dark:border-gray-600 pt-3 mt-2">
+                        <span class="text-gray-900 dark:text-white">TOTAL TTC:</span>
+                        <span class="text-green-600" x-text="formatMoney(calculateTotal())"></span>
+                    </div>
+                </div>
+
+                <!-- Modes de Paiement -->
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <button @click="paymentMethod = 'especes'"
+                            :class="paymentMethod === 'especes' ? 'bg-green-600 text-white ring-2 ring-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            class="p-3 rounded-lg font-bold transition text-sm">
+                        <i data-lucide="banknote" class="w-5 h-5 mx-auto mb-1"></i>
+                        Espèces
+                    </button>
+                    <button @click="paymentMethod = 'carte'"
+                            :class="paymentMethod === 'carte' ? 'bg-blue-600 text-white ring-2 ring-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            class="p-3 rounded-lg font-bold transition text-sm">
+                        <i data-lucide="credit-card" class="w-5 h-5 mx-auto mb-1"></i>
+                        Carte
+                    </button>
+                    <button @click="paymentMethod = 'mobile'"
+                            :class="paymentMethod === 'mobile' ? 'bg-orange-600 text-white ring-2 ring-orange-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            class="p-3 rounded-lg font-bold transition text-sm">
+                        <i data-lucide="smartphone" class="w-5 h-5 mx-auto mb-1"></i>
+                        Mobile
+                    </button>
+                </div>
+
+                <!-- Boutons Actions -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button @click="suspendSale()"
+                            :disabled="cart.length === 0"
+                            class="py-3 bg-yellow-600 text-white font-bold rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="pause" class="w-5 h-5 inline mr-2"></i>
+                        Suspendre
+                    </button>
+                    <button @click="openPaymentModal()"
+                            :disabled="cart.length === 0"
+                            class="py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg">
+                        <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
+                        PAYER
+                    </button>
+                </div>
+
+                <!-- Raccourcis clavier -->
+                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div><kbd class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">F1</kbd> Aide</div>
+                    <div><kbd class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">F4</kbd> Remise</div>
+                    <div><kbd class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">F9</kbd> Suspendre</div>
+                    <div><kbd class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">F12</kbd> Payer</div>
+                    <div><kbd class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">Esc</kbd> Vider</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Paiement -->
+    <div x-show="showPaymentModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showPaymentModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl"
+             @click.stop>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Encaissement</h3>
+                <button @click="showPaymentModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Montant à payer</div>
+                <div class="text-4xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(calculateTotal())"></div>
+            </div>
+
+            <!-- Espèces avec calculatrice -->
+            <div x-show="paymentMethod === 'especes'" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Montant reçu</label>
+                    <input type="text" 
+                           x-model="cashReceived"
+                           @input="calculateChange()"
+                           class="w-full px-4 py-3 text-2xl font-bold text-center border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Keypad Numérique -->
+                <div class="keypad-grid">
+                    <template x-for="n in [7,8,9,4,5,6,1,2,3]" :key="n">
+                        <button @click="addToCashReceived(n)" 
+                                class="py-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-xl font-bold transition">
+                            <span x-text="n"></span>
+                        </button>
+                    </template>
+                    <button @click="cashReceived = ''" class="py-4 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg text-xl font-bold text-red-600 transition">C</button>
+                    <button @click="addToCashReceived(0)" class="py-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-xl font-bold transition">0</button>
+                    <button @click="addToCashReceived('00')" class="py-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-xl font-bold transition">00</button>
+                </div>
+
+                <!-- Montants rapides -->
+                <div class="grid grid-cols-4 gap-2">
+                    <template x-for="amount in [500, 1000, 2000, 5000, 10000]" :key="amount">
+                        <button @click="cashReceived = amount.toString(); calculateChange()" 
+                                class="py-2 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg text-sm font-semibold text-green-700 dark:text-green-400 transition"
+                                x-text="amount"></button>
+                    </template>
+                    <button @click="cashReceived = calculateTotal().toString(); calculateChange()" 
+                            class="py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-lg text-sm font-semibold text-blue-700 dark:text-blue-400 transition">
+                        Exact
+                    </button>
+                </div>
+
+                <div x-show="cashChange >= 0" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Monnaie à rendre</div>
+                    <div class="text-3xl font-bold text-green-600" x-text="formatMoney(cashChange)"></div>
+                </div>
+
+                <div x-show="cashChange < 0" class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <div class="text-sm text-red-600 dark:text-red-400">Montant insuffisant</div>
+                </div>
+            </div>
+
+            <!-- Carte bancaire -->
+            <div x-show="paymentMethod === 'carte'" class="space-y-4">
+                <div class="text-center py-8">
+                    <i data-lucide="credit-card" class="w-20 h-20 text-blue-600 mx-auto mb-4"></i>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Insérez ou présentez la carte</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">En attente du terminal de paiement...</p>
+                    <div class="mt-4 flex items-center justify-center space-x-2">
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Money -->
+            <div x-show="paymentMethod === 'mobile'" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Opérateur</label>
+                    <select x-model="mobileOperator" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                        <option value="orange">Orange Money</option>
+                        <option value="mtn">MTN Mobile Money</option>
+                        <option value="moov">Moov Money</option>
+                        <option value="wave">Wave</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Numéro de téléphone</label>
+                    <input type="tel" 
+                           x-model="mobilePhone"
+                           placeholder="XX XX XX XX XX"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg">
+                </div>
+            </div>
+
+            <!-- Boutons validation -->
+            <div class="mt-6 flex space-x-3">
+                <button @click="showPaymentModal = false" 
+                        class="flex-1 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition">
+                    Annuler
+                </button>
+                <button @click="completeSale()" 
+                        :disabled="!canCompleteSale()"
+                        class="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="check" class="w-5 h-5 inline mr-2"></i>
+                    Valider
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ventes Suspendues -->
+    <div x-show="showSuspendedModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="showSuspendedModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Ventes Suspendues</h3>
+                <button @click="showSuspendedModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+                <template x-for="(sale, index) in suspendedSales" :key="index">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Vente #<span x-text="index + 1"></span></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400"><span x-text="sale.length"></span> articles - <span x-text="sale.time"></span></p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="restoreSale(index)" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                Reprendre
+                            </button>
+                            <button @click="deleteSuspendedSale(index)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="suspendedSales.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i data-lucide="archive" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p>Aucune vente suspendue</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function posSystem() {
+    return {
+        // État de la session
+        caissier: {
+            id: 1,
+            nom: 'Jean KOUASSI',
+            matricule: 'CAI001'
+        },
+        session: {
+            id: Date.now(),
+            debut: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            fondCaisse: 100000
+        },
+        
+        // Date et heure
+        currentTime: '',
+        currentDate: '',
+        
+        // État du POS
+        barcodeInput: '',
+        searchQuery: '',
+        selectedCategory: null,
+        showCategories: false,
+        showFavorites: false,
+        cart: [],
+        ticketNumber: 'TKT-' + String(Math.floor(Math.random() * 10000)).padStart(4, '0'),
+        
+        // Paiement
+        paymentMethod: 'especes',
+        showPaymentModal: false,
+        cashReceived: '',
+        cashChange: 0,
+        mobileOperator: 'orange',
+        mobilePhone: '',
+        
+        // Remises
+        globalDiscount: 0,
+        appliedDiscount: 0,
+        showGlobalDiscount: false,
+        showRemiseFor: null,
+        
+        // Ventes suspendues
+        suspendedSales: [],
+        showSuspendedModal: false,
+        
+        // Modals
+        showSessionModal: false,
+        
+        // Données
+        categories: ['Électronique', 'Informatique', 'Téléphonie', 'Accessoires', 'Gaming'],
+        
+        products: [
+            { id: 1, nom: 'Laptop HP ProBook', codeBarre: '5901234123457', prix: 450000, stock: 15, categorie: 'Informatique', favori: true },
+            { id: 2, nom: 'iPhone 14 Pro Max', codeBarre: '0190199218792', prix: 850000, stock: 8, categorie: 'Téléphonie', favori: true },
+            { id: 3, nom: 'Samsung Galaxy S23 Ultra', codeBarre: '8806094667523', prix: 750000, stock: 12, categorie: 'Téléphonie', favori: true },
+            { id: 4, nom: 'MacBook Air M2', codeBarre: '0194252707104', prix: 1200000, stock: 5, categorie: 'Informatique', favori: false },
+            { id: 5, nom: 'iPad Pro 12.9"', codeBarre: '0194252707203', prix: 900000, stock: 10, categorie: 'Électronique', favori: true },
+            { id: 6, nom: 'AirPods Pro 2', codeBarre: '0194252721083', prix: 180000, stock: 25, categorie: 'Accessoires', favori: true },
+            { id: 7, nom: 'Apple Watch Series 8', codeBarre: '0190199698536', prix: 350000, stock: 18, categorie: 'Accessoires', favori: false },
+            { id: 8, nom: 'Souris Logitech MX Master 3', codeBarre: '5099206078352', prix: 45000, stock: 50, categorie: 'Accessoires', favori: false },
+            { id: 9, nom: 'Clavier Mécanique Razer', codeBarre: '8886419363361', prix: 85000, stock: 30, categorie: 'Gaming', favori: false },
+            { id: 10, nom: 'Écran Dell 27" 4K', codeBarre: '5397184240564', prix: 280000, stock: 12, categorie: 'Informatique', favori: false },
+            { id: 11, nom: 'Casque Sony WH-1000XM5', codeBarre: '4548736132450', prix: 220000, stock: 20, categorie: 'Accessoires', favori: true },
+            { id: 12, nom: 'Imprimante HP LaserJet', codeBarre: '0192018736740', prix: 150000, stock: 8, categorie: 'Informatique', favori: false },
+            { id: 13, nom: 'Disque Dur Externe 2To', codeBarre: '0718037856308', prix: 55000, stock: 35, categorie: 'Informatique', favori: false },
+            { id: 14, nom: 'Webcam Logitech C920', codeBarre: '5099206071612', prix: 65000, stock: 22, categorie: 'Accessoires', favori: false },
+            { id: 15, nom: 'Manette PS5 DualSense', codeBarre: '0711719827337', prix: 45000, stock: 40, categorie: 'Gaming', favori: true },
+            { id: 16, nom: 'SSD Samsung 1To', codeBarre: '8806090932977', prix: 75000, stock: 28, categorie: 'Informatique', favori: false },
+            { id: 17, nom: 'Chargeur Sans Fil Anker', codeBarre: '0194644087869', prix: 18000, stock: 60, categorie: 'Accessoires', favori: false },
+            { id: 18, nom: 'Câble HDMI 4K 2m', codeBarre: '8886419366416', prix: 12000, stock: 100, categorie: 'Accessoires', favori: false },
+            { id: 19, nom: 'Hub USB-C 7 Ports', codeBarre: '0848061088564', prix: 35000, stock: 45, categorie: 'Accessoires', favori: false },
+            { id: 20, nom: 'Micro Blue Yeti', codeBarre: '0988063003673', prix: 95000, stock: 15, categorie: 'Accessoires', favori: false }
+        ],
+        
+        get displayedProducts() {
+            let filtered = this.products;
+            
+            if (this.showFavorites) {
+                filtered = filtered.filter(p => p.favori);
+            }
+            
+            if (this.selectedCategory) {
+                filtered = filtered.filter(p => p.categorie === this.selectedCategory);
+            }
+            
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(p => 
+                    p.nom.toLowerCase().includes(query) ||
+                    p.codeBarre.includes(query)
+                );
+            }
+            
+            return filtered;
+        },
+        
+        init() {
+            this.updateDateTime();
+            setInterval(() => this.updateDateTime(), 1000);
+            
+            // Charger les ventes suspendues du localStorage
+            const saved = localStorage.getItem('suspendedSales');
+            if (saved) {
+                this.suspendedSales = JSON.parse(saved);
+            }
+            
+            // Focus sur input code-barre
+            this.$nextTick(() => {
+                this.$refs.barcodeInput?.focus();
+            });
+        },
+        
+        updateDateTime() {
+            const now = new Date();
+            this.currentTime = now.toLocaleTimeString('fr-FR');
+            this.currentDate = now.toLocaleDateString('fr-FR', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        },
+        
+        scanProduct() {
+            if (!this.barcodeInput.trim()) return;
+            
+            const product = this.products.find(p => p.codeBarre === this.barcodeInput.trim());
+            
+            if (product) {
+                this.addToCart(product);
+                this.barcodeInput = '';
+                // Son de bip réussi (optionnel)
+                this.playBeep(true);
+            } else {
+                // Son d'erreur (optionnel)
+                this.playBeep(false);
+                alert('❌ Code-barre non trouvé\n\n' + this.barcodeInput);
+                this.barcodeInput = '';
+            }
+            
+            this.$refs.barcodeInput?.focus();
+        },
+        
+        playBeep(success) {
+            // Jouer un son si disponible
+            // const audio = new Audio(success ? '/static/sounds/beep-success.mp3' : '/static/sounds/beep-error.mp3');
+            // audio.play();
+        },
+        
+        addToCart(product) {
+            if (product.stock <= 0) {
+                alert('⚠️ Stock insuffisant pour ' + product.nom);
+                return;
+            }
+            
+            const existing = this.cart.find(item => item.id === product.id);
+            if (existing) {
+                if (existing.quantite < product.stock) {
+                    existing.quantite++;
+                } else {
+                    alert('⚠️ Stock maximum atteint pour ' + product.nom);
+                }
+            } else {
+                this.cart.push({ 
+                    ...product, 
+                    quantite: 1,
+                    remise: 0 
+                });
+            }
+        },
+        
+        removeFromCart(index) {
+            this.cart.splice(index, 1);
+        },
+        
+        incrementQuantity(index) {
+            const item = this.cart[index];
+            const product = this.products.find(p => p.id === item.id);
+            if (item.quantite < product.stock) {
+                item.quantite++;
+            } else {
+                alert('⚠️ Stock maximum atteint');
+            }
+        },
+        
+        decrementQuantity(index) {
+            const item = this.cart[index];
+            if (item.quantite > 1) {
+                item.quantite--;
+            } else {
+                this.removeFromCart(index);
+            }
+        },
+        
+        updateQuantity(index) {
+            const item = this.cart[index];
+            const product = this.products.find(p => p.id === item.id);
+            
+            if (item.quantite < 1) {
+                item.quantite = 1;
+            } else if (item.quantite > product.stock) {
+                item.quantite = product.stock;
+                alert('⚠️ Quantité ajustée au stock disponible');
+            }
+        },
+        
+        clearCart() {
+            if (this.cart.length > 0 && confirm('🗑️ Vider le panier?\n\nCette action est irréversible.')) {
+                this.cart = [];
+                this.appliedDiscount = 0;
+                this.globalDiscount = 0;
+            }
+        },
+        
+        getTotalItems() {
+            return this.cart.reduce((total, item) => total + item.quantite, 0);
+        },
+        
+        calculateSubtotal() {
+            return this.cart.reduce((total, item) => {
+                const itemTotal = item.prix * item.quantite;
+                const itemDiscount = item.remise > 0 ? itemTotal * (item.remise / 100) : 0;
+                return total + (itemTotal - itemDiscount);
+            }, 0);
+        },
+        
+        calculateDiscount() {
+            const subtotal = this.calculateSubtotal();
+            return subtotal * (this.appliedDiscount / 100);
+        },
+        
+        calculateTVA() {
+            const afterDiscount = this.calculateSubtotal() - this.calculateDiscount();
+            return afterDiscount * 0.18;
+        },
+        
+        calculateTotal() {
+            return this.calculateSubtotal() - this.calculateDiscount() + this.calculateTVA();
+        },
+        
+        applyGlobalDiscount() {
+            if (this.globalDiscount >= 0 && this.globalDiscount <= 100) {
+                this.appliedDiscount = this.globalDiscount;
+                this.showGlobalDiscount = false;
+            }
+        },
+        
+        applyItemDiscount(index) {
+            const item = this.cart[index];
+            if (item.remise < 0) item.remise = 0;
+            if (item.remise > 100) item.remise = 100;
+            this.showRemiseFor = null;
+        },
+        
+        filterProducts() {
+            // Déjà géré par le computed displayedProducts
+        },
+        
+        suspendSale() {
+            if (this.cart.length === 0) return;
+            
+            this.suspendedSales.push({
+                cart: JSON.parse(JSON.stringify(this.cart)),
+                discount: this.appliedDiscount,
+                time: new Date().toLocaleTimeString('fr-FR'),
+                paymentMethod: this.paymentMethod
+            });
+            
+            localStorage.setItem('suspendedSales', JSON.stringify(this.suspendedSales));
+            
+            this.cart = [];
+            this.appliedDiscount = 0;
+            this.globalDiscount = 0;
+            
+            alert('⏸️ Vente suspendue avec succès');
+        },
+        
+        restoreSale(index) {
+            const sale = this.suspendedSales[index];
+            this.cart = JSON.parse(JSON.stringify(sale.cart));
+            this.appliedDiscount = sale.discount;
+            this.globalDiscount = sale.discount;
+            this.paymentMethod = sale.paymentMethod;
+            
+            this.suspendedSales.splice(index, 1);
+            localStorage.setItem('suspendedSales', JSON.stringify(this.suspendedSales));
+            
+            this.showSuspendedModal = false;
+        },
+        
+        deleteSuspendedSale(index) {
+            if (confirm('Supprimer cette vente suspendue?')) {
+                this.suspendedSales.splice(index, 1);
+                localStorage.setItem('suspendedSales', JSON.stringify(this.suspendedSales));
+            }
+        },
+        
+        openPaymentModal() {
+            if (this.cart.length === 0) return;
+            this.showPaymentModal = true;
+            this.cashReceived = '';
+            this.cashChange = 0;
+        },
+        
+        addToCashReceived(value) {
+            this.cashReceived += value.toString();
+            this.calculateChange();
+        },
+        
+        calculateChange() {
+            const received = parseFloat(this.cashReceived) || 0;
+            const total = this.calculateTotal();
+            this.cashChange = received - total;
+        },
+        
+        canCompleteSale() {
+            if (this.paymentMethod === 'especes') {
+                return this.cashChange >= 0;
+            } else if (this.paymentMethod === 'mobile') {
+                return this.mobilePhone.length >= 10;
+            }
+            return true; // Carte bancaire
+        },
+        
+        completeSale() {
+            if (!this.canCompleteSale()) return;
+            
+            // Mise à jour des stocks
+            this.cart.forEach(item => {
+                const product = this.products.find(p => p.id === item.id);
+                if (product) {
+                    product.stock -= item.quantite;
+                }
+            });
+            
+            // Génération du reçu (à implémenter avec backend)
+            const receipt = {
+                numero: this.ticketNumber,
+                date: new Date(),
+                caissier: this.caissier.nom,
+                articles: this.cart,
+                sousTotal: this.calculateSubtotal(),
+                remise: this.calculateDiscount(),
+                tva: this.calculateTVA(),
+                total: this.calculateTotal(),
+                paiement: this.paymentMethod,
+                montantRecu: this.paymentMethod === 'especes' ? parseFloat(this.cashReceived) : this.calculateTotal(),
+                monnaie: this.paymentMethod === 'especes' ? this.cashChange : 0
+            };
+            
+            console.log('Vente enregistrée:', receipt);
+            
+            // Imprimer le ticket (à implémenter)
+            // this.printReceipt(receipt);
+            
+            alert('✅ VENTE ENREGISTRÉE\n\n' +
+                  'N° Ticket: ' + receipt.numero + '\n' +
+                  'Total: ' + this.formatMoney(receipt.total) + '\n' +
+                  (this.paymentMethod === 'especes' ? 'Monnaie: ' + this.formatMoney(receipt.monnaie) : '') +
+                  '\n\nMerci de votre achat!');
+            
+            // Réinitialisation
+            this.cart = [];
+            this.appliedDiscount = 0;
+            this.globalDiscount = 0;
+            this.showPaymentModal = false;
+            this.ticketNumber = 'TKT-' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+            
+            this.$refs.barcodeInput?.focus();
+        },
+        
+        handleKeyboard(e) {
+            // F1 - Aide
+            if (e.key === 'F1') {
+                e.preventDefault();
+                alert('🔑 RACCOURCIS CLAVIER\n\n' +
+                      'F1: Aide\n' +
+                      'F2: Recherche rapide\n' +
+                      'F4: Remise globale\n' +
+                      'F9: Suspendre vente\n' +
+                      'F10: Ventes suspendues\n' +
+                      'F12: Paiement\n' +
+                      'Esc: Vider panier');
+            }
+            // F2 - Recherche
+            else if (e.key === 'F2') {
+                e.preventDefault();
+                this.$refs.barcodeInput?.focus();
+            }
+            // F4 - Remise
+            else if (e.key === 'F4') {
+                e.preventDefault();
+                this.showGlobalDiscount = !this.showGlobalDiscount;
+            }
+            // F9 - Suspendre
+            else if (e.key === 'F9') {
+                e.preventDefault();
+                this.suspendSale();
+            }
+            // F10 - Ventes suspendues
+            else if (e.key === 'F10') {
+                e.preventDefault();
+                this.showSuspendedModal = true;
+            }
+            // F12 - Paiement
+            else if (e.key === 'F12') {
+                e.preventDefault();
+                this.openPaymentModal();
+            }
+            // Esc - Vider
+            else if (e.key === 'Escape' && !this.showPaymentModal) {
+                e.preventDefault();
+                this.clearCart();
+            }
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

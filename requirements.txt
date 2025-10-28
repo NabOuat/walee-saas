@@ -1,5 +1,6 @@
 # Core Django
 Django==5.0.1
+<<<<<<< HEAD
 django-environ==0.11.2
 
 # Database
@@ -9,6 +10,8 @@ supabase==2.3.4
 #Connexion a la Base de donnée Supabase
 python-dotenv 
 psycopg2
+=======
+>>>>>>> 0d3b53d9ee2035a9a282aa334152428c7736bcde
 
 # Web Server
 gunicorn==21.2.0
@@ -21,15 +24,17 @@ django-cors-headers==4.3.1
 django-crispy-forms==2.1
 crispy-tailwind==1.0.3
 
-# API (si nécessaire plus tard)
+# API (pour les intégrations)
 djangorestframework==3.14.0
 
 # Utilities
-python-decouple==3.8
 python-dotenv==1.0.0
+<<<<<<< HEAD
 
 # Production
 django-storages==1.14.2
 boto3==1.34.34
 
 
+=======
+>>>>>>> 0d3b53d9ee2035a9a282aa334152428c7736bcde

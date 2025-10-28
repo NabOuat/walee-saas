@@ -1,0 +1,370 @@
+{% extends "dashboard/roles/comptable/base_comptable.html" %}
+{% load static %}
+
+{% block title %}Exports & Archives - Comptable - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="exportsData()" x-init="init()">
+    
+    <!-- Header Compact -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold font-poppins text-gray-900 dark:text-white">
+            Exports & Archives
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Exportation et gestion des données comptables</p>
+    </div>
+
+    <!-- Actions Rapides - Version Compacte -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <button @click="exportFEC()" 
+                class="group p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 text-left">
+            <div class="flex items-center gap-3 text-white">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold">Export FEC</h3>
+                    <p class="text-xs opacity-90">Écritures comptables</p>
+                </div>
+            </div>
+        </button>
+
+        <button @click="exportExcel()" 
+                class="group p-4 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 text-left">
+            <div class="flex items-center gap-3 text-white">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold">Export Excel</h3>
+                    <p class="text-xs opacity-90">Tableaux personnalisés</p>
+                </div>
+            </div>
+        </button>
+
+        <button @click="exportPDF()" 
+                class="group p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 text-left">
+            <div class="flex items-center gap-3 text-white">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i data-lucide="file-down" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold">Export PDF</h3>
+                    <p class="text-xs opacity-90">Rapports financiers</p>
+                </div>
+            </div>
+        </button>
+    </div>
+
+    <!-- Export Personnalisé - Design Moderne -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <i data-lucide="settings" class="w-4 h-4 text-purple-600"></i>
+                </div>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Export Personnalisé</h2>
+            </div>
+            <button @click="showFilters = !showFilters" 
+                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition flex items-center gap-1">
+                <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="showFilters && 'rotate-180'"></i>
+                <span x-text="showFilters ? 'Masquer' : 'Afficher'"></span>
+            </button>
+        </div>
+        
+        <div x-show="showFilters" x-collapse>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Type d'export</label>
+                    <select x-model="exportConfig.type" 
+                            class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <option value="ecritures">Écritures comptables</option>
+                        <option value="factures">Factures</option>
+                        <option value="depenses">Dépenses</option>
+                        <option value="tresorerie">Trésorerie</option>
+                        <option value="bilan">Bilan</option>
+                        <option value="resultat">Compte de résultat</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Format</label>
+                    <select x-model="exportConfig.format" 
+                            class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <option value="xlsx">Excel (.xlsx)</option>
+                        <option value="csv">CSV (.csv)</option>
+                        <option value="pdf">PDF (.pdf)</option>
+                        <option value="fec">FEC (.txt)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Date de début</label>
+                    <input type="date" x-model="exportConfig.dateDebut" 
+                           class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Date de fin</label>
+                    <input type="date" x-model="exportConfig.dateFin" 
+                           class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            <button @click="generateExport()" 
+                    class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Générer l'export</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Historique des Exports - Table Responsive -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
+        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                        <i data-lucide="history" class="w-4 h-4 text-blue-600"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Historique des Exports</h2>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400" x-text="exports.length + ' exports'"></span>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Format</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Période</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Taille</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="export in exports" :key="export.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap" x-text="export.date"></td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold"
+                                      :class="getTypeColor(export.type)">
+                                    <span x-text="export.type"></span>
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden sm:table-cell" x-text="export.format"></td>
+                            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-500 hidden md:table-cell" x-text="export.periode"></td>
+                            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-500 hidden lg:table-cell" x-text="export.taille"></td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button @click="downloadExport(export)" 
+                                            class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                            title="Télécharger">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click="deleteExport(export)" 
+                                            class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            title="Supprimer">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Archives - Grid Moderne -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <i data-lucide="archive" class="w-4 h-4 text-purple-600"></i>
+            </div>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Archives Comptables</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <template x-for="archive in archives" :key="archive.id">
+                <div class="group p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all duration-200 cursor-pointer"
+                     @click="viewArchive(archive)">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i data-lucide="folder" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-900 dark:text-white" x-text="archive.exercice"></h4>
+                                <span class="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                      :class="archive.statut === 'Clôturé' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                      x-text="archive.statut">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-900/50 rounded">
+                            <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <i data-lucide="file" class="w-3 h-3"></i>
+                                Documents
+                            </span>
+                            <span class="font-semibold text-gray-900 dark:text-white" x-text="archive.documents"></span>
+                        </div>
+                        <div class="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-900/50 rounded">
+                            <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <i data-lucide="hard-drive" class="w-3 h-3"></i>
+                                Taille
+                            </span>
+                            <span class="font-semibold text-gray-900 dark:text-white" x-text="archive.taille"></span>
+                        </div>
+                    </div>
+                    
+                    <button class="mt-3 w-full px-3 py-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-1">
+                        <i data-lucide="eye" class="w-3 h-3"></i>
+                        <span>Consulter</span>
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform translate-y-2"
+         class="fixed bottom-4 right-4 z-50 max-w-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border-l-4 p-4"
+             :class="toastType === 'success' ? 'border-green-500' : toastType === 'error' ? 'border-red-500' : 'border-blue-500'">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                     :class="toastType === 'success' ? 'bg-green-100 dark:bg-green-900/30' : toastType === 'error' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'">
+                    <i :data-lucide="toastType === 'success' ? 'check' : toastType === 'error' ? 'x' : 'info'" 
+                       class="w-5 h-5"
+                       :class="toastType === 'success' ? 'text-green-600' : toastType === 'error' ? 'text-red-600' : 'text-blue-600'"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="toastMessage"></p>
+                </div>
+                <button @click="showToast = false" class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportsData() {
+    return {
+        showFilters: true,
+        showToast: false,
+        toastMessage: '',
+        toastType: 'info',
+        
+        exportConfig: {
+            type: 'ecritures',
+            format: 'xlsx',
+            dateDebut: '2025-01-01',
+            dateFin: '2025-12-31'
+        },
+        
+        exports: [
+            { id: 1, date: '18/10/2025 14:30', type: 'FEC', format: 'TXT', periode: 'Jan-Oct 2025', taille: '2.5 MB' },
+            { id: 2, date: '15/10/2025 10:15', type: 'Factures', format: 'XLSX', periode: 'Octobre 2025', taille: '1.2 MB' },
+            { id: 3, date: '10/10/2025 16:45', type: 'Bilan', format: 'PDF', periode: 'Exercice 2025', taille: '850 KB' },
+            { id: 4, date: '05/10/2025 09:20', type: 'Dépenses', format: 'CSV', periode: 'Septembre 2025', taille: '450 KB' }
+        ],
+        
+        archives: [
+            { id: 1, exercice: 'Exercice 2024', statut: 'Clôturé', documents: 1248, taille: '125 MB' },
+            { id: 2, exercice: 'Exercice 2023', statut: 'Archivé', documents: 1156, taille: '118 MB' },
+            { id: 3, exercice: 'Exercice 2022', statut: 'Archivé', documents: 1089, taille: '112 MB' }
+        ],
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        exportFEC() {
+            this.toast('Export FEC en cours...', 'info');
+            setTimeout(() => {
+                this.toast('Export FEC généré avec succès', 'success');
+            }, 1500);
+        },
+        
+        exportExcel() {
+            this.toast('Export Excel en cours...', 'info');
+            setTimeout(() => {
+                this.toast('Export Excel généré avec succès', 'success');
+            }, 1500);
+        },
+        
+        exportPDF() {
+            this.toast('Export PDF en cours...', 'info');
+            setTimeout(() => {
+                this.toast('Export PDF généré avec succès', 'success');
+            }, 1500);
+        },
+        
+        generateExport() {
+            this.toast('Génération de l\'export...', 'info');
+            setTimeout(() => {
+                this.toast(`Export ${this.exportConfig.type} (${this.exportConfig.format.toUpperCase()}) généré`, 'success');
+            }, 2000);
+        },
+        
+        getTypeColor(type) {
+            const colors = {
+                'FEC': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+                'Factures': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+                'Bilan': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                'Dépenses': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+            };
+            return colors[type] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        },
+        
+        downloadExport(exp) {
+            this.toast('Téléchargement de l\'export du ' + exp.date, 'info');
+            setTimeout(() => {
+                this.toast('Téléchargement terminé', 'success');
+            }, 1000);
+        },
+        
+        deleteExport(exp) {
+            if (confirm('Supprimer cet export ?')) {
+                const index = this.exports.indexOf(exp);
+                this.exports.splice(index, 1);
+                this.toast('Export supprimé avec succès', 'success');
+            }
+        },
+        
+        viewArchive(archive) {
+            this.toast('Ouverture de l\'archive : ' + archive.exercice, 'info');
+        },
+        
+        toast(message, type = 'info') {
+            this.toastMessage = message;
+            this.toastType = type;
+            this.showToast = true;
+            this.$nextTick(() => lucide.createIcons());
+            
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        }
+    }
+}
+</script>
+{% endblock %}

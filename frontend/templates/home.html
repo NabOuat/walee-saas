@@ -1,254 +1,512 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Walee - Solution SaaS de Gestion Intelligente{% endblock %}
+{% block title %}Walee - La Solution SaaS Ultime pour Entreprises Africaines{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations avancées */
+    @keyframes float-smooth {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    @keyframes pulse-glow {
+        0%, 100% { opacity: 0.5; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes slide-up-fade {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
+    
+    /* Glassmorphism */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    }
+    
+    .glass-card-white {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Gradient animé */
+    .animated-gradient {
+        background: linear-gradient(270deg, #2563eb, #7c3aed, #db2777, #f59e0b);
+        background-size: 800% 800%;
+        animation: gradient-shift 15s ease infinite;
+    }
+    
+    /* Hover effects premium */
+    .card-hover {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .card-hover:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Navigation blur */
+    .nav-blur {
+        backdrop-filter: blur(12px) saturate(180%);
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    /* Mesh gradient background */
+    .mesh-gradient {
+        background: 
+            radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 97% 21%, hsla(125, 98%, 72%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 10% 29%, hsla(256, 96%, 67%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 97% 96%, hsla(38, 60%, 74%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 33% 50%, hsla(222, 67%, 73%, 0.3) 0px, transparent 50%),
+            radial-gradient(at 79% 53%, hsla(343, 68%, 79%, 0.3) 0px, transparent 50%);
+    }
+    
+    /* Text gradients */
+    .text-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .text-gradient-green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Scrollbar personnalisée */
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #2563eb, #7c3aed);
+        border-radius: 5px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #1d4ed8, #6d28d9);
+    }
+    
+    /* Badge pulse */
+    .badge-pulse {
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    /* Bento grid */
+    .bento-grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(12, 1fr);
+    }
+    
+    .bento-item-1 { grid-column: span 7; grid-row: span 2; }
+    .bento-item-2 { grid-column: span 5; grid-row: span 1; }
+    .bento-item-3 { grid-column: span 5; grid-row: span 1; }
+    .bento-item-4 { grid-column: span 4; grid-row: span 1; }
+    .bento-item-5 { grid-column: span 4; grid-row: span 1; }
+    .bento-item-6 { grid-column: span 4; grid-row: span 1; }
+    
+    @media (max-width: 768px) {
+        .bento-grid > * {
+            grid-column: span 12 !important;
+            grid-row: span 1 !important;
+        }
+    }
+    
+    /* Shimmer effect pour loading */
+    .shimmer {
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-walee-bg" x-data="{ mobileMenuOpen: false, scrolled: false }" @scroll.window="scrolled = window.pageYOffset > 50">
+<div class="min-h-screen bg-gray-50" x-data="{ 
+    mobileMenuOpen: false, 
+    scrolled: false,
+    currentTestimonial: 0,
+    stats: { companies: 0, users: 0, uptime: 0 },
+    animateStats: false
+}" @scroll.window="scrolled = window.pageYOffset > 50">
     
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" 
-         :class="scrolled ? 'bg-white shadow-lg' : 'bg-transparent'">
+    <!-- Navigation Premium -->
+    <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" 
+         :class="scrolled ? 'nav-blur shadow-xl' : 'bg-transparent'">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-10 h-10">
-                    <span class="text-2xl font-bold font-poppins" :class="scrolled ? 'text-walee-blue' : 'text-white'">
+                <!-- Logo avec animation -->
+                <div class="flex items-center space-x-3 group cursor-pointer">
+                    <div class="relative">
+                        <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-11 h-11 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
+                        <div class="absolute inset-0 bg-walee-green rounded-full blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                    </div>
+                    <span class="text-2xl font-bold font-poppins transition-colors duration-300" 
+                          :class="scrolled ? 'text-walee-blue' : 'text-white'">
                         Walee
                     </span>
                 </div>
                 
                 <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#fonctionnalites" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#fonctionnalites" class="px-4 py-2 rounded-lg font-medium transition-all duration-200" 
+                       :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
                         Fonctionnalités
                     </a>
-                    <a href="#tarifs" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                    <a href="#solutions" class="px-4 py-2 rounded-lg font-medium transition-all duration-200" 
+                       :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
+                        Solutions
+                    </a>
+                    <a href="#tarifs" class="px-4 py-2 rounded-lg font-medium transition-all duration-200" 
+                       :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
                         Tarifs
                     </a>
-                    <a href="#temoignages" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
+                    <a href="#temoignages" class="px-4 py-2 rounded-lg font-medium transition-all duration-200" 
+                       :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
                         Témoignages
-                    </a>
-                    <a href="#contact" class="font-medium transition" :class="scrolled ? 'text-gray-700 hover:text-walee-blue' : 'text-white hover:text-walee-green'">
-                        Contact
                     </a>
                 </div>
                 
-                <!-- CTA Buttons -->
-                <div class="hidden md:flex items-center space-x-4">
-                    <a href="{% url 'login' %}" class="px-6 py-2 font-medium rounded-xl transition" 
+                <!-- CTA Buttons Premium -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <a href="{% url 'login' %}" class="px-5 py-2.5 font-medium rounded-xl transition-all duration-200" 
                        :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
                         Connexion
                     </a>
-                    <a href="{% url 'register' %}" class="px-6 py-2 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-lg">
-                        Essai gratuit
+                    <a href="{% url 'register' %}" class="group relative px-6 py-2.5 bg-gradient-to-r from-walee-green to-emerald-600 text-white font-semibold rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                        <span class="relative z-10 flex items-center space-x-2">
+                            <span>Commencer</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"></i>
+                        </span>
+                        <div class="absolute inset-0 bg-gradient-to-r from-emerald-600 to-walee-green opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </a>
                 </div>
                 
                 <!-- Mobile Menu Button -->
-                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg" :class="scrolled ? 'text-gray-700' : 'text-white'">
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg transition-colors duration-200" 
+                        :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'">
                     <i :data-lucide="mobileMenuOpen ? 'x' : 'menu'" class="w-6 h-6"></i>
                 </button>
-                
             </div>
         </div>
         
         <!-- Mobile Menu -->
-        <div x-show="mobileMenuOpen" x-transition class="md:hidden bg-white border-t">
-            <div class="px-4 py-6 space-y-4">
-                <a href="#fonctionnalites" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Fonctionnalités</a>
-                <a href="#tarifs" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Tarifs</a>
-                <a href="#temoignages" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Témoignages</a>
-                <a href="#contact" class="block py-2 text-gray-700 hover:text-walee-blue font-medium">Contact</a>
-                <div class="pt-4 space-y-2">
-                    <a href="{% url 'login' %}" class="block w-full text-center px-6 py-3 border border-walee-blue text-walee-blue font-semibold rounded-xl hover:bg-blue-50 transition">
+        <div x-show="mobileMenuOpen" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 -translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-4"
+             class="md:hidden glass-card-white border-t">
+            <div class="px-4 py-6 space-y-3">
+                <a href="#fonctionnalites" class="block py-2.5 px-4 text-gray-700 hover:bg-gray-100 font-medium rounded-lg transition-colors duration-200">Fonctionnalités</a>
+                <a href="#solutions" class="block py-2.5 px-4 text-gray-700 hover:bg-gray-100 font-medium rounded-lg transition-colors duration-200">Solutions</a>
+                <a href="#tarifs" class="block py-2.5 px-4 text-gray-700 hover:bg-gray-100 font-medium rounded-lg transition-colors duration-200">Tarifs</a>
+                <a href="#temoignages" class="block py-2.5 px-4 text-gray-700 hover:bg-gray-100 font-medium rounded-lg transition-colors duration-200">Témoignages</a>
+                <div class="pt-4 space-y-3">
+                    <a href="{% url 'login' %}" class="block w-full text-center px-6 py-3 border-2 border-walee-blue text-walee-blue font-semibold rounded-xl hover:bg-blue-50 transition-all duration-200">
                         Connexion
                     </a>
-                    <a href="{% url 'register' %}" class="block w-full text-center px-6 py-3 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transition">
-                        Essai gratuit
+                    <a href="{% url 'register' %}" class="block w-full text-center px-6 py-3 bg-gradient-to-r from-walee-green to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200">
+                        Commencer gratuitement
                     </a>
                 </div>
             </div>
         </div>
     </nav>
     
-    <!-- Hero Section -->
-    <section class="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-walee-blue via-walee-indigo to-purple-900">
+    <!-- Hero Section Ultra Premium -->
+    <section class="relative pt-32 pb-24 overflow-hidden">
         
-        <!-- Animated Background -->
+        <!-- Background avec mesh gradient -->
+        <div class="absolute inset-0 mesh-gradient"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-walee-blue/90 via-walee-indigo/90 to-purple-900/90"></div>
+        
+        <!-- Animated blobs -->
         <div class="absolute inset-0 overflow-hidden">
-            <div class="absolute top-20 left-10 w-96 h-96 bg-walee-green opacity-20 rounded-full blur-3xl animate-float"></div>
-            <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
-            <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-400 opacity-20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+            <div class="absolute top-20 left-10 w-96 h-96 bg-walee-green/30 rounded-full blur-3xl" style="animation: float-smooth 6s ease-in-out infinite;"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/30 rounded-full blur-3xl" style="animation: float-smooth 8s ease-in-out infinite; animation-delay: 1s;"></div>
+            <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-400/30 rounded-full blur-3xl" style="animation: float-smooth 10s ease-in-out infinite; animation-delay: 2s;"></div>
         </div>
         
+        <!-- Grid pattern overlay -->
+        <div class="absolute inset-0 opacity-40" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=');"></div>
+        
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
                 
                 <!-- Left Content -->
-                <div class="text-white space-y-8 animate-slide-up">
-                    <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-                        <i data-lucide="sparkles" class="w-4 h-4 text-walee-green"></i>
-                        <span class="text-sm font-medium">Nouveau : Version 2.0 disponible</span>
+                <div class="text-white space-y-8">
+                    <!-- Badge animé -->
+                    <div class="inline-flex items-center space-x-2 glass-card rounded-full px-5 py-2.5 badge-pulse">
+                        <div class="relative">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-walee-green"></i>
+                            <div class="absolute inset-0 bg-walee-green rounded-full blur-md opacity-50"></div>
+                        </div>
+                        <span class="text-sm font-semibold">Intelligence artificielle intégrée</span>
+                        <span class="px-2 py-0.5 bg-walee-green/20 text-walee-green text-xs font-bold rounded-full">NOUVEAU</span>
                     </div>
                     
+                    <!-- Titre avec gradient -->
                     <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold font-poppins leading-tight">
-                        Gérez votre entreprise avec
-                        <span class="text-walee-green">intelligence</span>
+                        La gestion d'entreprise
+                        <span class="block text-gradient-green mt-2">réinventée</span>
                     </h1>
                     
-                    <p class="text-xl text-blue-100 leading-relaxed">
-                        Walee est la solution SaaS tout-en-un pour les entreprises africaines. 
-                        Caisse, stock, facturation, comptabilité et bien plus encore.
+                    <p class="text-xl md:text-2xl text-blue-100 leading-relaxed">
+                        Walee transforme la façon dont les entreprises africaines gèrent leurs opérations. 
+                        Caisse intelligente, stock automatisé, facturation instantanée.
                     </p>
                     
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-2xl">
-                            <span>Commencer gratuitement</span>
-                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <a href="{% url 'register' %}" class="group relative inline-flex items-center justify-center space-x-2 px-8 py-4 bg-walee-green text-white font-bold rounded-xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+                            <span class="relative z-10 flex items-center space-x-2">
+                                <span>Démarrer gratuitement</span>
+                                <i data-lucide="arrow-right" class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-2"></i>
+                            </span>
+                            <div class="absolute inset-0 bg-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </a>
-                        <a href="#demo" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 transition duration-200">
-                            <i data-lucide="play-circle" class="w-5 h-5"></i>
+                        <a href="#demo" class="group inline-flex items-center justify-center space-x-2 px-8 py-4 glass-card text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300">
+                            <i data-lucide="play-circle" class="w-5 h-5 transition-transform duration-300 group-hover:scale-110"></i>
                             <span>Voir la démo</span>
                         </a>
                     </div>
                     
-                    <!-- Stats -->
-                    <div class="grid grid-cols-3 gap-6 pt-8">
-                        <div>
-                            <div class="text-3xl font-bold font-poppins">500+</div>
-                            <div class="text-sm text-blue-200">Entreprises</div>
+                    <!-- Social proof -->
+                    <div class="flex items-center space-x-8 pt-6">
+                        <div class="flex -space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 border-2 border-white"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-white"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white"></div>
+                            <div class="w-10 h-10 rounded-full glass-card border-2 border-white flex items-center justify-center text-xs font-bold">+500</div>
                         </div>
                         <div>
-                            <div class="text-3xl font-bold font-poppins">10K+</div>
-                            <div class="text-sm text-blue-200">Utilisateurs</div>
-                        </div>
-                        <div>
-                            <div class="text-3xl font-bold font-poppins">99.9%</div>
-                            <div class="text-sm text-blue-200">Uptime</div>
+                            <div class="flex items-center space-x-1 mb-1">
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-current"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-current"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-current"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-current"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-current"></i>
+                            </div>
+                            <p class="text-sm text-blue-200">Adoré par 500+ entreprises</p>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Right Content - Mascot & Dashboard Preview -->
-                <div class="relative animate-fade-in">
-                    <div class="relative">
-                        <!-- Mascot -->
-                        <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-full max-w-md mx-auto drop-shadow-2xl animate-float">
-                        
-                        <!-- Floating Cards -->
-                        <div class="absolute top-10 -left-10 bg-white rounded-2xl shadow-2xl p-4 animate-slide-up" style="animation-delay: 0.5s;">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-walee-green rounded-xl flex items-center justify-center">
-                                    <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500">Ventes du jour</p>
-                                    <p class="text-lg font-bold text-walee-dark">2.5M FCFA</p>
-                                </div>
+                <!-- Right Content - Dashboard Preview -->
+                <div class="relative">
+                    <!-- Mascot -->
+                    <div class="relative z-10">
+                        <img src="{% static 'images/mascote.png' %}" alt="Walee Mascot" class="w-full max-w-lg mx-auto drop-shadow-2xl" style="animation: float-smooth 6s ease-in-out infinite;">
+                    </div>
+                    
+                    <!-- Floating metric cards -->
+                    <div class="absolute top-16 -left-6 glass-card-white rounded-2xl p-4 shadow-2xl transform hover:scale-105 transition-transform duration-300" style="animation: slide-up-fade 0.6s ease-out 0.3s both;">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                             </div>
-                        </div>
-                        
-                        <div class="absolute bottom-10 -right-10 bg-white rounded-2xl shadow-2xl p-4 animate-slide-up" style="animation-delay: 1s;">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-walee-blue rounded-xl flex items-center justify-center">
-                                    <i data-lucide="package" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500">Stock disponible</p>
-                                    <p class="text-lg font-bold text-walee-dark">1,234 articles</p>
-                                </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Ventes aujourd'hui</p>
+                                <p class="text-2xl font-bold text-gray-900">2.5M <span class="text-sm text-gray-500">FCFA</span></p>
+                                <p class="text-xs text-green-600 font-semibold">+24.5% ↑</p>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="absolute bottom-16 -right-6 glass-card-white rounded-2xl p-4 shadow-2xl transform hover:scale-105 transition-transform duration-300" style="animation: slide-up-fade 0.6s ease-out 0.6s both;">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                                <i data-lucide="package" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Articles en stock</p>
+                                <p class="text-2xl font-bold text-gray-900">1,234</p>
+                                <p class="text-xs text-orange-600 font-semibold">12 alertes</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute top-1/2 left-8 glass-card-white rounded-2xl p-3 shadow-2xl transform hover:scale-105 transition-transform duration-300" style="animation: slide-up-fade 0.6s ease-out 0.9s both;">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
+                                <i data-lucide="users" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Nouveaux clients</p>
+                                <p class="text-lg font-bold text-gray-900">+47</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Glow effects -->
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-green-400/20 rounded-full blur-3xl -z-10"></div>
+                    <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl -z-10"></div>
                 </div>
                 
             </div>
         </div>
+        
+        <!-- Wave divider -->
+        <div class="absolute bottom-0 left-0 right-0">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                <path d="M0 0L60 10C120 20 240 40 360 46.7C480 53 600 47 720 43.3C840 40 960 40 1080 46.7C1200 53 1320 67 1380 73.3L1440 80V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z" fill="rgb(249 250 251)"/>
+            </svg>
+        </div>
     </section>
     
-    <!-- Features Section -->
-    <section id="fonctionnalites" class="py-20 bg-white">
+    <!-- Stats Section -->
+    <section class="py-16 bg-gray-50" x-intersect="animateStats = true">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-5xl font-bold font-poppins text-walee-blue mb-2">500+</div>
+                    <p class="text-gray-600 font-medium">Entreprises actives</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl font-bold font-poppins text-walee-green mb-2">10K+</div>
+                    <p class="text-gray-600 font-medium">Utilisateurs quotidiens</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl font-bold font-poppins text-purple-600 mb-2">99.9%</div>
+                    <p class="text-gray-600 font-medium">Disponibilité</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl font-bold font-poppins text-orange-600 mb-2">4.9/5</div>
+                    <p class="text-gray-600 font-medium">Satisfaction client</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Bento Grid -->
+    <section id="fonctionnalites" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Section Header -->
-            <div class="text-center mb-16 animate-slide-up">
-                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
-                    Tout ce dont vous avez besoin
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
+                    <i data-lucide="zap" class="w-4 h-4 text-walee-blue"></i>
+                    <span class="text-sm font-semibold text-walee-blue">Fonctionnalités</span>
+                </div>
+                <h2 class="text-5xl md:text-6xl font-bold font-poppins text-gray-900 mb-6">
+                    Tout ce dont vous avez besoin,
+                    <span class="text-gradient block mt-2">et bien plus encore</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-                    Une suite complète d'outils pour gérer votre entreprise efficacement
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Une suite complète d'outils professionnels conçus pour propulser votre entreprise vers le succès
                 </p>
             </div>
             
-            <!-- Features Grid -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Bento Grid -->
+            <div class="bento-grid">
                 
-                <!-- Feature Card 1 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-walee-blue rounded-xl flex items-center justify-center mb-6">
-                        <i data-lucide="shopping-cart" class="w-7 h-7 text-white"></i>
+                <!-- Large feature card -->
+                <div class="bento-item-1 group relative bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl p-8 overflow-hidden card-hover cursor-pointer">
+                    <div class="relative z-10 h-full flex flex-col justify-between">
+                        <div>
+                            <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
+                                <i data-lucide="shopping-cart" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white mb-4">Caisse Intelligente</h3>
+                            <p class="text-blue-100 text-lg leading-relaxed mb-6">
+                                Point de vente ultra-rapide avec suggestions automatiques, gestion multi-caisses, et intégration de paiements mobiles.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full">Multi-caisses</span>
+                                <span class="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full">Mode hors-ligne</span>
+                                <span class="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full">Tickets personnalisés</span>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Caisse & Ventes</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Gestion complète de la caisse avec multi-points de vente, tickets et reçus imprimables.
-                    </p>
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 </div>
                 
-                <!-- Feature Card 2 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-walee-green rounded-xl flex items-center justify-center mb-6">
+                <!-- Stock management -->
+                <div class="bento-item-2 group bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-8 card-hover cursor-pointer">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
                         <i data-lucide="package" class="w-7 h-7 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Gestion de Stock</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Suivi en temps réel, alertes de seuil, inventaires automatiques et multi-entrepôts.
+                    <h3 class="text-2xl font-bold text-white mb-3">Gestion de Stock</h3>
+                    <p class="text-green-100 leading-relaxed">
+                        Suivi en temps réel, alertes intelligentes de réapprovisionnement, inventaires automatisés.
                     </p>
                 </div>
                 
-                <!-- Feature Card 3 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center mb-6">
+                <!-- Invoicing -->
+                <div class="bento-item-3 group bg-gradient-to-br from-purple-500 to-purple-700 rounded-3xl p-8 card-hover cursor-pointer">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
                         <i data-lucide="file-text" class="w-7 h-7 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Facturation</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Créez des factures, devis et avoirs professionnels en quelques clics.
+                    <h3 class="text-2xl font-bold text-white mb-3">Facturation Pro</h3>
+                    <p class="text-purple-100 leading-relaxed">
+                        Créez des factures professionnelles, devis et avoirs en quelques clics. Export PDF automatique.
                     </p>
                 </div>
                 
-                <!-- Feature Card 4 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mb-6">
+                <!-- CRM -->
+                <div class="bento-item-4 group bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-8 card-hover cursor-pointer">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
                         <i data-lucide="users" class="w-7 h-7 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">CRM Clients</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Gérez vos clients, historiques d'achats, fidélité et segmentation avancée.
+                    <h3 class="text-xl font-bold text-white mb-3">CRM Clients</h3>
+                    <p class="text-orange-100 text-sm leading-relaxed">
+                        Fidélisation, historique, segmentation avancée.
                     </p>
                 </div>
                 
-                <!-- Feature Card 5 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-pink-500 rounded-xl flex items-center justify-center mb-6">
+                <!-- Analytics -->
+                <div class="bento-item-5 group bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl p-8 card-hover cursor-pointer">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
                         <i data-lucide="bar-chart-3" class="w-7 h-7 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Statistiques</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Tableaux de bord en temps réel, graphiques et rapports détaillés.
+                    <h3 class="text-xl font-bold text-white mb-3">Analytics IA</h3>
+                    <p class="text-pink-100 text-sm leading-relaxed">
+                        Insights en temps réel, prévisions intelligentes.
                     </p>
                 </div>
                 
-                <!-- Feature Card 6 -->
-                <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                    <div class="w-14 h-14 bg-teal-500 rounded-xl flex items-center justify-center mb-6">
+                <!-- Multi-company -->
+                <div class="bento-item-6 group bg-gradient-to-br from-teal-500 to-cyan-600 rounded-3xl p-8 card-hover cursor-pointer">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
                         <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold font-poppins text-walee-dark mb-3">Multi-entreprises</h3>
-                    <p class="text-gray-600 leading-relaxed">
-                        Gérez plusieurs entreprises depuis un seul compte avec permissions granulaires.
+                    <h3 class="text-xl font-bold text-white mb-3">Multi-entreprises</h3>
+                    <p class="text-teal-100 text-sm leading-relaxed">
+                        Gérez plusieurs entreprises, permissions granulaires.
                     </p>
                 </div>
                 
@@ -257,17 +515,146 @@
         </div>
     </section>
     
-    <!-- Pricing Section -->
-    <section id="tarifs" class="py-20 bg-walee-bg">
+    <!-- Solutions Section -->
+    <section id="solutions" class="py-24 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Section Header -->
-            <div class="text-center mb-16">
-                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
-                    Tarifs simples et transparents
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-full mb-6">
+                    <i data-lucide="layers" class="w-4 h-4 text-purple-600"></i>
+                    <span class="text-sm font-semibold text-purple-600">Solutions Métier</span>
+                </div>
+                <h2 class="text-5xl md:text-6xl font-bold font-poppins text-gray-900 mb-6">
+                    Adapté à votre
+                    <span class="text-gradient block mt-2">secteur d'activité</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-                    Choisissez le plan qui correspond à vos besoins
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Des solutions sur mesure pour chaque type d'entreprise
+                </p>
+            </div>
+            
+            <!-- Solutions Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- Retail -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="shopping-bag" class="w-8 h-8 text-blue-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Commerce de détail</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Boutiques, supérettes, magasins de vêtements. Caisse rapide, gestion des tailles et couleurs, promotions automatiques.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg">Multi-tarifs</span>
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg">Fidélité</span>
+                    </div>
+                </div>
+                
+                <!-- Restaurant -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="utensils" class="w-8 h-8 text-orange-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Restaurants & Cafés</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Prise de commandes rapide, gestion des tables, cuisine et bar séparés, intégration avec terminaux de cuisine.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium rounded-lg">Commandes</span>
+                        <span class="px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium rounded-lg">Tables</span>
+                    </div>
+                </div>
+                
+                <!-- Pharmacy -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="pill" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Pharmacies</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Gestion des médicaments, dates de péremption, ordonnances, alertes de réapprovisionnement, traçabilité complète.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-lg">Péremption</span>
+                        <span class="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-lg">Traçabilité</span>
+                    </div>
+                </div>
+                
+                <!-- Services -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="briefcase" class="w-8 h-8 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Entreprises de services</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Salons de coiffure, garages auto, agences. Rendez-vous, devis, suivi client, facturation récurrente.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-purple-50 text-purple-700 text-sm font-medium rounded-lg">Rendez-vous</span>
+                        <span class="px-3 py-1 bg-purple-50 text-purple-700 text-sm font-medium rounded-lg">Devis</span>
+                    </div>
+                </div>
+                
+                <!-- Wholesale -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-pink-100 to-pink-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="truck" class="w-8 h-8 text-pink-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Grossistes & Distributeurs</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Gestion multi-entrepôts, tarifs par client, livraisons, commandes fournisseurs, gestion des lots.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-pink-50 text-pink-700 text-sm font-medium rounded-lg">Entrepôts</span>
+                        <span class="px-3 py-1 bg-pink-50 text-pink-700 text-sm font-medium rounded-lg">Livraisons</span>
+                    </div>
+                </div>
+                
+                <!-- E-commerce -->
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="globe" class="w-8 h-8 text-teal-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">E-commerce</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Synchronisation boutique en ligne, gestion expéditions, intégration marketplaces, paiements en ligne.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-teal-50 text-teal-700 text-sm font-medium rounded-lg">API</span>
+                        <span class="px-3 py-1 bg-teal-50 text-teal-700 text-sm font-medium rounded-lg">Sync</span>
+                    </div>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+    
+    <!-- Pricing Section Premium -->
+    <section id="tarifs" class="py-24 bg-gray-50 relative overflow-hidden">
+        
+        <!-- Background decoration -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-green-200/30 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center space-x-2 px-4 py-2 bg-white rounded-full shadow-sm mb-6">
+                    <i data-lucide="credit-card" class="w-4 h-4 text-walee-blue"></i>
+                    <span class="text-sm font-semibold text-walee-blue">Tarification</span>
+                </div>
+                <h2 class="text-5xl md:text-6xl font-bold font-poppins text-gray-900 mb-6">
+                    Un prix juste pour
+                    <span class="text-gradient block mt-2">chaque entreprise</span>
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Commencez gratuitement et évoluez selon vos besoins. Pas de frais cachés, annulation à tout moment.
                 </p>
             </div>
             
@@ -275,228 +662,281 @@
             <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 
                 <!-- Free Plan -->
-                <div class="bg-white rounded-3xl p-8 shadow-lg hover-lift">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Gratuit</h3>
-                        <div class="text-5xl font-bold font-poppins text-walee-dark mb-2">0 <span class="text-2xl text-gray-500">FCFA</span></div>
-                        <p class="text-gray-500">Pour démarrer</p>
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-transparent hover:border-blue-100">
+                    <div class="mb-8">
+                        <div class="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="zap" class="w-7 h-7 text-gray-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                        <div class="flex items-baseline mb-4">
+                            <span class="text-6xl font-bold text-gray-900">0</span>
+                            <span class="text-2xl text-gray-500 ml-2">FCFA</span>
+                        </div>
+                        <p class="text-gray-600">Idéal pour débuter</p>
                     </div>
                     <ul class="space-y-4 mb-8">
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">1 utilisateur</span>
+                            <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">1 utilisateur</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Max 5 produits</span>
+                            <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">5 produits maximum</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Caisse basique</span>
+                            <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">Caisse basique</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Support email</span>
+                            <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-green-600"></i>
+                            </div>
+                            <span class="text-gray-700">Support email</span>
                         </li>
                     </ul>
-                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 border-2 border-walee-blue text-walee-blue font-semibold rounded-xl hover:bg-blue-50 transition">
-                        Commencer
+                    <a href="{% url 'register' %}" class="block w-full text-center py-4 px-6 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
+                        Commencer gratuitement
                     </a>
                 </div>
                 
-                <!-- Standard Plan -->
-                <div class="bg-gradient-to-br from-walee-blue to-walee-indigo rounded-3xl p-8 shadow-2xl transform scale-105 relative">
-                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-walee-green text-white px-4 py-1 rounded-full text-sm font-semibold">
-                        Populaire
+                <!-- Standard Plan (Popular) -->
+                <div class="group relative bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl transform scale-105 hover:scale-110 transition-all duration-500">
+                    <!-- Popular badge -->
+                    <div class="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                        <div class="px-6 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-sm font-bold rounded-full shadow-lg">
+                            ⚡ POPULAIRE
+                        </div>
                     </div>
-                    <div class="text-center mb-8 text-white">
-                        <h3 class="text-2xl font-bold font-poppins mb-2">Standard</h3>
-                        <div class="text-5xl font-bold font-poppins mb-2">15K <span class="text-2xl opacity-80">FCFA</span></div>
-                        <p class="opacity-80">Par mois</p>
+                    
+                    <div class="mb-8 text-white">
+                        <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Standard</h3>
+                        <div class="flex items-baseline mb-4">
+                            <span class="text-6xl font-bold">15K</span>
+                            <span class="text-2xl opacity-80 ml-2">FCFA</span>
+                        </div>
+                        <p class="opacity-90">Par mois, tout compris</p>
                     </div>
                     <ul class="space-y-4 mb-8 text-white">
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                            <span>Max 3 utilisateurs</span>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
+                            <span>3 utilisateurs</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                            <span>Max 100 produits</span>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
+                            <span>100 produits</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
                             <span>Caisse complète</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                            <span>Gestion stock</span>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
+                            <span>Gestion de stock</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                            <span>Facturation</span>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
+                            <span>Facturation illimitée</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5"></i>
+                            <div class="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                            </div>
                             <span>Support prioritaire</span>
                         </li>
                     </ul>
-                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 bg-white text-walee-blue font-semibold rounded-xl hover:bg-gray-100 transition">
+                    <a href="{% url 'register' %}" class="block w-full text-center py-4 px-6 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl">
                         Choisir Standard
                     </a>
                 </div>
                 
                 <!-- Premium Plan -->
-                <div class="bg-white rounded-3xl p-8 shadow-lg hover-lift">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold font-poppins text-walee-dark mb-2">Premium</h3>
-                        <div class="text-5xl font-bold font-poppins text-walee-dark mb-2">45K <span class="text-2xl text-gray-500">FCFA</span></div>
-                        <p class="text-gray-500">Par mois</p>
+                <div class="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-transparent hover:border-purple-100">
+                    <div class="mb-8">
+                        <div class="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mb-6">
+                            <i data-lucide="crown" class="w-7 h-7 text-purple-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
+                        <div class="flex items-baseline mb-4">
+                            <span class="text-6xl font-bold text-gray-900">45K</span>
+                            <span class="text-2xl text-gray-500 ml-2">FCFA</span>
+                        </div>
+                        <p class="text-gray-600">Pour les entreprises exigeantes</p>
                     </div>
                     <ul class="space-y-4 mb-8">
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Max 10 utilisateurs</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">10 utilisateurs</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Produits illimités</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">Produits illimités</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Multi-entreprises</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">Multi-entreprises</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Comptabilité</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">Comptabilité avancée</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">API Access</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">API Access</span>
                         </li>
                         <li class="flex items-center space-x-3">
-                            <i data-lucide="check" class="w-5 h-5 text-walee-green"></i>
-                            <span class="text-gray-600">Support 24/7</span>
+                            <div class="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-3 h-3 text-purple-600"></i>
+                            </div>
+                            <span class="text-gray-700">Support 24/7 dédié</span>
                         </li>
                     </ul>
-                    <a href="{% url 'register' %}" class="block w-full text-center py-3 px-6 gradient-green text-white font-semibold rounded-xl hover:shadow-lg transition">
+                    <a href="{% url 'register' %}" class="block w-full text-center py-4 px-6 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl">
                         Choisir Premium
                     </a>
                 </div>
                 
             </div>
             
+            <!-- Trust badges -->
+            <div class="mt-16 text-center">
+                <p class="text-gray-500 mb-6">Paiement sécurisé par</p>
+                <div class="flex justify-center items-center space-x-8 opacity-50">
+                    <div class="text-2xl font-bold text-gray-400">Mobile Money</div>
+                    <div class="text-2xl font-bold text-gray-400">Orange Money</div>
+                    <div class="text-2xl font-bold text-gray-400">Wave</div>
+                </div>
+            </div>
+            
         </div>
     </section>
     
     <!-- Testimonials Section -->
-    <section id="temoignages" class="py-20 bg-white">
+    <section id="temoignages" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Section Header -->
-            <div class="text-center mb-16">
-                <h2 class="text-4xl md:text-5xl font-bold font-poppins text-walee-dark mb-4">
-                    Ils nous font confiance
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-full mb-6">
+                    <i data-lucide="message-circle" class="w-4 h-4 text-walee-green"></i>
+                    <span class="text-sm font-semibold text-walee-green">Témoignages</span>
+                </div>
+                <h2 class="text-5xl md:text-6xl font-bold font-poppins text-gray-900 mb-6">
+                    Ce que nos clients
+                    <span class="text-gradient-green block mt-2">disent de nous</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-                    Découvrez ce que nos clients disent de Walee
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Rejoignez des centaines d'entrepreneurs qui ont transformé leur business avec Walee
                 </p>
             </div>
             
-            <!-- Testimonials Carousel -->
-            <div class="relative" x-data="{ currentTestimonial: 0, testimonials: 3 }">
+            <!-- Testimonials Grid -->
+            <div class="grid md:grid-cols-3 gap-8">
                 
-                <!-- Testimonials -->
-                <div class="grid md:grid-cols-3 gap-8">
-                    
-                    <!-- Testimonial 1 -->
-                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                        <div class="flex items-center space-x-4 mb-6">
-                            <div class="w-16 h-16 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white text-xl font-bold">
+                <!-- Testimonial 1 -->
+                <div class="group bg-gray-50 rounded-3xl p-8 hover:bg-white hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
                                 AK
                             </div>
-                            <div>
-                                <h4 class="font-bold text-walee-dark">Amadou Koné</h4>
-                                <p class="text-sm text-gray-500">Directeur, ACME Shop</p>
-                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-50 group-hover:border-white transition-colors duration-300"></div>
                         </div>
-                        <div class="flex mb-4">
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <div>
+                            <h4 class="font-bold text-gray-900">Amadou Koné</h4>
+                            <p class="text-sm text-gray-500">Directeur, ACME Shop</p>
                         </div>
-                        <p class="text-gray-600 leading-relaxed">
-                            "Walee a transformé la gestion de mon commerce. Je peux maintenant suivre mes ventes en temps réel et gérer mon stock efficacement. Un vrai gain de temps !"
-                        </p>
                     </div>
-                    
-                    <!-- Testimonial 2 -->
-                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                        <div class="flex items-center space-x-4 mb-6">
-                            <div class="w-16 h-16 bg-gradient-to-br from-walee-green to-emerald-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                                FT
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-walee-dark">Fatoumata Traoré</h4>
-                                <p class="text-sm text-gray-500">Gérante, Boutique Élégance</p>
-                            </div>
-                        </div>
-                        <div class="flex mb-4">
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                        </div>
-                        <p class="text-gray-600 leading-relaxed">
-                            "Interface intuitive et fonctionnalités complètes. Mes employés ont adopté Walee en quelques jours. Le support client est excellent !"
-                        </p>
+                    <div class="flex mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
                     </div>
-                    
-                    <!-- Testimonial 3 -->
-                    <div class="bg-walee-bg rounded-2xl p-8 hover-lift">
-                        <div class="flex items-center space-x-4 mb-6">
-                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                                YB
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-walee-dark">Yao Brou</h4>
-                                <p class="text-sm text-gray-500">PDG, Tech Solutions</p>
-                            </div>
-                        </div>
-                        <div class="flex mb-4">
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
-                        </div>
-                        <p class="text-gray-600 leading-relaxed">
-                            "Gérer 3 entreprises n'a jamais été aussi simple. Les statistiques détaillées m'aident à prendre de meilleures décisions. Je recommande vivement !"
-                        </p>
-                    </div>
-                    
+                    <p class="text-gray-700 leading-relaxed">
+                        "Walee a <strong>transformé</strong> la gestion de mon commerce. Je peux maintenant suivre mes ventes en temps réel et gérer mon stock efficacement. Un vrai gain de temps et d'argent !"
+                    </p>
                 </div>
                 
-                <!-- Stats -->
-                <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                    <div>
-                        <p class="text-4xl font-bold font-poppins text-walee-blue mb-2">500+</p>
-                        <p class="text-gray-600">Entreprises</p>
+                <!-- Testimonial 2 -->
+                <div class="group bg-gray-50 rounded-3xl p-8 hover:bg-white hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                                FT
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-50 group-hover:border-white transition-colors duration-300"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900">Fatoumata Traoré</h4>
+                            <p class="text-sm text-gray-500">Gérante, Boutique Élégance</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-4xl font-bold font-poppins text-walee-green mb-2">10K+</p>
-                        <p class="text-gray-600">Utilisateurs</p>
+                    <div class="flex mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
                     </div>
-                    <div>
-                        <p class="text-4xl font-bold font-poppins text-purple-600 mb-2">99.9%</p>
-                        <p class="text-gray-600">Uptime</p>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Interface <strong>intuitive</strong> et fonctionnalités complètes. Mes employés ont adopté Walee en quelques jours seulement. Le support client est excellent et toujours disponible !"
+                    </p>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="group bg-gray-50 rounded-3xl p-8 hover:bg-white hover:shadow-2xl transition-all duration-500 card-hover">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                                YB
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-50 group-hover:border-white transition-colors duration-300"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900">Yao Brou</h4>
+                            <p class="text-sm text-gray-500">PDG, Tech Solutions</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-4xl font-bold font-poppins text-orange-600 mb-2">4.9/5</p>
-                        <p class="text-gray-600">Satisfaction</p>
+                    <div class="flex mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
                     </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Gérer 3 entreprises n'a jamais été aussi simple. Les <strong>statistiques détaillées</strong> m'aident à prendre de meilleures décisions. Je recommande vivement Walee à tous les entrepreneurs !"
+                    </p>
                 </div>
                 
             </div>
@@ -504,103 +944,169 @@
         </div>
     </section>
     
-    <!-- CTA Section -->
-    <section class="py-20 bg-gradient-to-r from-walee-blue to-walee-indigo">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-            <h2 class="text-4xl md:text-5xl font-bold font-poppins mb-6">
-                Prêt à transformer votre entreprise ?
+    <!-- CTA Section Premium -->
+    <section class="relative py-32 overflow-hidden">
+        
+        <!-- Animated gradient background -->
+        <div class="absolute inset-0 animated-gradient"></div>
+        
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-pink-900/50"></div>
+        
+        <!-- Floating elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-20 left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" style="animation: float-smooth 8s ease-in-out infinite;"></div>
+            <div class="absolute bottom-20 right-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" style="animation: float-smooth 10s ease-in-out infinite; animation-delay: 2s;"></div>
+        </div>
+        
+        <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <!-- Badge -->
+            <div class="inline-flex items-center space-x-2 glass-card text-white rounded-full px-6 py-3 mb-8">
+                <i data-lucide="rocket" class="w-5 h-5"></i>
+                <span class="font-semibold">Rejoignez-nous aujourd'hui</span>
+            </div>
+            
+            <h2 class="text-5xl md:text-6xl lg:text-7xl font-bold font-poppins text-white mb-8 leading-tight">
+                Prêt à transformer
+                <span class="block mt-2">votre entreprise ?</span>
             </h2>
-            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                Rejoignez des centaines d'entreprises qui font confiance à Walee pour gérer leurs opérations quotidiennes.
+            
+            <p class="text-2xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed">
+                Rejoignez des centaines d'entreprises qui ont déjà fait le choix de l'excellence avec Walee. 
+                <strong>Essai gratuit, sans engagement.</strong>
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{% url 'register' %}" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-walee-green text-white font-semibold rounded-xl hover:bg-emerald-600 transform hover:scale-105 transition duration-200 shadow-2xl">
-                    <span>Commencer gratuitement</span>
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            
+            <div class="flex flex-col sm:flex-row gap-6 justify-center mb-12">
+                <a href="{% url 'register' %}" class="group relative inline-flex items-center justify-center space-x-3 px-10 py-5 bg-white text-blue-600 font-bold text-lg rounded-xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+                    <span class="relative z-10 flex items-center space-x-3">
+                        <span>Démarrer gratuitement</span>
+                        <i data-lucide="arrow-right" class="w-6 h-6 transition-transform duration-300 group-hover:translate-x-2"></i>
+                    </span>
+                    <div class="absolute inset-0 bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </a>
-                <a href="#contact" class="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 transition duration-200">
-                    <i data-lucide="phone" class="w-5 h-5"></i>
-                    <span>Nous contacter</span>
+                <a href="#contact" class="group inline-flex items-center justify-center space-x-3 px-10 py-5 glass-card text-white font-bold text-lg rounded-xl hover:bg-white/20 transition-all duration-300">
+                    <i data-lucide="phone" class="w-6 h-6"></i>
+                    <span>Contactez-nous</span>
                 </a>
             </div>
+            
+            <!-- Trust indicators -->
+            <div class="flex flex-wrap justify-center items-center gap-8 text-white/80">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                    <span>Essai gratuit 14 jours</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                    <span>Sans carte bancaire</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                    <span>Annulation à tout moment</span>
+                </div>
+            </div>
+            
         </div>
     </section>
     
-    <!-- Footer -->
-    <footer class="bg-walee-dark text-white py-12">
+    <!-- Footer Premium -->
+    <footer class="bg-gray-900 text-white pt-20 pb-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-4 gap-8">
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
                 
-                <!-- Brand -->
-                <div>
-                    <div class="flex items-center space-x-3 mb-4">
-                        <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-10 h-10">
-                        <span class="text-2xl font-bold font-poppins">Walee</span>
+                <!-- Brand Column -->
+                <div class="lg:col-span-2">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <img src="{% static 'images/logo.png' %}" alt="Walee Logo" class="w-12 h-12">
+                        <span class="text-3xl font-bold font-poppins">Walee</span>
                     </div>
-                    <p class="text-gray-400 mb-4">
-                        Solution SaaS de gestion intelligente pour entreprises africaines.
+                    <p class="text-gray-400 mb-6 leading-relaxed max-w-md">
+                        La solution SaaS de référence pour la gestion intelligente des entreprises africaines. 
+                        Transformez votre façon de travailler.
                     </p>
                     <div class="flex space-x-4">
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                        <a href="#" class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-walee-blue hover:scale-110 transition-all duration-300">
                             <i data-lucide="facebook" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                        <a href="#" class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-walee-blue hover:scale-110 transition-all duration-300">
                             <i data-lucide="twitter" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                        <a href="#" class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-walee-blue hover:scale-110 transition-all duration-300">
                             <i data-lucide="linkedin" class="w-5 h-5"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-walee-blue transition">
+                        <a href="#" class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-walee-blue hover:scale-110 transition-all duration-300">
                             <i data-lucide="instagram" class="w-5 h-5"></i>
                         </a>
                     </div>
                 </div>
                 
-                <!-- Product -->
+                <!-- Product Column -->
                 <div>
-                    <h4 class="font-bold font-poppins mb-4">Produit</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">Fonctionnalités</a></li>
-                        <li><a href="#" class="hover:text-white transition">Tarifs</a></li>
-                        <li><a href="#" class="hover:text-white transition">Sécurité</a></li>
-                        <li><a href="#" class="hover:text-white transition">Mises à jour</a></li>
+                    <h4 class="font-bold font-poppins text-lg mb-6">Produit</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#fonctionnalites" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Fonctionnalités</a></li>
+                        <li><a href="#solutions" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Solutions</a></li>
+                        <li><a href="#tarifs" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Tarifs</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Sécurité</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">API</a></li>
                     </ul>
                 </div>
                 
-                <!-- Company -->
+                <!-- Company Column -->
                 <div>
-                    <h4 class="font-bold font-poppins mb-4">Entreprise</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">À propos</a></li>
-                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
-                        <li><a href="#" class="hover:text-white transition">Carrières</a></li>
-                        <li><a href="#" class="hover:text-white transition">Partenaires</a></li>
+                    <h4 class="font-bold font-poppins text-lg mb-6">Entreprise</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">À propos</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Blog</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Carrières</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Partenaires</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Presse</a></li>
                     </ul>
                 </div>
                 
-                <!-- Support -->
+                <!-- Support Column -->
                 <div>
-                    <h4 class="font-bold font-poppins mb-4">Support</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">Centre d'aide</a></li>
-                        <li><a href="#" class="hover:text-white transition">Documentation</a></li>
-                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
-                        <li><a href="#" class="hover:text-white transition">Status</a></li>
+                    <h4 class="font-bold font-poppins text-lg mb-6">Support</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Centre d'aide</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Documentation</a></li>
+                        <li><a href="#contact" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Contact</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Tutoriels</a></li>
+                        <li><a href="#" class="hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Status</a></li>
                     </ul>
                 </div>
                 
             </div>
             
-            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400 text-sm">
-                    © 2025 Walee. Tous droits réservés.
-                </p>
-                <div class="flex space-x-6 mt-4 md:mt-0">
-                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Confidentialité</a>
-                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Conditions</a>
-                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Cookies</a>
+            <!-- Newsletter -->
+            <div class="border-t border-gray-800 pt-12 mb-12">
+                <div class="max-w-2xl">
+                    <h4 class="text-xl font-bold font-poppins mb-4">Restez informé</h4>
+                    <p class="text-gray-400 mb-6">Recevez les dernières nouvelles, mises à jour et conseils directement dans votre boîte mail.</p>
+                    <form class="flex gap-3">
+                        <input type="email" placeholder="Votre email" class="flex-1 px-6 py-4 bg-white/10 backdrop-blur-sm border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-walee-blue transition-colors duration-200">
+                        <button type="submit" class="px-8 py-4 bg-walee-green hover:bg-emerald-600 font-semibold rounded-xl transition-all duration-200 hover:scale-105 whitespace-nowrap">
+                            S'abonner
+                        </button>
+                    </form>
                 </div>
             </div>
+            
+            <!-- Bottom -->
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-400 text-sm">
+                    © 2025 Walee. Tous droits réservés. Fait avec ❤️ en Côte d'Ivoire.
+                </p>
+                <div class="flex flex-wrap justify-center gap-6 text-sm">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Confidentialité</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Conditions d'utilisation</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Cookies</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Mentions légales</a>
+                </div>
+            </div>
+            
         </div>
     </footer>
     
@@ -609,22 +1115,55 @@
 
 {% block extra_js %}
 <script>
-    // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
             const target = document.querySelector(this.getAttribute('href'));
             if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const offset = 80;
+                const targetPosition = target.offsetTop - offset;
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
             }
         });
     });
     
-    // Reinitialize icons
     document.addEventListener('alpine:init', () => {
         setTimeout(() => {
             lucide.createIcons();
         }, 100);
+    });
+    
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('section > div > div').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+        observer.observe(el);
+    });
+    
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const parallaxElements = document.querySelectorAll('.parallax-slow');
+        parallaxElements.forEach(el => {
+            const speed = 0.5;
+            el.style.transform = 'translateY(' + (scrolled * speed) + 'px)';
+        });
     });
 </script>
 {% endblock %}

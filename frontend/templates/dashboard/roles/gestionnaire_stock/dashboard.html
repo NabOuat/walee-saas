@@ -1,4 +1,4 @@
-{% extends "dashboard/base_dashboard.html" %}
+{% extends "dashboard/roles/gestionnaire_stock/base_gestionnaire.html" %}
 {% load static %}
 
 {% block title %}Gestion Stock - Walee{% endblock %}
@@ -292,20 +292,23 @@ function gestionnaireStockData() {
                 const quantity = parseInt(qty);
                 if (action === 'add') {
                     produit.quantite += quantity;
-                    alert(`✅ ${quantity} unités ajoutées\nNouveau stock: ${produit.quantite}`);
+                    // Unités ajoutées
                 } else {
                     if (produit.quantite >= quantity) {
                         produit.quantite -= quantity;
-                        alert(`✅ ${quantity} unités retirées\nNouveau stock: ${produit.quantite}`);
+                        // Unités retirées
                     } else {
-                        alert(`❌ Stock insuffisant\nStock actuel: ${produit.quantite}`);
+                        // Stock insuffisant
                     }
                 }
             }
         },
         
         viewHistory(produit) {
-            alert(`📊 Historique de "${produit.nom}"\n\nFonctionnalité à venir`);
+            showLoading('Chargement de l\'historique...');
+            setTimeout(() => {
+                window.location.href = '/dashboard/gestionnaire-stock/mouvements/';
+            }, 500);
         },
         
         formatMoney(amount) {

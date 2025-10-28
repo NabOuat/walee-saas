@@ -1,0 +1,155 @@
+{% extends "dashboard/roles/caissier/base_caissier.html" %}
+{% load static %}
+
+{% block title %}Caissier - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="caissierDashboard()" x-init="init()">
+    
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold font-poppins text-gray-900 dark:text-white mb-2">
+            Bienvenue, <span class="text-walee-blue" x-text="caissier.nom"></span> 👋
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">Voici un résumé de votre activité</p>
+    </div>
+
+    <!-- Stats du Jour -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">CA Aujourd'hui</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.caJour)"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">Ventes</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.ventesJour"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">Panier Moyen</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.panierMoyen)"></p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
+                    <i data-lucide="wallet" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
+                </div>
+            </div>
+            <h3 class="text-sm text-gray-500 dark:text-gray-400 mb-1">En Caisse</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(stats.fondCaisse)"></p>
+        </div>
+    </div>
+
+    <!-- Actions Rapides -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <a href="{% url 'caisse' %}" class="block p-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="flex items-center space-x-4 text-white">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">Nouvelle Vente</h3>
+                    <p class="text-sm opacity-90">Ouvrir le point de vente</p>
+                </div>
+            </div>
+        </a>
+
+        <button @click="showHistorique = true" class="block p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 text-left">
+            <div class="flex items-center space-x-4 text-white">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="receipt" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">Mes Ventes</h3>
+                    <p class="text-sm opacity-90">Historique du jour</p>
+                </div>
+            </div>
+        </button>
+
+        <button @click="showSessionModal = true" class="block p-6 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 text-left">
+            <div class="flex items-center space-x-4 text-white">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="clock" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">Ma Session</h3>
+                    <p class="text-sm opacity-90">Détails et clôture</p>
+                </div>
+            </div>
+        </button>
+    </div>
+
+    <!-- Dernières Ventes -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Dernières Ventes</h3>
+        <div class="space-y-3">
+            <template x-for="vente in dernieresVentes" :key="vente.id">
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white" x-text="vente.numero"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400" x-text="vente.heure"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-gray-900 dark:text-white" x-text="formatMoney(vente.montant)"></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="vente.paiement"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function caissierDashboard() {
+    return {
+        caissier: {
+            nom: 'Jean KOUASSI',
+            matricule: 'CAI001'
+        },
+        
+        stats: {
+            caJour: 2500000,
+            ventesJour: 45,
+            panierMoyen: 55555,
+            fondCaisse: 500000
+        },
+        
+        dernieresVentes: [
+            { id: 1, numero: 'VNT-001', heure: '14:30', montant: 125000, paiement: 'Espèces' },
+            { id: 2, numero: 'VNT-002', heure: '14:25', montant: 85000, paiement: 'Carte' },
+            { id: 3, numero: 'VNT-003', heure: '14:15', montant: 45000, paiement: 'Mobile Money' },
+            { id: 4, numero: 'VNT-004', heure: '14:00', montant: 150000, paiement: 'Espèces' },
+            { id: 5, numero: 'VNT-005', heure: '13:45', montant: 95000, paiement: 'Carte' }
+        ],
+        
+        init() {
+            lucide.createIcons();
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

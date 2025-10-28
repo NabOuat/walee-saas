@@ -2,7 +2,6 @@
 Django settings for walee project.
 """
 import os
-import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -79,7 +78,7 @@ WSGI_APPLICATION = "walee.wsgi.application"
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
+if DATABASE_URL and HAS_DJ_DATABASE_URL:
     # Production: PostgreSQL (Supabase ou Render)
     DATABASES = {
         'default': dj_database_url.config(

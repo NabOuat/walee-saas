@@ -1,0 +1,632 @@
+{% extends "dashboard/roles/vendeur/base_vendeur.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Vendeur - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="venteVendeurData()" x-init="init()">
+    
+    <!-- Header Premium avec Actions -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center space-x-3 mb-2">
+                    <button @click="window.location.href='/dashboard/vendeur/'" 
+                            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+                        <i data-lucide="arrow-left" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Nouveau document de vente</h1>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 ml-14">
+                    Document N° <span class="font-mono font-medium text-gray-700 dark:text-gray-300">VT-2024-001234</span>
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition flex items-center space-x-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Brouillon</span>
+                </button>
+                <button class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition flex items-center space-x-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Aperçu</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        <!-- Colonne principale (8/12) -->
+        <div class="xl:col-span-8 space-y-5">
+            
+            <!-- Sélection type de document - Style Premium -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Type de document</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-4">
+                        <button @click="typeVente = 'vente'" 
+                                :class="typeVente === 'vente' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+                                class="relative p-5 rounded-xl border-2 transition-all group">
+                            <div class="flex flex-col items-center text-center space-y-2">
+                                <div :class="typeVente === 'vente' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
+                                     class="w-12 h-12 rounded-xl flex items-center justify-center transition-colors">
+                                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <p :class="typeVente === 'vente' ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'"
+                                       class="font-semibold">Facture de vente</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Paiement immédiat</p>
+                                </div>
+                            </div>
+                            <div x-show="typeVente === 'vente'" class="absolute top-3 right-3">
+                                <div class="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                                    <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button @click="typeVente = 'devis'" 
+                                :class="typeVente === 'devis' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+                                class="relative p-5 rounded-xl border-2 transition-all group">
+                            <div class="flex flex-col items-center text-center space-y-2">
+                                <div :class="typeVente === 'devis' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
+                                     class="w-12 h-12 rounded-xl flex items-center justify-center transition-colors">
+                                    <i data-lucide="file-text" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <p :class="typeVente === 'devis' ? 'text-purple-700 dark:text-purple-400' : 'text-gray-700 dark:text-gray-300'"
+                                       class="font-semibold">Devis</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Sans engagement</p>
+                                </div>
+                            </div>
+                            <div x-show="typeVente === 'devis'" class="absolute top-3 right-3">
+                                <div class="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                                    <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button @click="typeVente = 'commande'" 
+                                :class="typeVente === 'commande' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+                                class="relative p-5 rounded-xl border-2 transition-all group">
+                            <div class="flex flex-col items-center text-center space-y-2">
+                                <div :class="typeVente === 'commande' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
+                                     class="w-12 h-12 rounded-xl flex items-center justify-center transition-colors">
+                                    <i data-lucide="package" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <p :class="typeVente === 'commande' ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'"
+                                       class="font-semibold">Bon de commande</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">En attente</p>
+                                </div>
+                            </div>
+                            <div x-show="typeVente === 'commande'" class="absolute top-3 right-3">
+                                <div class="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                                    <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations Client - Design Premium -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Informations client</h2>
+                    <button class="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium flex items-center space-x-1.5">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Nouveau client</span>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Client <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <select x-model="clientId" 
+                                        class="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+                                    <option value="">Sélectionner un client...</option>
+                                    <template x-for="client in clients" :key="client.id">
+                                        <option :value="client.id" x-text="client.nom"></option>
+                                    </template>
+                                </select>
+                                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i data-lucide="user" class="w-4 h-4"></i>
+                                </div>
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 flex items-center space-x-1">
+                                <i data-lucide="info" class="w-3 h-3"></i>
+                                <span>Recherchez ou créez un nouveau client</span>
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mode de paiement</label>
+                            <div class="relative">
+                                <select x-model="modePaiement" 
+                                        class="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+                                    <option>Espèces</option>
+                                    <option>Carte bancaire</option>
+                                    <option>Chèque</option>
+                                    <option>Virement</option>
+                                    <option>Crédit</option>
+                                </select>
+                                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                                </div>
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                            <div class="relative">
+                                <input type="date" 
+                                       :value="new Date().toISOString().split('T')[0]"
+                                       class="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm">
+                                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Échéance</label>
+                            <div class="relative">
+                                <select class="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+                                    <option>Immédiat</option>
+                                    <option>15 jours</option>
+                                    <option>30 jours</option>
+                                    <option>60 jours</option>
+                                    <option>90 jours</option>
+                                </select>
+                                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i data-lucide="clock" class="w-4 h-4"></i>
+                                </div>
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste Articles - Style Table Professionnelle -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Articles</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                            <span x-text="panier.length"></span> article(s) • <span x-text="panier.reduce((sum, item) => sum + item.quantite, 0)"></span> unité(s)
+                        </p>
+                    </div>
+                    <button @click="showProduitModal = true" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm font-medium shadow-sm hover:shadow">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Ajouter un article</span>
+                    </button>
+                </div>
+
+                <!-- Table Header -->
+                <div class="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <div class="col-span-5">Article</div>
+                    <div class="col-span-2 text-right">Prix unitaire</div>
+                    <div class="col-span-2 text-center">Quantité</div>
+                    <div class="col-span-2 text-right">Total</div>
+                    <div class="col-span-1"></div>
+                </div>
+
+                <!-- Table Body -->
+                <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <template x-for="(item, index) in panier" :key="index">
+                        <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition group items-center">
+                            <div class="col-span-12 md:col-span-5">
+                                <p class="font-medium text-gray-900 dark:text-white text-sm" x-text="item.nom"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">SKU: PRD-<span x-text="String(item.id).padStart(5, '0')"></span></p>
+                            </div>
+                            <div class="col-span-4 md:col-span-2 md:text-right">
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="formatMoney(item.prix)"></p>
+                            </div>
+                            <div class="col-span-4 md:col-span-2 md:text-center">
+                                <span class="inline-flex items-center justify-center px-3 py-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <span x-text="item.quantite"></span>
+                                </span>
+                            </div>
+                            <div class="col-span-3 md:col-span-2 md:text-right">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="formatMoney(item.quantite * item.prix)"></p>
+                            </div>
+                            <div class="col-span-1 flex justify-end">
+                                <button @click="panier.splice(index, 1)" 
+                                        class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- État vide -->
+                <div x-show="panier.length === 0" class="px-6 py-16">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="package-open" class="w-8 h-8 text-gray-400 dark:text-gray-600"></i>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 font-medium mb-1">Aucun article ajouté</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500">Cliquez sur "Ajouter un article" pour commencer</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Colonne Récapitulatif (4/12) - Sticky Premium -->
+        <div class="xl:col-span-4">
+            <div class="sticky top-6 space-y-5">
+                
+                <!-- Récapitulatif -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Récapitulatif</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">Sous-total HT</span>
+                                <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(getTotal())"></span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-gray-600 dark:text-gray-400">TVA</span>
+                                    <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-900 rounded text-xs font-medium text-gray-700 dark:text-gray-300">18%</span>
+                                </div>
+                                <span class="font-semibold text-gray-900 dark:text-white" x-text="formatMoney(getTotal() * 0.18)"></span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">Remise</span>
+                                <button class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium flex items-center space-x-1">
+                                    <span class="text-xs">Ajouter</span>
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-lg font-bold text-gray-900 dark:text-white">Total TTC</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(getTotal() * 1.18)"></span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 text-right">Montant en FCFA</p>
+                        </div>
+
+                        <!-- Alert Info -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                            <div class="flex items-start space-x-2">
+                                <i data-lucide="info" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"></i>
+                                <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                                    <span x-show="typeVente === 'vente'">Cette facture sera enregistrée dans les ventes et impactera votre stock.</span>
+                                    <span x-show="typeVente === 'devis'">Ce devis pourra être converti en facture ou commande ultérieurement.</span>
+                                    <span x-show="typeVente === 'commande'">Cette commande sera en attente de confirmation et n'impactera pas le stock.</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="space-y-3">
+                        <button @click="validerVente()" 
+                                :disabled="!clientId || panier.length === 0"
+                                :class="!clientId || panier.length === 0 ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20'"
+                                class="w-full px-4 py-3.5 text-white rounded-xl transition-all font-semibold flex items-center justify-center space-x-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                            <span x-text="typeVente === 'vente' ? 'Enregistrer la vente' : typeVente === 'devis' ? 'Créer le devis' : 'Créer la commande'"></span>
+                        </button>
+                        
+                        <button class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition font-medium flex items-center justify-center space-x-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Télécharger le PDF</span>
+                        </button>
+
+                        <button @click="window.location.href='/dashboard/vendeur/'" 
+                                class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition font-medium">
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistiques Quick -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-5">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Ventes aujourd'hui</p>
+                            <p class="text-lg font-bold text-blue-900 dark:text-blue-300">2 450 000 FCFA</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-blue-700 dark:text-blue-300">
+                        <span class="flex items-center">
+                            <i data-lucide="arrow-up" class="w-3 h-3 mr-1"></i>
+                            +12% vs hier
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter Produit - Premium Design -->
+    <div x-show="showProduitModal" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+         @click.self="showProduitModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             @click.stop>
+            
+            <!-- Header Modal -->
+            <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-5 bg-gray-50 dark:bg-gray-900/50">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Ajouter un article</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sélectionnez un produit et définissez la quantité</p>
+                    </div>
+                    <button @click="showProduitModal = false" 
+                            class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition">
+                        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Body Modal -->
+            <div class="p-6 space-y-5">
+                <!-- Recherche / Sélection produit -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Produit <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select x-model="selectedProduit" 
+                                @change="quantite = 1"
+                                class="w-full pl-11 pr-10 py-3.5 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+                            <option value="">Rechercher ou sélectionner un produit...</option>
+                            <template x-for="produit in produits" :key="produit.id">
+                                <option :value="produit.id" x-text="produit.nom + ' • ' + formatMoney(produit.prix)"></option>
+                            </template>
+                        </select>
+                        <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </div>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aperçu produit sélectionné -->
+                <div x-show="selectedProduit" 
+                     x-transition
+                     class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center flex-shrink-0 border border-blue-200 dark:border-blue-700">
+                            <i data-lucide="box" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-gray-900 dark:text-white truncate" 
+                               x-text="selectedProduit ? produits.find(p => p.id == selectedProduit).nom : ''"></p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                                Prix unitaire: <span class="font-semibold" x-text="selectedProduit ? formatMoney(produits.find(p => p.id == selectedProduit).prix) : ''"></span>
+                            </p>
+                            <p class="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
+                                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                                En stock
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quantité avec contrôles -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Quantité <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <button @click="quantite = Math.max(1, quantite - 1)" 
+                                class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition flex-shrink-0">
+                            <i data-lucide="minus" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                        </button>
+                        <input type="number" 
+                               x-model="quantite" 
+                               min="1" 
+                               class="flex-1 text-center text-lg font-bold px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <button @click="quantite++" 
+                                class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition flex-shrink-0">
+                            <i data-lucide="plus" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                        <span>Quantité minimum: 1</span>
+                        <span>Disponible: 125 unités</span>
+                    </div>
+                </div>
+
+                <!-- Total ligne -->
+                <div x-show="selectedProduit" 
+                     x-transition
+                     class="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total de cette ligne</span>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white" 
+                               x-text="selectedProduit ? formatMoney(produits.find(p => p.id == selectedProduit).prix * quantite) : '0 FCFA'"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">HT • TVA 18%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-5 bg-gray-50 dark:bg-gray-900/50">
+                <div class="flex items-center space-x-3">
+                    <button @click="showProduitModal = false" 
+                            class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium">
+                        Annuler
+                    </button>
+                    <button @click="ajouterProduit()" 
+                            :disabled="!selectedProduit || !quantite"
+                            :class="!selectedProduit || !quantite ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20'"
+                            class="flex-1 px-4 py-3 text-white rounded-xl font-semibold transition-all flex items-center justify-center space-x-2">
+                        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                        <span>Ajouter au panier</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function venteVendeurData() {
+    return {
+        typeVente: 'vente',
+        clientId: '',
+        modePaiement: 'Espèces',
+        panier: [],
+        showProduitModal: false,
+        selectedProduit: '',
+        quantite: 1,
+        
+        clients: [
+            { id: 1, nom: 'SARL TECHNOLOGIE CI' },
+            { id: 2, nom: 'Entreprise BATIMENT NORD' },
+            { id: 3, nom: 'M. KOUAME Jean-Pierre' },
+            { id: 4, nom: 'Boutique MODE ELEGANCE' }
+        ],
+        
+        produits: [
+            { id: 1, nom: 'Laptop Dell XPS 15 - i7 16GB 512GB', prix: 850000 },
+            { id: 2, nom: 'iPhone 13 Pro 256GB', prix: 650000 },
+            { id: 3, nom: 'Samsung Galaxy S21 128GB', prix: 450000 },
+            { id: 4, nom: 'AirPods Pro (2ème génération)', prix: 150000 },
+            { id: 5, nom: 'MacBook Air M2 - 8GB 256GB', prix: 725000 },
+            { id: 6, nom: 'iPad Pro 11" 128GB WiFi', prix: 575000 }
+        ],
+        
+        init() {
+            lucide.createIcons();
+            
+            // Réinitialiser les icônes après les changements DOM
+            this.$watch('panier', () => {
+                this.$nextTick(() => lucide.createIcons());
+            });
+            this.$watch('showProduitModal', () => {
+                this.$nextTick(() => lucide.createIcons());
+            });
+            this.$watch('typeVente', () => {
+                this.$nextTick(() => lucide.createIcons());
+            });
+        },
+        
+        ajouterProduit() {
+            if (!this.selectedProduit || !this.quantite) return;
+            
+            const produit = this.produits.find(p => p.id == this.selectedProduit);
+            if (produit) {
+                const existingIndex = this.panier.findIndex(p => p.id === produit.id);
+                
+                if (existingIndex !== -1) {
+                    this.panier[existingIndex].quantite += parseInt(this.quantite);
+                } else {
+                    this.panier.push({
+                        ...produit,
+                        quantite: parseInt(this.quantite)
+                    });
+                }
+                
+                this.selectedProduit = '';
+                this.quantite = 1;
+                this.showProduitModal = false;
+            }
+        },
+        
+        getTotal() {
+            return this.panier.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
+        },
+        
+        async validerVente() {
+            // Validation
+            if (!this.clientId) {
+                showToast('Veuillez sélectionner un client', 'error', 'Validation');
+                return;
+            }
+            
+            if (this.panier.length === 0) {
+                showToast('Veuillez ajouter au moins un article', 'error', 'Validation');
+                return;
+            }
+            
+            const typeDoc = this.typeVente === 'vente' ? 'Facture' : this.typeVente === 'devis' ? 'Devis' : 'Bon de commande';
+            const client = this.clients.find(c => c.id == this.clientId);
+            
+            // Loading
+            showLoading(`Création ${typeDoc.toLowerCase()}...`);
+            
+            try {
+                // Simulation API call
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                hideLoading();
+                
+                // Toast succès
+                showToast(
+                    `${typeDoc} créé${this.typeVente === 'commande' ? '' : 'e'} pour ${client.nom} - ${this.formatMoney(this.getTotal() * 1.18)}`,
+                    'success',
+                    `${typeDoc} créé${this.typeVente === 'commande' ? '' : 'e'}`
+                );
+                
+                // Redirection après 1s
+                setTimeout(() => {
+                    window.location.href = '/dashboard/vendeur/';
+                }, 1000);
+                
+            } catch (error) {
+                hideLoading();
+                showToast('Erreur lors de la création', 'error', 'Erreur');
+            }
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block sidebar_content %}
+<!-- Sidebar Comptable -->
+<div class="flex flex-col h-full">
+    <!-- Logo -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-purple-600 dark:text-purple-400">📊 Comptable</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Finances & Comptabilité</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        
+        <!-- Dashboard -->
+        <a href="{% url 'comptable' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition group {% if request.resolver_match.url_name == 'comptable' %}bg-purple-600 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span class="font-medium">Tableau de Bord</span>
+        </a>
+
+        <div class="pt-4 pb-2">
+            <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">Facturation</p>
+        </div>
+
+        <!-- Facturation -->
+        <a href="{% url 'comptable_facturation' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+            <span class="font-medium">Facturation</span>
+            <span class="ml-auto bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 text-xs px-2 py-1 rounded-full">3</span>
+        </a>
+
+        <div class="pt-4 pb-2">
+            <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">Comptabilité</p>
+        </div>
+
+        <!-- Dépenses & Trésorerie -->
+        <a href="{% url 'comptable_depenses_tresorerie' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="credit-card" class="w-5 h-5"></i>
+            <span class="font-medium">Dépenses & Trésorerie</span>
+        </a>
+
+        <!-- Comptabilité -->
+        <a href="{% url 'comptable_comptabilite' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+            <span class="font-medium">Comptabilité</span>
+        </a>
+
+        <div class="pt-4 pb-2">
+            <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">Rapports</p>
+        </div>
+
+        <!-- Rapports Financiers -->
+        <a href="{% url 'comptable_rapports' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+            <span class="font-medium">Rapports Financiers</span>
+        </a>
+
+        <!-- Exports & Archives -->
+        <a href="{% url 'comptable_exports' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span class="font-medium">Exports & Archives</span>
+        </a>
+
+    </nav>
+
+    <!-- Quick Stats -->
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+            <p class="text-xs text-purple-600 dark:text-purple-400 mb-2">CA du mois</p>
+            <p class="text-2xl font-bold text-purple-700 dark:text-purple-300">12.5M FCFA</p>
+            <div class="flex items-center mt-2 text-xs text-green-600 dark:text-green-400">
+                <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>
+                <span>+15.2%</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,623 @@
+{% extends "dashboard/roles/comptable/base_comptable.html" %}
+{% load static %}
+
+{% block title %}Comptabilité - Comptable - Walee{% endblock %}
+
+{% block dashboard_content %}
+<div x-data="comptabiliteData()" x-init="init()" class="space-y-6">
+    
+    <!-- Header Premium avec Actions Contextuelles -->
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="flex items-center space-x-3 mb-2">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Comptabilité</h1>
+                <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold">
+                    Exercice 2025
+                </span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">Gestion des écritures comptables et rapprochements bancaires</p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button @click="exportData()" 
+                    class="px-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium flex items-center space-x-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Exporter</span>
+            </button>
+            <button @click="openAddModal()" 
+                    class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20 font-semibold flex items-center space-x-2">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                <span x-text="activeTab === 'ecritures' ? 'Nouvelle écriture' : 'Nouveau rapprochement'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats - Design Enterprise -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Écritures du mois -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold">
+                    Ce mois
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Écritures comptables</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white" x-text="stats.ecrituresMois"></p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center">
+                    <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>
+                    +12% vs mois dernier
+                </p>
+            </div>
+        </div>
+
+        <!-- Validées -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs font-semibold">
+                    Validées
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Écritures validées</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white" x-text="stats.ecrituresValidees"></p>
+                <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div class="bg-green-600 h-1.5 rounded-full transition-all duration-500" 
+                         :style="`width: ${(stats.ecrituresValidees / stats.ecrituresMois * 100)}%`"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- En attente -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    <i data-lucide="clock" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:orange-blue-300 rounded-lg text-xs font-semibold">
+                    Brouillons
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">En attente validation</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white" x-text="stats.ecrituresAttente"></p>
+                <button class="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium hover:underline flex items-center">
+                    <i data-lucide="arrow-right" class="w-3 h-3 mr-1"></i>
+                    Valider maintenant
+                </button>
+            </div>
+        </div>
+
+        <!-- Rapprochements -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <i data-lucide="refresh-cw" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-semibold">
+                    Actifs
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rapprochements</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white" x-text="stats.rapprochements"></p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                    Dernier: <span class="font-medium">15 Oct 2025</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur Principal avec Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        
+        <!-- Navigation Tabs Premium -->
+        <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex">
+                <button @click="activeTab = 'ecritures'" 
+                        :class="activeTab === 'ecritures' ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                        class="flex-1 px-6 py-4 font-semibold transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Journal des écritures</span>
+                    <span class="ml-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs" x-text="ecritures.length"></span>
+                </button>
+                <button @click="activeTab = 'rapprochement'" 
+                        :class="activeTab === 'rapprochement' ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                        class="flex-1 px-6 py-4 font-semibold transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span>Rapprochement bancaire</span>
+                </button>
+                <button @click="activeTab = 'grand-livre'" 
+                        :class="activeTab === 'grand-livre' ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                        class="flex-1 px-6 py-4 font-semibold transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span>Grand livre</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ONGLET ÉCRITURES -->
+        <div x-show="activeTab === 'ecritures'" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             class="p-6">
+            
+            <!-- Barre de filtres professionnelle -->
+            <div class="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Recherche -->
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Recherche</label>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" 
+                                   x-model="searchQuery"
+                                   placeholder="N° pièce, libellé..."
+                                   class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                        </div>
+                    </div>
+
+                    <!-- Journal -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Journal</label>
+                        <div class="relative">
+                            <select x-model="filterJournal" 
+                                    class="w-full pl-3 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
+                                <option value="">Tous les journaux</option>
+                                <option value="Ventes">📗 Ventes</option>
+                                <option value="Achats">📕 Achats</option>
+                                <option value="Banque">📘 Banque</option>
+                                <option value="Caisse">📙 Caisse</option>
+                                <option value="OD">📔 Op. Diverses</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <!-- Période -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Période</label>
+                        <div class="relative">
+                            <select class="w-full pl-3 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
+                                <option>Ce mois</option>
+                                <option>Mois dernier</option>
+                                <option>Ce trimestre</option>
+                                <option>Cette année</option>
+                                <option>Personnalisée</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <!-- Statut -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Statut</label>
+                        <div class="relative">
+                            <select class="w-full pl-3 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
+                                <option>Tous</option>
+                                <option>Validées</option>
+                                <option>Brouillons</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau style ERP -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <div class="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                        <div class="col-span-1">Date</div>
+                        <div class="col-span-1">Journal</div>
+                        <div class="col-span-1">N° Pièce</div>
+                        <div class="col-span-4">Libellé</div>
+                        <div class="col-span-1 text-right">Compte</div>
+                        <div class="col-span-1 text-right">Débit</div>
+                        <div class="col-span-1 text-right">Crédit</div>
+                        <div class="col-span-1 text-center">Statut</div>
+                        <div class="col-span-1 text-center">Actions</div>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                    <template x-for="ecriture in ecritures" :key="ecriture.id">
+                        <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition items-center group">
+                            <div class="col-span-1 text-sm text-gray-700 dark:text-gray-300 font-medium" x-text="ecriture.date"></div>
+                            
+                            <div class="col-span-1">
+                                <span class="inline-flex px-2 py-1 rounded-md text-xs font-semibold"
+                                      :class="getJournalColor(ecriture.journal)">
+                                    <span x-text="ecriture.journal.substring(0, 3).toUpperCase()"></span>
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-1 text-sm font-mono font-semibold text-indigo-600 dark:text-indigo-400" x-text="ecriture.piece"></div>
+                            
+                            <div class="col-span-4">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="ecriture.libelle"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">Compte: <span x-text="ecriture.compte || '411000'"></span></p>
+                            </div>
+                            
+                            <div class="col-span-1 text-right text-xs font-mono text-gray-600 dark:text-gray-400" x-text="ecriture.compte || '411000'"></div>
+                            
+                            <div class="col-span-1 text-right text-sm font-semibold" :class="ecriture.debit ? 'text-green-600 dark:text-green-400' : 'text-gray-400'">
+                                <span x-text="ecriture.debit ? formatMoney(ecriture.debit) : '-'"></span>
+                            </div>
+                            
+                            <div class="col-span-1 text-right text-sm font-semibold" :class="ecriture.credit ? 'text-red-600 dark:text-red-400' : 'text-gray-400'">
+                                <span x-text="ecriture.credit ? formatMoney(ecriture.credit) : '-'"></span>
+                            </div>
+                            
+                            <div class="col-span-1 text-center">
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                                      :class="ecriture.valide ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'">
+                                    <span x-text="ecriture.valide ? '✓ Validé' : '⏱ Brouillon'"></span>
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-1 text-center">
+                                <div class="flex items-center justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="viewEcriture(ecriture)" 
+                                            class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                            title="Détails">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click="editEcriture(ecriture)" 
+                                            class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                                            title="Modifier">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <button x-show="!ecriture.valide" 
+                                            @click="validateEcriture(ecriture)" 
+                                            class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition"
+                                            title="Valider">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer avec totaux -->
+                <div class="bg-gray-50 dark:bg-gray-900 border-t-2 border-gray-300 dark:border-gray-600">
+                    <div class="grid grid-cols-12 gap-4 px-6 py-4">
+                        <div class="col-span-7 text-sm font-bold text-gray-900 dark:text-white">TOTAUX</div>
+                        <div class="col-span-1"></div>
+                        <div class="col-span-1 text-right text-sm font-bold text-green-600 dark:text-green-400">
+                            <span x-text="formatMoney(ecritures.reduce((sum, e) => sum + (e.debit || 0), 0))"></span>
+                        </div>
+                        <div class="col-span-1 text-right text-sm font-bold text-red-600 dark:text-red-400">
+                            <span x-text="formatMoney(ecritures.reduce((sum, e) => sum + (e.credit || 0), 0))"></span>
+                        </div>
+                        <div class="col-span-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ONGLET RAPPROCHEMENT -->
+        <div x-show="activeTab === 'rapprochement'" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             class="p-6">
+            
+            <!-- Sélection compte -->
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Compte bancaire</label>
+                        <div class="relative">
+                            <select x-model="selectedCompte" 
+                                    class="w-full pl-12 pr-10 py-3.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition appearance-none">
+                                <option value="banque1">Banque Atlantique - CI00 1234 5678 9012 3456</option>
+                                <option value="banque2">SGCI - CI00 9876 5432 1098 7654</option>
+                                <option value="banque3">BICICI - CI00 5555 6666 7777 8888</option>
+                            </select>
+                            <i data-lucide="landmark" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-indigo-600 dark:text-indigo-400"></i>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Période</label>
+                        <div class="flex space-x-3">
+                            <input type="date" class="flex-1 px-4 py-3.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <input type="date" class="flex-1 px-4 py-3.5 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats rapprochement -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <i data-lucide="book-open" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Comptabilité</p>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(rapprochement.soldeComptable)"></p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                            <i data-lucide="landmark" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Banque</p>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatMoney(rapprochement.soldeBancaire)"></p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                             :class="rapprochement.ecart === 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'">
+                            <i data-lucide="alert-circle" class="w-5 h-5"
+                               :class="rapprochement.ecart === 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Écart</p>
+                    </div>
+                    <p class="text-2xl font-bold" 
+                       :class="rapprochement.ecart === 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" 
+                       x-text="formatMoney(Math.abs(rapprochement.ecart))"></p>
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-5 text-white">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        </div>
+                        <p class="text-xs font-semibold uppercase opacity-90">Rapprochés</p>
+                    </div>
+                    <p class="text-2xl font-bold">24 / 30</p>
+                    <div class="mt-2 bg-white/20 rounded-full h-1.5">
+                        <div class="bg-white h-1.5 rounded-full" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonnes de rapprochement -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Comptabilité -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 border-b border-blue-200 dark:border-blue-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="book-open" class="w-4 h-4 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Comptabilité</h3>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">Non rapprochés</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm font-bold" x-text="rapprochement.comptabilite.length"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 space-y-2 max-h-96 overflow-y-auto">
+                        <template x-for="op in rapprochement.comptabilite" :key="op.id">
+                            <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer transition group">
+                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mr-3">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate" x-text="op.libelle"></p>
+                                    <div class="flex items-center space-x-3 mt-1">
+                                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="op.date"></span>
+                                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">•</span>
+                                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400" x-text="op.reference || 'CHQ-123'"></span>
+                                    </div>
+                                </div>
+                                <p class="text-sm font-bold ml-3" 
+                                   :class="op.montant > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" 
+                                   x-text="(op.montant > 0 ? '+' : '') + formatMoney(Math.abs(op.montant))"></p>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Relevé bancaire -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-4 border-b border-green-200 dark:border-green-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="landmark" class="w-4 h-4 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Relevé bancaire</h3>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">Non rapprochés</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm font-bold" x-text="rapprochement.banque.length"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 space-y-2 max-h-96 overflow-y-auto">
+                        <template x-for="op in rapprochement.banque" :key="op.id">
+                            <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-900 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer transition group">
+                                <input type="checkbox" class="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500 mr-3">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate" x-text="op.libelle"></p>
+                                    <div class="flex items-center space-x-3 mt-1">
+                                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="op.date"></span>
+                                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">•</span>
+                                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400" x-text="op.reference || 'BNQ-456'"></span>
+                                    </div>
+                                </div>
+                                <p class="text-sm font-bold ml-3" 
+                                   :class="op.montant > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" 
+                                   x-text="(op.montant > 0 ? '+' : '') + formatMoney(Math.abs(op.montant))"></p>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between mt-6 p-5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" class="w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Rapprocher automatiquement les correspondances exactes</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button class="px-5 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition font-medium">
+                        Annuler
+                    </button>
+                    <button @click="validerRapprochement()" 
+                            class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20 font-semibold flex items-center space-x-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        <span>Valider le rapprochement</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ONGLET GRAND LIVRE -->
+        <div x-show="activeTab === 'grand-livre'" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             class="p-6">
+            <div class="text-center py-16">
+                <div class="w-20 h-20 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="layers" class="w-10 h-10 text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Grand livre</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Consultez le détail des comptes</p>
+                <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold">
+                    Générer le grand livre
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+/* Scrollbar personnalisée */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.dark .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function comptabiliteData() {
+    return {
+        activeTab: 'ecritures',
+        searchQuery: '',
+        filterJournal: '',
+        selectedCompte: 'banque1',
+        
+        stats: {
+            ecrituresMois: 156,
+            ecrituresValidees: 142,
+            ecrituresAttente: 14,
+            rapprochements: 3
+        },
+        
+        ecritures: [
+            { id: 1, date: '22/10/2025', journal: 'Ventes', piece: 'VT-2025-001', libelle: 'Vente SARL TECHNOLOGIE CI', compte: '411100', debit: 590000, credit: null, valide: true },
+            { id: 2, date: '21/10/2025', journal: 'Achats', piece: 'AC-2025-156', libelle: 'Achat fournitures bureau', compte: '601200', debit: null, credit: 175000, valide: true },
+            { id: 3, date: '20/10/2025', journal: 'Banque', piece: 'BQ-2025-089', libelle: 'Virement salaires octobre', compte: '421000', debit: null, credit: 2450000, valide: false },
+            { id: 4, date: '19/10/2025', journal: 'Caisse', piece: 'CA-2025-234', libelle: 'Vente comptant client passage', compte: '411900', debit: 285000, credit: null, valide: true },
+            { id: 5, date: '18/10/2025', journal: 'OD', piece: 'OD-2025-045', libelle: 'Régularisation TVA septembre', compte: '445200', debit: 125000, credit: null, valide: false },
+            { id: 6, date: '17/10/2025', journal: 'Ventes', piece: 'VT-2025-002', libelle: 'Facture M. KOUAME Jean-Pierre', compte: '411100', debit: 730000, credit: null, valide: true },
+            { id: 7, date: '16/10/2025', journal: 'Banque', piece: 'BQ-2025-090', libelle: 'Règlement fournisseur ABC', compte: '401100', debit: 450000, credit: null, valide: true }
+        ],
+        
+        rapprochement: {
+            soldeComptable: 15000000,
+            soldeBancaire: 14950000,
+            ecart: 50000,
+            comptabilite: [
+                { id: 1, date: '18/10/2025', libelle: 'Chèque n°123456 - Fournisseur XYZ', montant: -50000, reference: 'CHQ-123456' },
+                { id: 2, date: '17/10/2025', libelle: 'Virement Client SARL TECHNOLOGIE', montant: 320000, reference: 'VIR-001' },
+                { id: 3, date: '16/10/2025', libelle: 'Paiement loyer octobre', montant: -125000, reference: 'CHQ-123457' },
+                { id: 4, date: '15/10/2025', libelle: 'Encaissement facture n°VT-001', montant: 590000, reference: 'VIR-002' }
+            ],
+            banque: [
+                { id: 1, date: '17/10/2025', libelle: 'VIR SARL TECHNOLOGIE CI', montant: 320000, reference: 'BNQ-45678' },
+                { id: 2, date: '16/10/2025', libelle: 'PRLV ASSURANCE MENSUELLE', montant: -85000, reference: 'BNQ-45679' },
+                { id: 3, date: '15/10/2025', libelle: 'FRAIS BANCAIRES OCTOBRE', montant: -15000, reference: 'BNQ-45680' },
+                { id: 4, date: '15/10/2025', libelle: 'VIR CLIENT ENTREPRISE B', montant: 590000, reference: 'BNQ-45681' }
+            ]
+        },
+        
+        init() {
+            lucide.createIcons();
+            
+            this.$watch('activeTab', () => {
+                this.$nextTick(() => lucide.createIcons());
+            });
+        },
+        
+        getJournalColor(journal) {
+            const colors = {
+                'Ventes': 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
+                'Achats': 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+                'Banque': 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+                'Caisse': 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+                'OD': 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+            };
+            return colors[journal] || colors['OD'];
+        },
+        
+        openAddModal() {
+            alert('Modal d\'ajout d\'écriture');
+        },
+        
+        viewEcriture(ecriture) {
+            alert('Détails de l\'écriture: ' + ecriture.piece);
+        },
+        
+        editEcriture(ecriture) {
+            alert('Modification de l\'écriture: ' + ecriture.piece);
+        },
+        
+        validateEcriture(ecriture) {
+            ecriture.valide = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        validerRapprochement() {
+            alert('Rapprochement bancaire validé avec succès !');
+        },
+        
+        exportData() {
+            alert('Export des données comptables');
+        },
+        
+        formatMoney(amount) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+        }
+    }
+}
+</script>
+{% endblock %}

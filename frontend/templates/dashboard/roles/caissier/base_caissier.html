@@ -1,0 +1,79 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block sidebar_content %}
+<!-- Sidebar Caissier -->
+<div class="flex flex-col h-full">
+    <!-- Logo -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-walee-blue dark:text-white">💰 Caissier</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Point de Vente</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        
+        <!-- Caisse -->
+        <a href="{% url 'caisse' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition group {% if request.resolver_match.url_name == 'caisse' %}bg-walee-blue text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+            <span class="font-medium">Point de Vente</span>
+        </a>
+
+        <!-- Mes Ventes -->
+        <a href="{% url 'caissier_mes_ventes' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="receipt" class="w-5 h-5"></i>
+            <span class="font-medium">Mes Ventes</span>
+        </a>
+
+        <!-- Session Caisse -->
+        <a href="{% url 'caissier_session' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+            <span class="font-medium">Ma Session</span>
+        </a>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+
+        <!-- Produits -->
+        <a href="{% url 'stock' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="package" class="w-5 h-5"></i>
+            <span class="font-medium">Produits</span>
+            <span class="ml-auto text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">Lecture</span>
+        </a>
+
+        <!-- Clients -->
+        <a href="{% url 'caissier_clients' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span class="font-medium">Clients</span>
+        </a>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+
+        <!-- Aide -->
+        <a href="{% url 'caissier_aide' %}" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-300">
+            <i data-lucide="help-circle" class="w-5 h-5"></i>
+            <span class="font-medium">Aide & Support</span>
+        </a>
+
+    </nav>
+
+    <!-- Session Info -->
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-green-700 dark:text-green-400">Session Active</span>
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <p class="text-xs text-green-600 dark:text-green-500">Caisse 01 - Ouvert à 08:00</p>
+            <button class="mt-3 w-full px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition">
+                <i data-lucide="power" class="w-4 h-4 inline mr-1"></i>
+                Clôturer Session
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

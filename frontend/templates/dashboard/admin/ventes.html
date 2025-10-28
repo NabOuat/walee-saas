@@ -4,7 +4,7 @@
 {% block title %}Ventes - Walee{% endblock %}
 
 {% block dashboard_content %}
-<div x-data="ventesData()">
+<div x-data="ventesApp()" x-init="init()">
     
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -451,8 +451,16 @@
 
 {% block extra_js %}
 <script>
-function ventesData() {
+function ventesApp() {
     return {
+        init() {
+            // Initialisation
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 100);
+        },
         showNewSaleModal: false,
         selectedEntreprise: '',
         searchQuery: '',
@@ -514,9 +522,22 @@ function ventesData() {
             });
         },
         
-        loadVentes() {
-            // Recharger les stats selon l'entreprise sélectionnée
-            console.log('Chargement ventes pour entreprise:', this.selectedEntreprise);
+        async loadVentes() {
+            showLoading('Chargement des ventes...');
+            try {
+                // Simuler un chargement
+                await new Promise(resolve => setTimeout(resolve, 800));
+                console.log('Chargement ventes pour entreprise:', this.selectedEntreprise);
+            } catch (error) {
+                showToast(
+                    'Impossible de charger les ventes. Veuillez réessayer.',
+                    'error',
+                    'Erreur de chargement',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         },
         
         formatMoney(amount) {
@@ -533,19 +554,49 @@ function ventesData() {
         },
         
         viewVente(vente) {
-            alert(`📋 Détails de la vente ${vente.numero}\n\nClient: ${vente.client}\nMontant: ${this.formatMoney(vente.montant)}\nArticles: ${vente.articles}\nStatut: ${vente.statut}`);
+            showToast(
+                `Client: ${vente.client}<br>Montant: ${this.formatMoney(vente.montent)}<br>Articles: ${vente.articles}<br>Statut: ${vente.statut}`,
+                'info',
+                `Détails de la vente ${vente.numero}`,
+                5000
+            );
         },
         
-        printVente(vente) {
-            alert(`🖨️ Impression de la vente ${vente.numero}\n\nFonctionnalité à venir`);
+        async printVente(vente) {
+            showLoading('Préparation de l\'impression...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            hideLoading();
+            
+            showToast(
+                'La fonction d\'impression sera bientôt disponible',
+                'info',
+                'Impression en cours de développement',
+                3000
+            );
         },
         
-        deleteVente(vente) {
-            if (confirm(`⚠️ Annuler la vente ${vente.numero} ?\n\nCette action est irréversible.`)) {
+        async deleteVente(vente) {
+            const confirmed = await showConfirm(
+                'Confirmer l\'annulation',
+                `Êtes-vous sûr de vouloir annuler la vente ${vente.numero} ?<br><span class='text-sm text-red-600 dark:text-red-400'>Cette action est irréversible.</span>`,
+                'Annuler',
+                'Oui, annuler'
+            );
+            
+            if (confirmed) {
+                showLoading('Annulation en cours...');
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
                 const index = this.ventes.findIndex(v => v.id === vente.id);
                 if (index > -1) {
                     this.ventes.splice(index, 1);
-                    alert(`✅ Vente ${vente.numero} annulée.`);
+                    hideLoading();
+                    showToast(
+                        `La vente ${vente.numero} a été annulée avec succès`,
+                        'success',
+                        'Vente annulée',
+                        5000
+                    );
                 }
             }
         },
@@ -588,45 +639,67 @@ function ventesData() {
             return afterDiscount + this.calculateTVA();
         },
         
-        handleNewSale() {
+        async handleNewSale() {
             if (!this.saleForm.clientId) {
-                alert('⚠️ Veuillez sélectionner un client');
+                showToast('Veuillez sélectionner un client', 'warning', 'Champ requis');
                 return;
             }
             
             if (this.saleForm.items.length === 0) {
-                alert('⚠️ Veuillez ajouter au moins un produit');
+                showToast('Veuillez ajouter au moins un produit', 'warning', 'Panier vide');
                 return;
             }
             
-            // Créer la nouvelle vente
-            const newVente = {
-                id: this.ventes.length + 1,
-                numero: `VNT-${String(this.ventes.length + 1).padStart(3, '0')}`,
-                date: 'Maintenant',
-                entreprise: 'ACME Corporation',
-                entrepriseId: 1,
-                client: 'Client #' + this.saleForm.clientId,
-                clientTel: '+225 XX XX XX XX',
-                vendeur: 'Vous',
-                montant: this.calculateTotal(),
-                articles: this.saleForm.items.length,
-                statut: 'Payée'
-            };
+            showLoading('Traitement de la vente...');
             
-            this.ventes.unshift(newVente);
-            
-            alert(`✅ Vente ${newVente.numero} créée avec succès !\n\nMontant: ${this.formatMoney(newVente.montant)}\nArticles: ${newVente.articles}`);
-            
-            // Réinitialiser le formulaire
-            this.saleForm = {
-                clientId: '',
-                items: [],
-                remise: 0,
-                modePaiement: 'especes',
-                notes: ''
-            };
-            this.showNewSaleModal = false;
+            try {
+                // Simuler un appel API
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                
+                // Créer la nouvelle vente
+                const newVente = {
+                    id: this.ventes.length + 1,
+                    numero: `VNT-${String(this.ventes.length + 1).padStart(3, '0')}`,
+                    date: 'Maintenant',
+                    entreprise: 'ACME Corporation',
+                    entrepriseId: 1,
+                    client: 'Client #' + this.saleForm.clientId,
+                    clientTel: '+225 XX XX XX XX',
+                    vendeur: 'Vous',
+                    montant: this.calculateTotal(),
+                    articles: this.saleForm.items.length,
+                    statut: 'Payée'
+                };
+                
+                this.ventes.unshift(newVente);
+                
+                showToast(
+                    `Montant: ${this.formatMoney(newVente.montent)}<br>Articles: ${newVente.articles}`,
+                    'success',
+                    `Vente ${newVente.numero} créée avec succès !`,
+                    5000
+                );
+                
+                // Réinitialiser le formulaire
+                this.saleForm = {
+                    clientId: '',
+                    items: [],
+                    remise: 0,
+                    modePaiement: 'especes',
+                    notes: ''
+                };
+                this.showNewSaleModal = false;
+                
+            } catch (error) {
+                showToast(
+                    'Une erreur est survenue lors de la création de la vente',
+                    'error',
+                    'Erreur',
+                    5000
+                );
+            } finally {
+                hideLoading();
+            }
         }
     }
 }

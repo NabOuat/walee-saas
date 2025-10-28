@@ -1,0 +1,25 @@
+{% extends "dashboard/roles/vendeur/base_vendeur.html" %}
+{% load static %}
+{% block title %}Mes Objectifs - Vendeur - Walee{% endblock %}
+{% block dashboard_content %}
+<div x-data="{objectifs:[{nom:'CA Mensuel',cible:3500000,realise:2800000},{nom:'Nouveaux Clients',cible:10,realise:7}]}" x-init="lucide.createIcons()">
+<h1 class="text-2xl font-bold mb-6">Mes Objectifs</h1>
+<div class="space-y-4">
+<template x-for="obj in objectifs" :key="obj.nom">
+<div class="bg-white rounded-xl p-6 shadow-sm">
+<div class="flex justify-between mb-3">
+<h3 class="font-bold" x-text="obj.nom"></h3>
+<span class="text-sm font-semibold" x-text="Math.round(obj.realise/obj.cible*100)+'%'"></span>
+</div>
+<div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+<div class="bg-green-600 h-3 rounded-full" :style="'width:'+Math.min(obj.realise/obj.cible*100,100)+'%'"></div>
+</div>
+<div class="flex justify-between text-sm text-gray-600">
+<span x-text="obj.realise.toLocaleString()"></span>
+<span x-text="obj.cible.toLocaleString()"></span>
+</div>
+</div>
+</template>
+</div>
+</div>
+{% endblock %}
