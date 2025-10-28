@@ -6,6 +6,9 @@ django-environ==0.11.2
 psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 supabase==2.3.4
+#Connexion a la Base de donnée Supabase
+python-dotenv 
+psycopg2
 
 # Web Server
 gunicorn==21.2.0
@@ -28,3 +31,5 @@ python-dotenv==1.0.0
 # Production
 django-storages==1.14.2
 boto3==1.34.34
+
+
