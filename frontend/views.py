@@ -1,9 +1,71 @@
 """
 Views for frontend pages (authentication and landing page)
 """
+import requests
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import transaction # Utile pour garantir deux operations indissociable
+from django.conf import settings # Importation essentielle pour recuperer les variables
+# Importation des models
+from backend.walee.models import Utilisateurs
+
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_ANON_KEY = settings.SUPABASE_ANON_KEY
+
+###### API VIEWS
+class InscriptionPartenaireAPIView(APIView):
+    # Cet endpoint n'a pas besoin d'authentification DRF car il crée le compte
+    permission_classes = [] 
+
+    def post(self, request):
+        data = request.data
+        email = data.get('email')
+        password = data.get('password')
+        full_name = data.get('full_name', '')
+
+        supabase_payload = {
+            "email": email,
+            "password": password
+        }
+        
+        headers = {
+            "apikey": SUPABASE_ANON_KEY,
+            "Content-Type": "application/json"
+        }
+
+        try:
+            SUPABASE_AUTH_URL = f"{SUPABASE_URL}/auth/v1/signup"
+            # Appel à l'API Supabase pour l'inscription
+            auth_response = requests.post(SUPABASE_AUTH_URL, json=supabase_payload, headers=headers)
+            auth_response.raise_for_status() # Lève une exception si le statut HTTP est un échec (4xx ou 5xx)
+            
+            # Récupérer l'ID utilisateur généré par Supabase
+            supabase_user_data = auth_response.json()
+            supabase_user_id = supabase_user_data['user']['id']
+
+            # Creation du profil utilisateur dans la table locale
+            Utilisateurs.objects.create(
+                id = supabase_user_id,
+                full_name = full_name
+            )
+
+            return Response ({
+                "success": True,
+                "message": "Inscription réussie.",
+                "email" : email
+            }, status=status.HTTP_201_CREATED)
+            
+        except requests.exceptions.HTTPError as e:
+            # Gérer les erreurs de Supabase (ex: utilisateur déjà enregistré)
+            return Response({"detail": "Erreur Supabase Auth: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({"detail": "Erreur interne lors de l'appel Supabase: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # Error handlers
@@ -328,3 +390,5 @@ def onboarding_page(request):
 def dashboard_page(request):
     """Dashboard page"""
     return render(request, 'dashboard/admin/index.html')
+
+

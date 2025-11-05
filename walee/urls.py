@@ -6,6 +6,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from frontend import views
+from frontend.api_supabase import add_user
+
 
 # Custom error handlers
 handler404 = 'frontend.views.error_404'
@@ -16,7 +18,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     
     # API Integrations (mode frontend uniquement)
-    path("api/integrations/", include('accounts.integrations.urls')),
+    # path("api/integrations/", include('accounts.integrations.urls')),
     
     # Landing page
     path("", views.HomeView.as_view(), name='home'),
@@ -82,6 +84,10 @@ urlpatterns = [
     path("dashboard/rh/paie/", views.RHPaieView.as_view(), name='rh_paie'),
     path("dashboard/rh/formations/", views.RHFormationsView.as_view(), name='rh_formations'),
     path("dashboard/rh/evaluations/", views.RHEvaluationsView.as_view(), name='rh_evaluations'),
+
+    # API Supabase
+    # path('api/utilisateurs/', add_user, name='add_user'),
+    path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' )
 ]
 
 # Serve static and media files in development

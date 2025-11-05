@@ -1,17 +1,14 @@
 # Core Django
 Django==5.0.1
-<<<<<<< HEAD
-django-environ==0.11.2
+django-environ
 
 # Database
-psycopg2-binary==2.9.9
-dj-database-url==2.1.0
-supabase==2.3.4
+psycopg2-binary
+dj-database-url
+supabase
 #Connexion a la Base de donnée Supabase
 python-dotenv 
 psycopg2
-=======
->>>>>>> 0d3b53d9ee2035a9a282aa334152428c7736bcde
 
 # Web Server
 gunicorn==21.2.0
@@ -29,12 +26,12 @@ djangorestframework==3.14.0
 
 # Utilities
 python-dotenv==1.0.0
-<<<<<<< HEAD
 
 # Production
 django-storages==1.14.2
 boto3==1.34.34
 
+# Pour la gestion des requetes entre Django et Supabase
+requests
 
-=======
->>>>>>> 0d3b53d9ee2035a9a282aa334152428c7736bcde
+
