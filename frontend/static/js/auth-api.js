@@ -22,7 +22,7 @@ async function inscription(email, nom_complet, telephone = null) {
         if (telephone) {
             body.telephone = telephone;
         }
-        
+        console.log('Body envoyé à l\'API:', body);
         const response = await fetch(`${API_BASE}register/`, {
             method: 'POST',
             headers: {
@@ -47,20 +47,21 @@ async function inscription(email, nom_complet, telephone = null) {
  * @param {string} email - Email de l'utilisateur
  * @param {string} password - Mot de passe
  * @param {string} telephone - Téléphone (optionnel)
+ * @param {string} loginMethod - Methode de connexion ('email' ou 'phone')
  * @returns {Promise} Réponse de l'API avec tokens
  */
-async function connexion(email = null, password = null, telephone = null) {
+async function connexion(email = null, password, telephone = null,loginMethod ) {
     try {
-        const body = { password };
-        
+        const body = { password:password,
+            loginMethod:loginMethod
+         };
         if (email) {
             body.email = email;
         }
         if (telephone) {
-            body.telephone = telephone;
+            body.telephone = telephone ;
         }
         
-        console.log('Body envoyé à l\'API:', body);
         
         const response = await fetch(`${API_BASE}login/`, {
             method: 'POST',
@@ -71,21 +72,18 @@ async function connexion(email = null, password = null, telephone = null) {
         });
         
         const data = await response.json();
-        console.log('Réponse de l\'API:', data);
         
         // Stocker les tokens si connexion réussie
         if (data.success && data.data) {
             localStorage.setItem('access_token', data.data.access_token);
             localStorage.setItem('refresh_token', data.data.refresh_token);
-            localStorage.setItem('user', JSON.stringify(data.data.utilisateur));
+            localStorage.setItem('user', JSON.stringify(data.data.user));
         }
-        
         return data;
     } catch (error) {
-        console.error('Erreur connexion:', error);
         return {
             success: false,
-            message: 'Erreur de connexion au serveur'
+            message: error || 'Erreur de connexion au serveur'
         };
     }
 }
