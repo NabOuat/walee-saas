@@ -315,8 +315,11 @@
                     );
                                         
                     if (result.success) {
+                        console.log('Login success, result:', result);
+                        console.log('localStorage après login:', localStorage.getItem('access_token'));
                         afficherToast('Connexion réussie !', 'success');
                         setTimeout(() => {
+                            console.log('Redirection vers /loading/, localStorage:', localStorage.getItem('access_token'));
                             window.location.href = '/loading/';
                         }, 1000);
                     } else {

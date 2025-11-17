@@ -91,6 +91,7 @@ urlpatterns = [
     path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' ),
     path('api/auth/login/',views.LoginPartenaireAPIView.as_view(), name='auth_login'),
     path('api/auth/profile/',views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
+    path('api/auth/verify-otp/', views.VerifyOtpAPIView.as_view(), name='auth_verify_otp'),
     # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout')
 ]
 

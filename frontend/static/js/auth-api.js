@@ -6,13 +6,14 @@
 const API_BASE = 'http://localhost:8000/api/auth/';
 
 /**
- * Inscription - Étape 1 : Envoyer OTP
+ * Inscription - Étape 1 : Envoyer OTP + données de base
  * @param {string} email - Email de l'utilisateur
  * @param {string} nom_complet - Nom complet de l'utilisateur
  * @param {string} telephone - Téléphone (optionnel)
+ * @param {string} password - Mot de passe (optionnel mais recommandé)
  * @returns {Promise} Réponse de l'API
  */
-async function inscription(email, nom_complet, telephone = null) {
+async function inscription(email, nom_complet, telephone = null, password = null) {
     try {
         const body = { nom_complet };
         
@@ -21,6 +22,11 @@ async function inscription(email, nom_complet, telephone = null) {
         }
         if (telephone) {
             body.telephone = telephone;
+        }
+
+        // Si un mot de passe est fourni, l'envoyer également au backend
+        if (password) {
+            body.password = password;
         }
         console.log('Body envoyé à l\'API:', body);
         const response = await fetch(`${API_BASE}register/`, {
@@ -73,11 +79,34 @@ async function connexion(email = null, password, telephone = null,loginMethod ) 
         
         const data = await response.json();
         
+        console.log('Réponse login:', data);
+        
         // Stocker les tokens si connexion réussie
-        if (data.success && data.data) {
-            localStorage.setItem('access_token', data.data.access_token);
-            localStorage.setItem('refresh_token', data.data.refresh_token);
-            localStorage.setItem('user', JSON.stringify(data.data.user));
+        if (data.success) {
+            // Le backend retourne les tokens directement dans data, pas dans data.data
+            console.log('Stockage du token:', data.access_token);
+            
+            // Utiliser sessionStorage ET localStorage pour plus de fiabilité
+            try {
+                sessionStorage.setItem('access_token', data.access_token);
+                sessionStorage.setItem('refresh_token', data.refresh_token);
+                sessionStorage.setItem('user', JSON.stringify(data.user));
+                console.log('Token stocké dans sessionStorage');
+            } catch (e) {
+                console.warn('sessionStorage indisponible:', e);
+            }
+            
+            try {
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                console.log('Token stocké dans localStorage');
+            } catch (e) {
+                console.warn('localStorage indisponible:', e);
+            }
+            
+            console.log('Vérification sessionStorage:', sessionStorage.getItem('access_token'));
+            console.log('Vérification localStorage:', localStorage.getItem('access_token'));
         }
         return data;
     } catch (error) {
@@ -216,7 +245,12 @@ async function deconnexion() {
  */
 async function getProfile() {
     try {
-        const token = localStorage.getItem('access_token');
+        // Chercher le token dans sessionStorage d'abord, puis localStorage
+        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
+        
+        console.log('getProfile - Token trouvé:', !!token);
+        console.log('getProfile - sessionStorage token:', !!sessionStorage.getItem('access_token'));
+        console.log('getProfile - localStorage token:', !!localStorage.getItem('access_token'));
         
         if (!token) {
             return {

@@ -315,12 +315,12 @@
         <!-- User Profile (bottom) -->
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div class="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                <div class="w-10 h-10 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0">
+                <div id="sidebar-user-initials" class="w-10 h-10 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0">
                     JD
                 </div>
                 <div x-show="sidebarOpen" class="overflow-hidden">
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">John Doe</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Administrateur</p>
+                    <p id="sidebar-user-name" class="text-sm font-semibold text-gray-900 dark:text-white truncate">John Doe</p>
+                    <p id="sidebar-user-role" class="text-xs text-gray-500 dark:text-gray-400 truncate">Administrateur</p>
                 </div>
             </div>
         </div>
@@ -681,6 +681,58 @@
     
     <!-- PWA Install -->
     <script src="{% static 'js/pwa-install.js' %}"></script>
+    
+    <!-- Auth API for profile loading -->
+    <script src="{% static 'js/auth-api.js' %}"></script>
+    
+    <!-- Load and display user profile -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Petit délai pour s'assurer que localStorage est accessible
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Vérifier que l'utilisateur est authentifié
+            const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
+            console.log('Token trouvé:', !!token);
+            console.log('sessionStorage token:', !!sessionStorage.getItem('access_token'));
+            console.log('localStorage token:', !!localStorage.getItem('access_token'));
+            console.log('sessionStorage keys:', Object.keys(sessionStorage));
+            console.log('localStorage keys:', Object.keys(localStorage));
+            
+            // Si pas de token, essayer quand même d'appeler getProfile()
+            // car le serveur peut avoir une session
+            if (!token) {
+                console.log('Pas de token en localStorage, tentative getProfile() quand même');
+            }
+            
+            console.log('Appel getProfile()');
+            // Charger le profil utilisateur
+            const profileData = await getProfile();
+            console.log('Profile data:', profileData);
+            
+            if (profileData.success && profileData.user) {
+                const user = profileData.user;
+                const nomComplet = user.user_metadata?.nom_complet || user.email || 'Utilisateur';
+                const email = user.email || '';
+                const initiales = nomComplet.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+                
+                console.log('Mise à jour avec:', { nomComplet, email, initiales });
+                
+                // Mettre à jour la sidebar
+                const sidebarInitials = document.getElementById('sidebar-user-initials');
+                const sidebarName = document.getElementById('sidebar-user-name');
+                const sidebarRole = document.getElementById('sidebar-user-role');
+                
+                if (sidebarInitials) sidebarInitials.textContent = initiales;
+                if (sidebarName) sidebarName.textContent = nomComplet;
+                if (sidebarRole) sidebarRole.textContent = email;
+            } else {
+                console.log('Profil échoué, redirection vers login');
+                // Token invalide ou expiré, ou pas d'authentification
+                redirectSiNonAuthentifie();
+            }
+        });
+    </script>
     
 </body>
 </html>
