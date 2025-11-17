@@ -91,7 +91,8 @@ urlpatterns = [
     path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' ),
     path('api/auth/login/',views.LoginPartenaireAPIView.as_view(), name='auth_login'),
     path('api/auth/profile/',views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
-    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout')
+    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout'),
+    # path('api/entreprises/', views.EntreprisesAPIView.as_view(), name='entreprises_api'),
 ]
 
 # Serve static and media files in development
