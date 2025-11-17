@@ -86,16 +86,7 @@ async function connexion(email = null, password, telephone = null,loginMethod ) 
             // Le backend retourne les tokens directement dans data, pas dans data.data
             console.log('Stockage du token:', data.access_token);
             
-            // Utiliser sessionStorage ET localStorage pour plus de fiabilité
-            try {
-                sessionStorage.setItem('access_token', data.access_token);
-                sessionStorage.setItem('refresh_token', data.refresh_token);
-                sessionStorage.setItem('user', JSON.stringify(data.user));
-                console.log('Token stocké dans sessionStorage');
-            } catch (e) {
-                console.warn('sessionStorage indisponible:', e);
-            }
-            
+            // Stocker dans localStorage ET cookies pour plus de fiabilité
             try {
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
@@ -105,8 +96,17 @@ async function connexion(email = null, password, telephone = null,loginMethod ) 
                 console.warn('localStorage indisponible:', e);
             }
             
-            console.log('Vérification sessionStorage:', sessionStorage.getItem('access_token'));
+            // Aussi stocker dans un cookie (persiste mieux entre les pages)
+            try {
+                document.cookie = `access_token=${data.access_token}; path=/; max-age=3600`;
+                document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=3600`;
+                console.log('Token stocké dans cookies');
+            } catch (e) {
+                console.warn('Cookies indisponibles:', e);
+            }
+            
             console.log('Vérification localStorage:', localStorage.getItem('access_token'));
+            console.log('Vérification cookies:', document.cookie);
         }
         return data;
     } catch (error) {
@@ -245,12 +245,24 @@ async function deconnexion() {
  */
 async function getProfile() {
     try {
-        // Chercher le token dans sessionStorage d'abord, puis localStorage
-        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
+        // Chercher le token dans localStorage d'abord, puis dans les cookies
+        let token = localStorage.getItem('access_token');
+        
+        if (!token) {
+            // Chercher dans les cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'access_token') {
+                    token = value;
+                    break;
+                }
+            }
+        }
         
         console.log('getProfile - Token trouvé:', !!token);
-        console.log('getProfile - sessionStorage token:', !!sessionStorage.getItem('access_token'));
         console.log('getProfile - localStorage token:', !!localStorage.getItem('access_token'));
+        console.log('getProfile - cookies:', document.cookie);
         
         if (!token) {
             return {

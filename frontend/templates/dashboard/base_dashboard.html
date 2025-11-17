@@ -374,12 +374,12 @@
         <!-- User Profile -->
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center space-x-3 px-3 py-2">
-                <div class="w-10 h-10 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white font-semibold">
+                <div id="mobile-user-initials" class="w-10 h-10 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white font-semibold">
                     JD
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white">John Doe</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Administrateur</p>
+                    <p id="mobile-user-name" class="text-sm font-semibold text-gray-900 dark:text-white">John Doe</p>
+                    <p id="mobile-user-email" class="text-xs text-gray-500 dark:text-gray-400">Administrateur</p>
                 </div>
             </div>
         </div>
@@ -544,7 +544,7 @@
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" 
                                 class="flex items-center space-x-2 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
-                            <div class="w-8 h-8 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                            <div id="header-user-initials" class="w-8 h-8 bg-gradient-to-br from-walee-blue to-walee-indigo rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
                                 JD
                             </div>
                             <i data-lucide="chevron-down" class="w-4 h-4 text-gray-600 dark:text-gray-300 hidden lg:block"></i>
@@ -558,8 +558,8 @@
                             
                             <!-- User Info -->
                             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white">John Doe</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">john.doe@walee.com</p>
+                                <p id="header-user-name" class="text-sm font-semibold text-gray-900 dark:text-white">John Doe</p>
+                                <p id="header-user-email" class="text-xs text-gray-500 dark:text-gray-400">john.doe@walee.com</p>
                             </div>
                             
                             <a href="{% url 'profil' %}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -687,17 +687,36 @@
     
     <!-- Load and display user profile -->
     <script>
+        // Masquer les skeleton loaders après le chargement
+        function hideSkeletonLoaders() {
+            const skeletons = document.querySelectorAll('.skeleton, .skeleton-card, .skeleton-table-row, .skeleton-list-item, .skeleton-kpi, .skeleton-text');
+            skeletons.forEach(skeleton => {
+                skeleton.style.display = 'none';
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', async () => {
             // Petit délai pour s'assurer que localStorage est accessible
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // Vérifier que l'utilisateur est authentifié
-            const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
-            console.log('Token trouvé:', !!token);
-            console.log('sessionStorage token:', !!sessionStorage.getItem('access_token'));
-            console.log('localStorage token:', !!localStorage.getItem('access_token'));
-            console.log('sessionStorage keys:', Object.keys(sessionStorage));
-            console.log('localStorage keys:', Object.keys(localStorage));
+            let token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // Chercher dans les cookies
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'access_token') {
+                        token = value;
+                        break;
+                    }
+                }
+            }
+            
+            console.log('Dashboard - Token trouvé:', !!token);
+            console.log('Dashboard - localStorage token:', !!localStorage.getItem('access_token'));
+            console.log('Dashboard - cookies:', document.cookie);
             
             // Si pas de token, essayer quand même d'appeler getProfile()
             // car le serveur peut avoir une session
@@ -712,7 +731,8 @@
             
             if (profileData.success && profileData.user) {
                 const user = profileData.user;
-                const nomComplet = user.user_metadata?.nom_complet || user.email || 'Utilisateur';
+                // Chercher le nom dans nom_complet (depuis la table locale), sinon user_metadata, sinon email
+                const nomComplet = user.nom_complet || user.user_metadata?.nom_complet || user.email || 'Utilisateur';
                 const email = user.email || '';
                 const initiales = nomComplet.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
                 
@@ -726,6 +746,27 @@
                 if (sidebarInitials) sidebarInitials.textContent = initiales;
                 if (sidebarName) sidebarName.textContent = nomComplet;
                 if (sidebarRole) sidebarRole.textContent = email;
+                
+                // Mettre à jour le header user menu
+                const headerUserName = document.getElementById('header-user-name');
+                const headerUserEmail = document.getElementById('header-user-email');
+                const headerUserInitials = document.getElementById('header-user-initials');
+                
+                if (headerUserName) headerUserName.textContent = nomComplet;
+                if (headerUserEmail) headerUserEmail.textContent = email;
+                if (headerUserInitials) headerUserInitials.textContent = initiales;
+                
+                // Mettre à jour le mobile sidebar
+                const mobileUserInitials = document.getElementById('mobile-user-initials');
+                const mobileUserName = document.getElementById('mobile-user-name');
+                const mobileUserEmail = document.getElementById('mobile-user-email');
+                
+                if (mobileUserInitials) mobileUserInitials.textContent = initiales;
+                if (mobileUserName) mobileUserName.textContent = nomComplet;
+                if (mobileUserEmail) mobileUserEmail.textContent = email;
+                
+                // Masquer les skeleton loaders
+                hideSkeletonLoaders();
             } else {
                 console.log('Profil échoué, redirection vers login');
                 // Token invalide ou expiré, ou pas d'authentification

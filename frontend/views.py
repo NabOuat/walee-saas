@@ -305,6 +305,21 @@ class ProfilePartenaireAPIView(APIView):
             user_response.raise_for_status() # Lève une exception si le statut HTTP est un échec (4xx ou 5xx)
 
             user_data = user_response.json()
+            user_id = user_data.get("id")
+            
+            # Chercher aussi les données locales (nom_complet, etc.)
+            utilisateur_local = None
+            if user_id:
+                try:
+                    utilisateur_local = Utilisateurs.objects.get(id=user_id)
+                except Utilisateurs.DoesNotExist:
+                    utilisateur_local = None
+            
+            # Fusionner les données : Supabase + données locales
+            if utilisateur_local:
+                user_data["nom_complet"] = utilisateur_local.nom_complet
+                user_data["telephone"] = utilisateur_local.telephone
+            
             return Response ( 
                 {"success": True,
                  "user": user_data
