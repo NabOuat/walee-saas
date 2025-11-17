@@ -55,6 +55,24 @@ INSTALLED_APPS = [
     'corsheaders',
 ]
 
+# Django REST Framework configuration
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Limites globales
+        "anon": "100/hour",
+        "user": "1000/hour",
+        # Limites spécifiques auth (anti brute-force)
+        "auth_register": "5/minute",
+        "auth_login": "10/minute",
+        "auth_verify_otp": "10/minute",
+    },
+}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # Pour servir les fichiers statiques

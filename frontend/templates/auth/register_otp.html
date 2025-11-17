@@ -196,6 +196,72 @@
                             <span x-text="'Format: ' + selectedCountry.format"></span>
                         </p>
                     </div>
+
+                    <!-- Mot de passe (création) -->
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Créer un mot de passe *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                :type="showPassword ? 'text' : 'password'" 
+                                id="password" 
+                                x-model="password"
+                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                placeholder="Min. 8 caractères"
+                                required
+                                minlength="8"
+                            >
+                            <button 
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                            Minimum 8 caractères
+                        </p>
+                    </div>
+
+                    <!-- Confirmer mot de passe -->
+                    <div class="mb-6">
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confirmer le mot de passe *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                            <input 
+                                :type="showConfirmPassword ? 'text' : 'password'" 
+                                id="confirmPassword" 
+                                x-model="confirmPassword"
+                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
+                                :class="confirmPassword && password !== confirmPassword ? 'border-red-500' : ''"
+                                placeholder="Confirmer le mot de passe"
+                                required
+                                minlength="8"
+                            >
+                            <button 
+                                type="button"
+                                @click="showConfirmPassword = !showConfirmPassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i :data-lucide="showConfirmPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-xs" :class="confirmPassword && password !== confirmPassword ? 'text-red-500' : 'text-gray-500'">
+                            <i :data-lucide="confirmPassword && password !== confirmPassword ? 'x-circle' : 'info'" class="w-3 h-3 inline"></i>
+                            <span x-show="!confirmPassword || password === confirmPassword">Les mots de passe doivent correspondre</span>
+                            <span x-show="confirmPassword && password !== confirmPassword">Les mots de passe ne correspondent pas</span>
+                        </p>
+                    </div>
                     
                     <!-- Submit Button -->
                     <button 
@@ -240,72 +306,6 @@
                         >
                         <p class="mt-2 text-xs text-gray-500 text-center">
                             Le code expire dans <span class="font-semibold text-walee-green" x-text="countdown"></span>
-                        </p>
-                    </div>
-                    
-                    <!-- Mot de passe -->
-                    <div class="mb-6">
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                            Créer un mot de passe *
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
-                            </div>
-                            <input 
-                                :type="showPassword ? 'text' : 'password'" 
-                                id="password" 
-                                x-model="password"
-                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
-                                placeholder="Min. 8 caractères"
-                                required
-                                minlength="8"
-                            >
-                            <button 
-                                type="button"
-                                @click="showPassword = !showPassword"
-                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
-                            >
-                                <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <p class="mt-2 text-xs text-gray-500">
-                            <i data-lucide="info" class="w-3 h-3 inline"></i>
-                            Minimum 8 caractères
-                        </p>
-                    </div>
-                    
-                    <!-- Confirmer mot de passe -->
-                    <div class="mb-6">
-                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
-                            Confirmer le mot de passe *
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
-                            </div>
-                            <input 
-                                :type="showConfirmPassword ? 'text' : 'password'" 
-                                id="confirmPassword" 
-                                x-model="confirmPassword"
-                                class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-walee-green focus:border-transparent transition duration-200 outline-none"
-                                :class="confirmPassword && password !== confirmPassword ? 'border-red-500' : ''"
-                                placeholder="Confirmer le mot de passe"
-                                required
-                                minlength="8"
-                            >
-                            <button 
-                                type="button"
-                                @click="showConfirmPassword = !showConfirmPassword"
-                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
-                            >
-                                <i :data-lucide="showConfirmPassword ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <p class="mt-2 text-xs" :class="confirmPassword && password !== confirmPassword ? 'text-red-500' : 'text-gray-500'">
-                            <i :data-lucide="confirmPassword && password !== confirmPassword ? 'x-circle' : 'info'" class="w-3 h-3 inline"></i>
-                            <span x-show="!confirmPassword || password === confirmPassword">Les mots de passe doivent correspondre</span>
-                            <span x-show="confirmPassword && password !== confirmPassword">Les mots de passe ne correspondent pas</span>
                         </p>
                     </div>
                     
@@ -443,6 +443,17 @@ function registerForm() {
                 afficherToast('Veuillez entrer votre téléphone', 'error');
                 return;
             }
+
+            // Validation mot de passe dès l'étape 1
+            if (!this.password || this.password.length < 8) {
+                afficherToast('Le mot de passe doit contenir au moins 8 caractères', 'error');
+                return;
+            }
+
+            if (this.password !== this.confirmPassword) {
+                afficherToast('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
             
             this.loading = true;
             
@@ -455,7 +466,8 @@ function registerForm() {
                 const result = await inscription(
                     this.loginMethod === 'email' ? this.email : null,
                     this.nom_complet,
-                    fullPhone
+                    fullPhone,
+                    this.password || null
                 );
                 
                 if (result.success) {
@@ -482,16 +494,6 @@ function registerForm() {
         async verifierOTP() {
             if (this.code.length !== 6) {
                 afficherToast('Le code doit contenir 6 chiffres', 'error');
-                return;
-            }
-            
-            if (!this.password || this.password.length < 8) {
-                afficherToast('Le mot de passe doit contenir au moins 8 caractères', 'error');
-                return;
-            }
-            
-            if (this.password !== this.confirmPassword) {
-                afficherToast('Les mots de passe ne correspondent pas', 'error');
                 return;
             }
             
