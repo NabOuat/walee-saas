@@ -21,6 +21,23 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
 
+# Si la variable d'environnement n'est PAS définie, on utilise la liste par défaut :
+DEFAULT_CORS_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    ]
+
+# On tente de récupérer les origines depuis l'environnement.
+# Si non définies, on utilise la liste par défaut.
+cors_env = os.environ.get('CORS_ALLOWED_ORIGINS')
+if cors_env:
+    # Si définie, on suppose que les origines sont séparées par des virgules (ex: "url1,url2")
+    # et on les convertit en liste.
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_env.split(',')]
+else:
+    CORS_ALLOWED_ORIGINS = DEFAULT_CORS_ORIGINS
+
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Application definition
 
@@ -35,6 +52,7 @@ INSTALLED_APPS = [
     "frontend",
     "backend",
     "rest_framework",
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -46,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "walee.urls"

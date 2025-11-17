@@ -2,7 +2,7 @@
 URL configuration for walee project.
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from frontend import views
@@ -25,6 +25,7 @@ urlpatterns = [
     
     # Authentication
     path("login/", views.LoginView.as_view(), name='login'),
+    # path("register/", include('frontend.views.register'), name='register'),
     path("register/", views.RegisterView.as_view(), name='register'),
     path("forgot-password/", views.ForgotPasswordView.as_view(), name='forgot_password'),
     
@@ -87,7 +88,10 @@ urlpatterns = [
 
     # API Supabase
     # path('api/utilisateurs/', add_user, name='add_user'),
-    path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' )
+    path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' ),
+    path('api/auth/login/',views.LoginPartenaireAPIView.as_view(), name='auth_login'),
+    path('api/auth/profile/',views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
+    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout')
 ]
 
 # Serve static and media files in development

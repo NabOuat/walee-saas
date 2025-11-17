@@ -293,33 +293,34 @@
                 // Simuler le chargement
                 this.loading = true;
                 
-                // Simuler un délai de connexion
-                setTimeout(() => {
-                    afficherToast('Connexion réussie !', 'success');
+                // // Simuler un délai de connexion
+                // setTimeout(() => {
+                //     afficherToast('Connexion réussie !', 'success');
                     
-                    // Redirection vers le dashboard après 1 seconde
-                    setTimeout(() => {
-                        window.location.href = '/loading/';
-                    }, 1000);
-                }, 500);
+                //     // Redirection vers le dashboard après 1 seconde
+                //     setTimeout(() => {
+                //         window.location.href = '/loading/';
+                //     }, 1000);
+                // }, 500);
                 
-                /* CODE API COMMENTÉ - À RÉACTIVER PLUS TARD
+                //CODE API COMMENTÉ - À RÉACTIVER PLUS TARD
                 try {
                     const result = await connexion(
-                        this.loginMethod === 'email' ? this.email : null,
+                        //email(null si on utilise le telephone)
+                        this.loginMethod === 'email' ? this.email : null, 
                         this.password,
-                        this.loginMethod === 'phone' ? this.phone : null
+                        // telephone (null si on utilise l'email)
+                        this.loginMethod ==='phone' ? this.phone : null,
+                        this.loginMethod,
                     );
-                    
-                    console.log('Résultat connexion:', result);
-                    
+                                        
                     if (result.success) {
                         afficherToast('Connexion réussie !', 'success');
                         setTimeout(() => {
                             window.location.href = '/loading/';
                         }, 1000);
                     } else {
-                        const errorMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+                        const errorMsg = result.detail ;
                         console.error('Erreur de connexion:', result);
                         afficherToast(errorMsg || 'Erreur de connexion', 'error');
                     }
@@ -329,7 +330,7 @@
                 } finally {
                     this.loading = false;
                 }
-                */
+                
             }
         }
     }

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction # Utile pour garantir deux operations indissociable
 from django.conf import settings # Importation essentielle pour recuperer les variables
+import resend # Pour l'envoi d'email via Resend API
 # Importation des models
 from backend.walee.models import Utilisateurs
 
@@ -24,12 +25,17 @@ class InscriptionPartenaireAPIView(APIView):
     def post(self, request):
         data = request.data
         email = data.get('email')
-        password = data.get('password')
-        full_name = data.get('full_name', '')
+        password = data.get('password','azerty123')  # Mot de passe par defaut si non fourni
+        nom_complet = data.get('nom_complet', '')
+        telephone = data.get('telephone', '')
 
         supabase_payload = {
             "email": email,
-            "password": password
+            "password": password,
+            "options": {
+                "should_create_user": False, # False :Effectue une verification OTP avant la creation 
+                "email_redirect_to" : "http://localhost:8000/login"  # URL de redirection apres verification email
+            }
         }
         
         headers = {
@@ -42,7 +48,7 @@ class InscriptionPartenaireAPIView(APIView):
             # Appel à l'API Supabase pour l'inscription
             auth_response = requests.post(SUPABASE_AUTH_URL, json=supabase_payload, headers=headers)
             auth_response.raise_for_status() # Lève une exception si le statut HTTP est un échec (4xx ou 5xx)
-            
+            # print("Réponse Supabase Auth:", auth_response.json())
             # Récupérer l'ID utilisateur généré par Supabase
             supabase_user_data = auth_response.json()
             supabase_user_id = supabase_user_data['user']['id']
@@ -50,7 +56,9 @@ class InscriptionPartenaireAPIView(APIView):
             # Creation du profil utilisateur dans la table locale
             Utilisateurs.objects.create(
                 id = supabase_user_id,
-                full_name = full_name
+                nom_complet = nom_complet,
+                email = email,
+                telephone = telephone
             )
 
             return Response ({
@@ -66,6 +74,110 @@ class InscriptionPartenaireAPIView(APIView):
         except Exception as e:
             return Response({"detail": "Erreur interne lors de l'appel Supabase: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+class LoginPartenaireAPIView(APIView):
+    # Cet endpoint n'a pas besoin d'authentification DRF car il crée le compte
+    permission_classes = [] 
+
+    def post(self, request):
+        data = request.data
+        loginMethod = data.get('loginMethod') # email ou phone
+        email = data.get('email')
+        phone = data.get('telephone')
+        password = data.get('password')
+
+        if loginMethod == 'email' and not email or not password:
+            return Response (
+                {"detail": "L'email et le mot de passe sont requis."},
+                status= status.HTTP_400_BAD_REQUEST
+            )
+        
+        if loginMethod == "phone" and not phone or not password :
+            return Response (
+                {"detail": "Le numéro et le mot de passe sont requis."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        supabase_payload = {
+            "email": email,
+            "password": password
+        } if loginMethod == "email" else {"phone":phone, 
+                                          "password": password}
+        
+        headers = {
+            "apikey": SUPABASE_ANON_KEY,
+            "Content-Type": "application/json"
+        }
+
+        try:
+            SUPABASE_AUTH_URL = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
+            # Appel à l'API Supabase pour la connexion
+            login_response = requests.post(SUPABASE_AUTH_URL, json=supabase_payload, headers=headers)
+            login_response.raise_for_status() # Lève une exception si le statut HTTP est un échec (4xx ou 5xx)
+
+            session_data = login_response.json()
+            print("Données de session Supabase:", session_data)
+            return Response ( 
+                {"success": True,
+                 "message" : "Connexion réussie.",
+                 "access_token" : session_data.get("access_token"),
+                 "refresh_token" : session_data.get("refresh_token"),
+                 "user": session_data.get("user") # Possibilité de le retirer pour y acceder seulement apres un GetProfile
+                 },
+                 status=status.HTTP_200_OK
+            )
+            
+        except requests.exceptions.HTTPError as e:
+            # Gérer les erreurs de Supabase (ex: identifiants invalides)
+            # error_message = "Email ou mot de passe invalide."
+
+            return Response({"detail": "L'adresse email/ téléphone ou le mot de passe est incorrect."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({"detail": "Erreur interne lors de l'authentification: " + str(e)}, 
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProfilePartenaireAPIView(APIView):
+    # Cet endpoint nécessite une authentification DRF
+    permission_classes = [] 
+
+    def get(self, request):
+        # Récupérer le token d'accès depuis les en-têtes de la requête
+        access_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
+
+        if not access_token:
+            return Response({"detail": "Token d'accès manquant."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        headers = {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        try:
+            SUPABASE_USER_URL = f"{SUPABASE_URL}/auth/v1/user"
+            # Appel à l'API Supabase pour récupérer le profil utilisateur
+            user_response = requests.get(SUPABASE_USER_URL, headers=headers)
+            user_response.raise_for_status() # Lève une exception si le statut HTTP est un échec (4xx ou 5xx)
+            print("Réponse Supabase User:", user_response.json())
+
+            user_data = user_response.json()
+            print("Données utilisateur récupérées:", user_data)
+            return Response ( 
+                {"success": True,
+                 "user": user_data
+                 },
+                 status=status.HTTP_200_OK
+            )
+            
+        except requests.exceptions.HTTPError as e:
+            # Gérer les erreurs de Supabase (ex: token invalide)
+            return Response({"detail": "Erreur lors de la récupération du profil: " + str(e)}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({"detail": "Erreur interne lors de la récupération du profil: " + str(e)}, 
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Error handlers

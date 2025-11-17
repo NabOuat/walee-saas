@@ -5,22 +5,38 @@
 
 {% block dashboard_content %}
 <div x-data="dashboardData()">
-    
+    <template x-if="isLoading">
+        <div class="flex flex-col items-center justify-center h-64 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+            <i data-lucide="loader-circle" class="w-8 h-8 text-walee-blue animate-spin"></i>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">Verification de la session...</p>
+        </div>
+
+    </template>
+
     <!-- Welcome Section -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-2">
-                    Bonjour, John 👋
-                </h1>
-                <p class="text-gray-600 dark:text-gray-400">Voici un aperçu de votre activité aujourd'hui</p>
-            </div>
-            <div class="text-right hidden md:block">
-                <p class="text-sm text-gray-500 dark:text-gray-400" x-text="currentTime"></p>
+    <template x-if="!isLoading && isAuthenticated">
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold font-poppins text-walee-dark dark:text-white mb-2">
+                        Bonjour, <span x-text="user && user.email ? user.email.split(' ')[0] : 'Partenaire'"></span> 👋
+                    </h1>
+                    <p class="text-gray-600 dark:text-gray-400">Voici un aperçu de votre activité aujourd'hui</p>
+                </div>
+                <div class="text-right hidden md:block">
+                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="currentTime"></p>
+                </div>
             </div>
         </div>
-    </div>
-    
+    </template>
+
+    <template x-if="!isLoading && !isAuthenticated">
+        <div class="p-8 text-center bg-red-100 dark:bg-red-900/20 rounded-2xl">
+            <h2 class="text-xl text-red-700 dark:text-red-300">Session expirée ou non valide.</h2>
+            <p class="mt-2 text-red-600 dark:text-red-400">Redirection vers la page de connexion...</p>
+        </div>
+    </template>
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
@@ -220,6 +236,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/auth-api.js' %}"></script>
 <script>
 // Configuration optimisée de Chart.js - animations désactivées pour les performances
 Chart.defaults.animation = false;
@@ -228,22 +245,47 @@ Chart.defaults.maintainAspectRatio = false;
 
 function dashboardData() {
     return {
+        
+        // --- NOUVELLES PROPRIÉTÉS ---
+        user: null, // Stockera les données utilisateur ou sera null si déconnecté
+        isAuthenticated: false, // État de la connexion
+        isLoading: true, // Pour gérer l'affichage de chargement
+        // ---------------------------
+
         salesPeriod: '7',
         currentTime: '',
         salesChart: null,
         productsChart: null,
         
-        init() {
-            this.updateTime();
-            // Mise à jour de l'heure toutes les minutes au lieu de chaque seconde
-            setInterval(() => this.updateTime(), 60000);
+        async init() {
+            // 1 Charger /verifier le profil utilisateur
+            await this.loadUserProfile();
             
-            // Initialiser les graphiques
-            this.$nextTick(() => {
-                this.initCharts();
-            });
+            if (this.isAuthenticated) {
+                this.updateTime();
+                // Mise à jour de l'heure toutes les minutes au lieu de chaque seconde
+                setInterval(() => this.updateTime(), 60000);
+                
+                // Initialiser les graphiques
+                this.$nextTick(() => {
+                    this.initCharts();
+                });
+            }
+            this.isLoading = false ;
         },
-        
+        async loadUserProfile() {
+            const profile = await getProfile();
+
+            if (profile && profile.success) {
+                this.user = profile.data; // stocker les données de l'utilisateur
+                this.isAuthenticated = true;
+                localStorage.setItem('user', JSON.stringify(profile.data));
+            } else {
+                //  Si l'authentification échoue(token manquant , 401, etc.)
+                this.isAuthenticated = false;
+                this.user = null;
+            }
+        },
         updateTime() {
             const now = new Date();
             this.currentTime = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -353,8 +395,33 @@ function dashboardData() {
             this.salesChart.data.labels = labels;
             this.salesChart.data.datasets[0].data = data;
             this.salesChart.update('none'); // Mise à jour sans animation
+        },
+        
+        async logout() {
+            this.isLoading = true; // Afficher un indicateur de chargement
+            
+            // 1. Appeler la fonction de déconnexion de auth-api.js
+            // Cette fonction doit faire l'appel POST à /auth/v1/logout et nettoyer le localStorage
+            await deconnexion(); 
+            
+            // 2. Mettre à jour l'état local (bien que deconnexion() devrait déjà nettoyer le localStorage)
+            this.isAuthenticated = false;
+            this.user = null;
+            
+            // 3. Redirection vers la page de connexion
+            window.location.href = '/login/'; 
+            
+            this.isLoading = false;
         }
     }
 }
+window.handleGlobalLogout = async function() {
+    // Appeler la fonction logout du composant Alpine,
+    // ou si on est en dehors de la portée, appeler directement deconnexion()
+    
+    // Puisque nous ne sommes pas sûrs de la portée, l'appel direct est le plus sûr :
+    await deconnexion(); 
+    window.location.href = '/login/'; 
+};
 </script>
 {% endblock %}
