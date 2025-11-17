@@ -1,0 +1,9 @@
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Base Supabase
+DATABASE_URL=postgresql://postgres:eyFowXu2vjJ78LIe@db.mqhmwffpbumevkhtdjnd.supabase.co:5432/postgres
+SUPABASE_URL=https://mqhmwffpbumevkhtdjnd.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_Wboq8EIcwF1sgEPO9pvBzQ_a_s1uAL2

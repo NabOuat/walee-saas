@@ -93,6 +93,8 @@ urlpatterns = [
     path('api/auth/profile/',views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
     # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout'),
     # path('api/entreprises/', views.EntreprisesAPIView.as_view(), name='entreprises_api'),
+    path('api/auth/verify-otp/', views.VerifyOtpAPIView.as_view(), name='auth_verify_otp'),
+    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout')
 ]
 
 # Serve static and media files in development

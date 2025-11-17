@@ -216,7 +216,7 @@ class Clients(models.Model):
 
 class Codepostal(models.Model):
     id = models.BigAutoField(primary_key=True)
-    code = models.CharField()
+    code = models.CharField(max_length=20)
     created_at = models.DateTimeField()
     pays = models.ForeignKey('Pays', models.DO_NOTHING, db_column='pays', blank=True, null=True)
 
@@ -1061,7 +1061,7 @@ class Organisations(models.Model):
     adresse_ligne1 = models.TextField(blank=True, null=True)
     adresse_ligne2 = models.TextField(blank=True, null=True)
     ville = models.CharField(max_length=100, blank=True, null=True)
-    code_postal = models.CharField(blank=True, null=True)
+    code_postal = models.CharField(max_length=20, blank=True, null=True)
     region = models.CharField(max_length=100, blank=True, null=True)
     pays = models.ForeignKey('Pays', models.DO_NOTHING, db_column='pays', blank=True, null=True)
     email_contact = models.TextField(blank=True, null=True)
@@ -1210,9 +1210,9 @@ class ParametresOrganisation(models.Model):
 
 class Pays(models.Model):
     id = models.BigAutoField(primary_key=True)
-    nom = models.CharField(unique=True)
+    nom = models.CharField(unique=True, max_length=100)
     created_at = models.DateTimeField()
-    indicatif = models.CharField(unique=True)
+    indicatif = models.CharField(unique=True, max_length=10)
     drapeau_url = models.TextField(blank=True, null=True)
 
     class Meta:
