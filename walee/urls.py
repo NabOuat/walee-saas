@@ -7,7 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from frontend import views
 from frontend.api_supabase import add_user
-
+from backend.walee import api_views
 
 # Custom error handlers
 handler404 = 'frontend.views.error_404'
@@ -88,13 +88,18 @@ urlpatterns = [
 
     # API Supabase
     # path('api/utilisateurs/', add_user, name='add_user'),
-    path('api/auth/register/',views.InscriptionPartenaireAPIView.as_view(), name='auth_register' ),
-    path('api/auth/login/',views.LoginPartenaireAPIView.as_view(), name='auth_login'),
-    path('api/auth/profile/',views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
-    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout'),
-    # path('api/entreprises/', views.EntreprisesAPIView.as_view(), name='entreprises_api'),
-    path('api/auth/verify-otp/', views.VerifyOtpAPIView.as_view(), name='auth_verify_otp'),
-    # path('api/auth/logout/',views.LoginPartenaireAPIView.as_view(), name='logout')
+    path('api/auth/register/',api_views.InscriptionPartenaireAPIView.as_view(), name='auth_signup' ),
+    path('api/auth/login/',api_views.LoginPartenaireAPIView.as_view(), name='auth_login'),
+    path('api/auth/profile/',api_views.ProfilePartenaireAPIView.as_view(), name='auth_profile'),
+    # path('api/entreprises/', api_views.OrganisationsAPIView.as_view(), name='entreprises_api'),
+    path('api/auth/verify-otp/', api_views.VerifyOtpAPIView.as_view(), name='auth_verify_otp'),
+    # path('api/auth/logout/',api_views.LoginPartenaireAPIView.as_view(), name='logout')
+    # 1. Route LISTE/CREATE: Sans ID. Appelle les méthodes get() et post()
+    path('api/organisations/', api_views.OrganisationAPIView.as_view(), name='organisation-list-create'),
+    
+    # 2. Route DETAIL/UPDATE/DELETE: AVEC ID. Appelle les méthodes patch() et delete()
+    # L'ID est passé comme argument 'pk' à la vue
+    path('api/organisations/<uuid:pk>/', api_views.OrganisationAPIView.as_view(), name='organisation-detail'),
 ]
 
 # Serve static and media files in development

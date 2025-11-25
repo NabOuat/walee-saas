@@ -5,6 +5,9 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+
+# python manage.py inspectdb > backend/walee/models.py
+
 from django.db import models
 
 
@@ -216,7 +219,7 @@ class Clients(models.Model):
 
 class Codepostal(models.Model):
     id = models.BigAutoField(primary_key=True)
-    code = models.CharField(max_length=20)
+    code = models.CharField()
     created_at = models.DateTimeField()
     pays = models.ForeignKey('Pays', models.DO_NOTHING, db_column='pays', blank=True, null=True)
 
@@ -1061,7 +1064,7 @@ class Organisations(models.Model):
     adresse_ligne1 = models.TextField(blank=True, null=True)
     adresse_ligne2 = models.TextField(blank=True, null=True)
     ville = models.CharField(max_length=100, blank=True, null=True)
-    code_postal = models.CharField(max_length=20, blank=True, null=True)
+    code_postal = models.CharField(blank=True, null=True)
     region = models.CharField(max_length=100, blank=True, null=True)
     pays = models.ForeignKey('Pays', models.DO_NOTHING, db_column='pays', blank=True, null=True)
     email_contact = models.TextField(blank=True, null=True)
@@ -1093,6 +1096,7 @@ class Organisations(models.Model):
     date_creation = models.DateTimeField(blank=True, null=True)
     date_modification = models.DateTimeField(blank=True, null=True)
     date_suppression = models.DateTimeField(blank=True, null=True)
+    type_organisation = models.ForeignKey('TypeOrganisations', models.DO_NOTHING, db_column='type_organisation', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -1210,9 +1214,9 @@ class ParametresOrganisation(models.Model):
 
 class Pays(models.Model):
     id = models.BigAutoField(primary_key=True)
-    nom = models.CharField(unique=True, max_length=100)
+    nom = models.CharField(unique=True)
     created_at = models.DateTimeField()
-    indicatif = models.CharField(unique=True, max_length=10)
+    indicatif = models.CharField(unique=True)
     drapeau_url = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -1515,6 +1519,17 @@ class TransactionsCaisse(models.Model):
         db_table = 'transactions_caisse'
         unique_together = (('organisation', 'numero_transaction'),)
         db_table_comment = 'Toutes les transactions de caisse (ventes, entrées, sorties)'
+
+
+class TypeOrganisations(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    description = models.CharField(unique=True)
+    created_at = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'type_organisations'
+        db_table_comment = "Liste des differents types d'organisations pour à l'avenir creer des interfaces adaptés à chaque organisation"
 
 
 class TypesNotifications(models.Model):

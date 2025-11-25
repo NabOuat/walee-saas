@@ -67,7 +67,7 @@ REST_FRAMEWORK = {
         "anon": "100/hour",
         "user": "1000/hour",
         # Limites spécifiques auth (anti brute-force)
-        "auth_register": "5/minute",
+        "auth_signup": "5/minute",
         "auth_login": "10/minute",
         "auth_verify_otp": "10/minute",
     },
@@ -114,7 +114,6 @@ WSGI_APPLICATION = "walee.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
-
 if DATABASE_URL:
     # Production: PostgreSQL (Supabase ou Render)
     DATABASES = {

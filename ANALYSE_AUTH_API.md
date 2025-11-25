@@ -9,7 +9,7 @@
 
 | Endpoint | Méthode | Statut | Implémentation |
 |----------|---------|--------|-----------------|
-| `/api/auth/register/` | POST | ✅ Fonctionnel | Inscription Supabase + Profil local |
+| `/api/auth/signup/` | POST | ✅ Fonctionnel | Inscription Supabase + Profil local |
 | `/api/auth/login/` | POST | ✅ Fonctionnel | Connexion Supabase + JWT tokens |
 | `/api/auth/profile/` | GET | ✅ Fonctionnel | Récupération profil utilisateur |
 
@@ -19,7 +19,7 @@
 
 ### **Route**
 ```python
-path('api/auth/register/', views.InscriptionPartenaireAPIView.as_view(), name='auth_register')
+path('api/auth/signup/', views.InscriptionPartenaireAPIView.as_view(), name='auth_signup')
 ```
 
 ### **Classe**
